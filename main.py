@@ -4,6 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import time
 import threading
 from datetime import datetime, timedelta
+import pytz
 import os
 import re
 import html
@@ -11,7 +12,6 @@ import config
 import database
 import ai_generator
 import watermarker
-import pytz
 
 database.init_db()
 bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
@@ -22,7 +22,6 @@ album_cache = {}
 
 # --- РАБОТА С КАНАЛАМИ И ФАЙЛАМИ ---
 def get_channels():
-    """Получает каналы из .env и объединяет с добавленными вручную из channels.txt"""
     channels = config.AVAILABLE_CHANNELS.copy()
     if os.path.exists("channels.txt"):
         with open("channels.txt", "r", encoding="utf-8") as f:
@@ -112,7 +111,13 @@ def show_queue_page(chat_id, page, message_id=None):
 
     clean_text = re.sub(r'<[^>]+>', '', text)
     preview_text = clean_text[:250] + "..." if len(clean_text) > 250 else clean_text
-    time_str = datetime.fromtimestamp(scheduled_time).strftime('%d.%m.%Y %H:%M') if scheduled_time else "Без времени"
+    
+    # ИСПРАВЛЕНИЕ ВРЕМЕНИ (ОТОБРАЖЕНИЕ)
+    tashkent_tz = pytz.timezone('Asia/Tashkent')
+    if scheduled_time:
+        time_str = datetime.fromtimestamp(scheduled_time, tashkent_tz).strftime('%d.%m.%Y %H:%M')
+    else:
+        time_str = "Без времени"
 
     msg_text = (f"🕒 <b>В очереди: {len(posts)} постов</b>\n\n"
                 f"📄 <b>Пост [{page+1}/{len(posts)}]</b>\n"
@@ -165,17 +170,14 @@ def get_draft_markup(draft_id):
     return markup
 
 def update_draft_inline(chat_id, target_id, draft):
-    """Обновляет сообщение с черновиком (добавление рекламы и т.д.)"""
     markup = get_draft_markup(target_id)
     try:
-        # Пробуем обновить как текст (для альбомов и длинных постов)
         bot.edit_message_text(text=draft['text'], chat_id=chat_id, message_id=target_id, parse_mode='HTML', reply_markup=markup)
     except:
         try:
-            # Если это одиночное фото с подписью
             bot.edit_message_caption(caption=draft['text'], chat_id=chat_id, message_id=target_id, parse_mode='HTML', reply_markup=markup)
         except Exception as e:
-            print(f"Ошибка обновления инлайна: {e}")
+            pass
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -184,7 +186,6 @@ def send_welcome(message):
 @bot.message_handler(content_types=['text', 'photo'])
 def handle_text_photo(message):
     if message.content_type == 'text':
-        # Перехватываем кнопки меню, чтобы они не уходили в ИИ
         if message.text == "📝 Создать пост":
             bot.send_message(message.chat.id, "Отправь мне фото, текст или ссылку с описанием мода, и я сгенерирую пост! 🚀\n\n<i>Ты можешь отправить одно фото или целый альбом.</i>", parse_mode="HTML")
             return
@@ -215,7 +216,6 @@ def handle_text_photo(message):
             bot.send_message(message.chat.id, "Выбери личность бота для генерации текста:", reply_markup=markup)
             return
 
-    # Если это не кнопка меню, значит это КОНТЕНТ для поста
     if message.media_group_id:
         if message.media_group_id not in album_cache:
             album_cache[message.media_group_id] = []
@@ -249,7 +249,6 @@ def process_single_message(message):
             
             with open(temp_in, 'wb') as f: f.write(downloaded_file)
                 
-            # Безопасный вызов watermarker
             watermarker.add_watermark(temp_in, temp_out)
             target_image = temp_out if os.path.exists(temp_out) else temp_in
             
@@ -291,7 +290,6 @@ def process_album(media_group_id, chat_id, user_id):
             tin, tout = f"in_{media_group_id}_{i}.jpg", f"out_{media_group_id}_{i}.jpg"
             with open(tin, 'wb') as f: f.write(downloaded_file)
             
-            # Накладываем знак
             watermarker.add_watermark(tin, tout)
             target_img = tout if os.path.exists(tout) else tin
             temp_files.append((tin, target_img))
@@ -349,7 +347,6 @@ def send_draft_preview(chat_id, draft):
     user_drafts[target_id] = draft
     bot.edit_message_reply_markup(chat_id, target_id, reply_markup=get_draft_markup(target_id))
 
-# --- ОБРАБОТЧИКИ "ОТМЕНЫ" И ШАГОВ ---
 def process_ad_step(message):
     if message.text and message.text.lower() in ['отмена', '❌ отмена']:
         bot.send_message(message.chat.id, "❌ Действие отменено.", reply_markup=get_main_menu())
@@ -363,8 +360,6 @@ def process_add_channel_step(message):
         return
     
     new_channel = message.text.strip()
-    
-    # Делаем проверку на формат юзернейма (@channel) или ID (-100...)
     if not new_channel.startswith('@') and not new_channel.replace('-', '').isdigit():
         new_channel = '@' + new_channel
         
@@ -394,20 +389,17 @@ def save_edited_text(message, target_id, chat_id):
     bot.send_message(chat_id, "✅ Текст успешно обновлен!", reply_markup=get_main_menu())
     send_draft_preview(chat_id, draft)
 
+# ИСПРАВЛЕНИЕ ВРЕМЕНИ (ПЛАНИРОВАНИЕ)
 def process_exact_time(message, draft_id, chat_id):
     if message.text and message.text.lower() in ['отмена', '❌ отмена']:
         bot.send_message(chat_id, "❌ Планирование отменено.", reply_markup=get_main_menu())
         return
 
     try:
-        # 1. Считываем время, которое ввел пользователь
         dt_naive = datetime.strptime(message.text, "%d.%m.%Y %H:%M")
         
-        # 2. ЖЕСТКО привязываем это время к часовому поясу Ташкента
         tashkent_tz = pytz.timezone('Asia/Tashkent')
         dt_aware = tashkent_tz.localize(dt_naive)
-        
-        # 3. Получаем правильный универсальный timestamp
         timestamp = int(dt_aware.timestamp())
         
         if timestamp < time.time():
@@ -426,7 +418,6 @@ def process_exact_time(message, draft_id, chat_id):
         msg = bot.send_message(chat_id, "❌ Неверный формат! Введи заново (ДД.ММ.ГГГГ ЧЧ:ММ):", reply_markup=get_cancel_markup())
         bot.register_next_step_handler(msg, process_exact_time, draft_id, chat_id)
 
-# --- ОБРАБОТКА CALLBACK ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     if call.data.startswith('q_'):
@@ -481,7 +472,6 @@ def callback_handler(call):
         
         draft['text'] += f"\n\n<blockquote>{ad_text}</blockquote>"
         draft['ad_added'] = True
-        # Используем новую функцию вместо ошибки
         update_draft_inline(call.message.chat.id, target_id, draft) 
         bot.answer_callback_query(call.id, "Реклама добавлена!")
         return
@@ -512,13 +502,18 @@ def callback_handler(call):
         bot.edit_message_reply_markup(call.message.chat.id, target_id, reply_markup=get_draft_markup(target_id))
         return
 
+    # ИСПРАВЛЕНИЕ ВРЕМЕНИ (ИНТЕРВАЛЫ)
     if call.data.startswith("sched_interval_"):
         parts = call.data.split('_')
         hours, draft_id = int(parts[2]), int(parts[3])
         target_draft = user_drafts.get(draft_id)
         
         if not target_draft: return bot.answer_callback_query(call.id, "Ошибка.")
-        timestamp = int((datetime.now() + timedelta(hours=hours)).timestamp())
+        
+        tashkent_tz = pytz.timezone('Asia/Tashkent')
+        now = datetime.now(tashkent_tz)
+        future = now + timedelta(hours=hours)
+        timestamp = int(future.timestamp())
         
         database.add_to_queue(target_draft['photo'], target_draft['text'], target_draft['document'], target_draft['channel'], timestamp)
         bot.edit_message_reply_markup(call.message.chat.id, draft_id, reply_markup=None)
@@ -542,7 +537,7 @@ def handle_document(message):
             return
     bot.reply_to(message, "Сделай Reply на сообщение с кнопками!")
 
-print("Бот v11.3 (Исправленный Watermark + FSM) запущен!")
+print("Бот v11.4 (Фикс времени и водяных знаков) запущен!")
 while True:
     try:
         bot.polling(none_stop=True, timeout=90)

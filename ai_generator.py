@@ -1,4 +1,3 @@
-# ai_generator.py
 from google import genai
 import config
 import re
@@ -8,7 +7,6 @@ from bs4 import BeautifulSoup
 client = genai.Client(api_key=config.GEMINI_KEY)
 MODEL_ID = "gemini-2.5-flash"
 
-# Словарь с разными личностями (шаблонами)
 PROMPTS = {
     "uz": """Ты — креативный редактор Telegram-канала о модах для Minecraft.
 Я передам тебе текст. Вычлени главное и напиши пост. Уложись в 800 символов.
@@ -95,7 +93,6 @@ def fetch_page_content(url):
         print(f"⚠️ Не смог прочитать сайт {url}: {e}")
         return ""
 
-# Теперь функция принимает параметр persona
 def generate_post(user_input, persona="uz"):
     url = extract_url(user_input)
     site_context = ""
@@ -105,15 +102,13 @@ def generate_post(user_input, persona="uz"):
         page_text = fetch_page_content(url)
 
     selected_prompt = PROMPTS.get(persona, PROMPTS["uz"])
-    prompt = f"{selected_prompt}\n\nСырая информация от пользователя:\n{user_input}{site_context}"
     
+    prompt = f"{selected_prompt}\n\nСырая информация от пользователя:\n{user_input}{site_context}"
     response = client.models.generate_content(model=MODEL_ID, contents=prompt)
     
-    # --- ИСПРАВЛЕНИЕ ФОРМАТИРОВАНИЯ ---
     final_text = response.text.strip()
     
-    # Жестко заменяем маркдауновские звездочки на HTML-теги для жирного текста
-    final_text = final_text.replace("**", "<b>", 1).replace("**", "</b>", 1) # Если ИИ ставит их парами
-    final_text = final_text.replace("**", "") # Удаляем все оставшиеся случайные звездочки
+    # Конвертируем Markdown-звездочки в HTML-теги для жирного текста
+    final_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_text)
     
     return final_text

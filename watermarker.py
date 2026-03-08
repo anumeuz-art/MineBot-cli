@@ -8,19 +8,17 @@ def add_watermark(input_image_path, output_image_path):
         base_image = Image.open(input_image_path).convert("RGBA")
         width, height = base_image.size
 
-        # Путь к вашему логотипу (убедитесь, что файл лежит в папке с ботом)
         logo_path = "logo.png" 
         if not os.path.exists(logo_path):
             print(f"⚠️ Файл {logo_path} не найден! Просто сохраняю фото.")
             base_image.convert("RGB").save(output_image_path, "JPEG", quality=95)
-            return
+            return True
 
         logo = Image.open(logo_path).convert("RGBA")
         
-        # --- УМНОЕ МАСШТАБИРОВАНИЕ ---
         # Логотип всегда будет занимать 15% от ширины основного фото
-        target_width = int(width * 0.30) 
-        if target_width < 100: target_width = 200 # Минимальный размер, чтобы не был точкой
+        target_width = int(width * 0.15) 
+        if target_width < 100: target_width = 100
         
         w_percent = (target_width / float(logo.size[0]))
         target_height = int((float(logo.size[1]) * float(w_percent)))
@@ -38,6 +36,8 @@ def add_watermark(input_image_path, output_image_path):
         combined = Image.alpha_composite(base_image, overlay)
         combined.convert("RGB").save(output_image_path, "JPEG", quality=95)
         print(f"✅ Водяной знак наложен на фото {width}x{height}")
+        return True
 
     except Exception as e:
         print(f"❌ Ошибка в watermarker: {e}")
+        return False
