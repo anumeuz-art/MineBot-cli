@@ -20,6 +20,55 @@ active_channels = {}
 user_personas = {} 
 album_cache = {}
 
+# --- НОВЫЕ ВИЗУАЛЬНЫЕ ФУНКЦИИ ---
+
+def get_time_greeting():
+    """Возвращает приветствие в зависимости от времени"""
+    tashkent_tz = pytz.timezone('Asia/Tashkent')
+    hour = datetime.now(tashkent_tz).hour
+    if hour < 6:
+        return "🌙 Доброй ночи"
+    elif hour < 12:
+        return "🌅 Доброе утро"
+    elif hour < 18:
+        return "☀️ Добрый день"
+    else:
+        return "🌆 Добрый вечер"
+
+def format_queue_post(post, index, total):
+    """Красивый шаблон для поста в очереди"""
+    post_id, photo_id, text, doc_id, channel, time_sched = post
+    
+    # Иконка типа
+    type_icon = "🖼️" if photo_id else "📝" if not doc_id else "📁"
+    if photo_id and ',' in photo_id: type_icon = "📚" # Альбом
+    
+    # Время
+    tashkent_tz = pytz.timezone('Asia/Tashkent')
+    if time_sched:
+        dt = datetime.fromtimestamp(time_sched, tashkent_tz)
+        now = datetime.now(tashkent_tz)
+        if dt.date() == now.date():
+            time_str = f"Сегодня в {dt.strftime('%H:%M')}"
+        elif dt.date() == (now + timedelta(days=1)).date():
+            time_str = f"Завтра в {dt.strftime('%H:%M')}"
+        else:
+            time_str = dt.strftime('%d.%m.%Y %H:%M')
+    else:
+        time_str = "⏰ Не запланировано"
+        
+    # Превью текста
+    preview = re.sub(r'<[^>]+>', '', text)[:100]
+    
+    return f"""╔═══📋 ПОСТ {index}/{total} ═══╗
+{type_icon} <b>Тип:</b> {'Альбом' if photo_id and ',' in photo_id else 'Фото' if photo_id else 'Текст'}
+📢 <b>Канал:</b> {channel or config.DEFAULT_CHANNEL}
+⏰ <b>Время:</b> {time_str}
+
+📝 <b>Превью:</b>
+<i>{preview}{'...' if len(text) > 100 else ''}</i>
+╚════════════════════╝"""
+
 # --- РАБОТА С КАНАЛАМИ И ФАЙЛАМИ ---
 def get_channels():
     channels = config.AVAILABLE_CHANNELS.copy()
@@ -100,31 +149,9 @@ def show_queue_page(chat_id, page, message_id=None):
     if page >= len(posts): page = len(posts) - 1
     if page < 0: page = 0
 
-    post_id, photo_id, text, document_id, channel_id, scheduled_time = posts[page]
-
-    media_info = []
-    if photo_id:
-        if ',' in photo_id: media_info.append(f"🖼 Альбом ({len(photo_id.split(','))} фото)")
-        else: media_info.append("🖼 Фото")
-    if document_id: media_info.append("📁 Файл")
-    media_str = ", ".join(media_info) if media_info else "Только текст"
-
-    clean_text = re.sub(r'<[^>]+>', '', text)
-    preview_text = clean_text[:250] + "..." if len(clean_text) > 250 else clean_text
-    
-    # ИСПРАВЛЕНИЕ ВРЕМЕНИ (ОТОБРАЖЕНИЕ)
-    tashkent_tz = pytz.timezone('Asia/Tashkent')
-    if scheduled_time:
-        time_str = datetime.fromtimestamp(scheduled_time, tashkent_tz).strftime('%d.%m.%Y %H:%M')
-    else:
-        time_str = "Без времени"
-
-    msg_text = (f"🕒 <b>В очереди: {len(posts)} постов</b>\n\n"
-                f"📄 <b>Пост [{page+1}/{len(posts)}]</b>\n"
-                f"📢 Канал: {channel_id or config.DEFAULT_CHANNEL}\n"
-                f"⏰ Запланирован: <b>{time_str}</b>\n"
-                f"📎 Вложения: {media_str}\n\n"
-                f"<i>{preview_text}</i>")
+    # Используем новый красивый формат
+    msg_text = f"🕒 <b>В очереди: {len(posts)} постов</b>\n\n"
+    msg_text += format_queue_post(posts[page], page + 1, len(posts))
 
     markup = InlineKeyboardMarkup(row_width=2)
     nav_row = []
@@ -133,8 +160,8 @@ def show_queue_page(chat_id, page, message_id=None):
     if nav_row: markup.add(*nav_row)
 
     markup.add(
-        InlineKeyboardButton("🚀 Выпустить сейчас", callback_data=f"q_pub_{post_id}"),
-        InlineKeyboardButton("🗑 Удалить", callback_data=f"q_del_{post_id}")
+        InlineKeyboardButton("🚀 Выпустить сейчас", callback_data=f"q_pub_{posts[page][0]}"),
+        InlineKeyboardButton("🗑 Удалить", callback_data=f"q_del_{posts[page][0]}")
     )
 
     if message_id:
@@ -149,7 +176,9 @@ def get_main_menu():
     markup.add(KeyboardButton("📝 Создать пост"))
     markup.add(KeyboardButton("🎭 Выбор стиля"), KeyboardButton("📢 Выбор канала"))
     markup.add(KeyboardButton("➕ Добавить канал"), KeyboardButton("📊 Статус очереди"))
-    markup.add(KeyboardButton("💰 Реклама"))
+    # НОВЫЕ КНОПКИ:
+    markup.add(KeyboardButton("💰 Реклама"), KeyboardButton("📈 Статистика"))
+    markup.add(KeyboardButton("💾 Бэкап базы"))
     return markup
 
 def get_cancel_markup():
@@ -158,14 +187,21 @@ def get_cancel_markup():
     return markup
 
 def get_draft_markup(draft_id):
+    """Обновленная клавиатура с иконками"""
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("🚀 Опубликовать сейчас", callback_data="pub_now"),
-        InlineKeyboardButton("🕒 Запланировать", callback_data="pub_queue_menu")
+        InlineKeyboardButton(f"🧠 Умная очередь (+{config.SMART_QUEUE_INTERVAL_HOURS} ч)", callback_data="add_to_smart_q")
     )
     markup.add(
-        InlineKeyboardButton("✏️ Редактировать", callback_data="edit_text"),
-        InlineKeyboardButton("💰 Добавить рекламу", callback_data="add_ad")
+        InlineKeyboardButton("🚀 Сейчас", callback_data="pub_now"),
+        InlineKeyboardButton("📅 Позже", callback_data="pub_queue_menu")
+    )
+    markup.add(
+        InlineKeyboardButton("✏️ Правка", callback_data="edit_text"),
+        InlineKeyboardButton("💰 +Реклама", callback_data="add_ad")
+    )
+    markup.add(
+        InlineKeyboardButton("❌ Удалить", callback_data="cancel_action")
     )
     return markup
 
@@ -181,7 +217,8 @@ def update_draft_inline(chat_id, target_id, draft):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, "Привет! Бот готов к работе.", reply_markup=get_main_menu())
+    greeting = get_time_greeting()
+    bot.send_message(message.chat.id, f"{greeting}! Бот готов к работе.", reply_markup=get_main_menu())
 
 @bot.message_handler(content_types=['text', 'photo'])
 def handle_text_photo(message):
@@ -207,6 +244,13 @@ def handle_text_photo(message):
                 markup.add(InlineKeyboardButton(f"{status}{ch}", callback_data=f"set_channel_{ch}"))
             bot.send_message(message.chat.id, "Выбери канал для публикации:", reply_markup=markup)
             return
+        elif message.text == "📈 Статистика":
+            show_stats(message.chat.id)
+            return
+        elif message.text == "💾 Бэкап базы":
+            backup_data(message.chat.id)
+            return
+        
         elif message.text == "🎭 Выбор стиля":
             markup = InlineKeyboardMarkup(row_width=1)
             active_p = get_active_persona(message.from_user.id)
@@ -225,6 +269,52 @@ def handle_text_photo(message):
         return
 
     process_single_message(message)
+    
+def show_stats(chat_id):
+    """Показывает красивую статистику"""
+    stats = database.get_stats()
+    active_ch_count = len(get_channels())
+    
+    text = f"""📊 <b>СТАТИСТИКА БОТА</b> 📊
+
+📝 <b>Всего постов создано:</b> {stats['total']}
+✅ <b>Успешно опубликовано:</b> {stats['published']}
+⏳ <b>Ждут в очереди:</b> {stats['queue']}
+📅 <b>Запланировано от сегодня:</b> {stats['today']}
+
+📢 <b>Подключенных каналов:</b> {active_ch_count}
+"""
+    bot.send_message(chat_id, text, parse_mode='HTML')
+
+def backup_data(chat_id):
+    """Создает резервную копию и отправляет файлом"""
+    bot.send_message(chat_id, "⏳ Собираю данные для резервной копии...")
+    import json
+    
+    # Формируем JSON-файл
+    tashkent_tz = pytz.timezone('Asia/Tashkent')
+    backup = {
+        'channels': get_channels(),
+        'stats': database.get_stats(),
+        'posts': database.get_all_posts(),
+        'date': datetime.now(tashkent_tz).isoformat()
+    }
+    
+    filename = f'backup_{datetime.now(tashkent_tz).strftime("%Y%m%d_%H%M%S")}.json'
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(backup, f, indent=2, ensure_ascii=False)
+        
+    # Отправляем JSON
+    with open(filename, 'rb') as f:
+        bot.send_document(chat_id, f, caption="✅ Резервная копия (формат JSON) успешно создана!")
+        
+    # И отправляем сам файл базы данных (самое надежное!)
+    if os.path.exists('bot_data.db'):
+        with open('bot_data.db', 'rb') as f:
+            bot.send_document(chat_id, f, caption="🗄 Вот сам файл базы данных (bot_data.db). В случае сбоя сервера просто положи его в папку с ботом.")
+            
+    # Удаляем временный файл json с сервера, чтобы не засорять память
+    os.remove(filename)
 
 def process_single_message(message):
     temp_in = f"in_{message.message_id}.jpg"
@@ -389,7 +479,6 @@ def save_edited_text(message, target_id, chat_id):
     bot.send_message(chat_id, "✅ Текст успешно обновлен!", reply_markup=get_main_menu())
     send_draft_preview(chat_id, draft)
 
-# ИСПРАВЛЕНИЕ ВРЕМЕНИ (ПЛАНИРОВАНИЕ)
 def process_exact_time(message, draft_id, chat_id):
     if message.text and message.text.lower() in ['отмена', '❌ отмена']:
         bot.send_message(chat_id, "❌ Планирование отменено.", reply_markup=get_main_menu())
@@ -397,7 +486,6 @@ def process_exact_time(message, draft_id, chat_id):
 
     try:
         dt_naive = datetime.strptime(message.text, "%d.%m.%Y %H:%M")
-        
         tashkent_tz = pytz.timezone('Asia/Tashkent')
         dt_aware = tashkent_tz.localize(dt_naive)
         timestamp = int(dt_aware.timestamp())
@@ -420,21 +508,32 @@ def process_exact_time(message, draft_id, chat_id):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
+    chat_id = call.message.chat.id
+    target_id = call.message.message_id
+    
+    # Обработка отмены (Удалить)
+    if call.data == "cancel_action":
+        try: bot.delete_message(chat_id, target_id)
+        except: pass
+        if target_id in user_drafts: del user_drafts[target_id]
+        bot.answer_callback_query(call.id, "🗑 Черновик удален")
+        return
+
     if call.data.startswith('q_'):
         parts = call.data.split('_')
         action, val = parts[1], int(parts[2])
 
-        if action == 'page': show_queue_page(call.message.chat.id, val, call.message.message_id)
+        if action == 'page': show_queue_page(chat_id, val, target_id)
         elif action == 'del':
             database.delete_from_queue(val)
             bot.answer_callback_query(call.id, "🗑 Пост удален!")
-            show_queue_page(call.message.chat.id, 0, call.message.message_id)
+            show_queue_page(chat_id, 0, target_id)
         elif action == 'pub':
             posts = database.get_all_pending()
             post = next((p for p in posts if p[0] == val), None)
             if post and publish_post_data(post[0], post[1], post[2], post[3], post[4] or config.DEFAULT_CHANNEL):
                 bot.answer_callback_query(call.id, "🚀 Опубликовано!")
-                show_queue_page(call.message.chat.id, 0, call.message.message_id)
+                show_queue_page(chat_id, 0, target_id)
             else: bot.answer_callback_query(call.id, "❌ Ошибка публикации!", show_alert=True)
             return
 
@@ -442,7 +541,7 @@ def callback_handler(call):
         channel = call.data.replace("set_channel_", "")
         active_channels[call.from_user.id] = channel
         bot.answer_callback_query(call.id, f"Актуальный канал: {channel}")
-        bot.edit_message_text(f"✅ Выбран канал: <b>{channel}</b>", call.message.chat.id, call.message.message_id, parse_mode="HTML")
+        bot.edit_message_text(f"✅ Выбран канал: <b>{channel}</b>", chat_id, target_id, parse_mode="HTML")
         return
 
     if call.data.startswith("set_persona_"):
@@ -450,19 +549,36 @@ def callback_handler(call):
         user_personas[call.from_user.id] = persona
         lang_names = {"uz": "Узбекский", "ru": "Русский", "en": "Английский"}
         bot.answer_callback_query(call.id, f"Стиль изменен на: {lang_names.get(persona)}")
-        bot.edit_message_text(f"✅ Установлен стиль постов: <b>{lang_names.get(persona)}</b>", call.message.chat.id, call.message.message_id, parse_mode="HTML")
+        bot.edit_message_text(f"✅ Установлен стиль постов: <b>{lang_names.get(persona)}</b>", chat_id, target_id, parse_mode="HTML")
         return
 
-    target_id = call.message.message_id
     draft = user_drafts.get(target_id)
     
     if not draft and not call.data.startswith("sched_"):
         return bot.answer_callback_query(call.id, "Черновик устарел.", show_alert=True)
 
+    if call.data == "add_to_smart_q":
+        last_time = database.get_last_scheduled_time()
+        tashkent_tz = pytz.timezone('Asia/Tashkent')
+        current_time = int(datetime.now(tashkent_tz).timestamp())
+        interval_seconds = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 2) * 3600
+        
+        if last_time and last_time > current_time: new_time = last_time + interval_seconds
+        else: new_time = current_time + interval_seconds
+            
+        database.add_to_queue(draft['photo'], draft['text'], draft['document'], draft['channel'], new_time)
+        dt_str = datetime.fromtimestamp(new_time, tashkent_tz).strftime('%d.%m.%Y %H:%M')
+        
+        bot.answer_callback_query(call.id, "✅ Добавлено в умную очередь!")
+        bot.edit_message_reply_markup(chat_id, target_id, reply_markup=None)
+        bot.send_message(chat_id, f"🧠 <b>Умная очередь:</b> Пост запланирован на {dt_str} для {draft['channel']}", parse_mode="HTML")
+        del user_drafts[target_id]
+        return
+
     if call.data == "edit_text":
         raw_text = html.escape(draft['text'])
-        msg = bot.send_message(call.message.chat.id, f"✏️ <b>Нажми на код ниже, чтобы скопировать его:</b>\n\n<code>{raw_text}</code>\n\nВставь, исправь и отправь мне!", parse_mode="HTML", reply_markup=get_cancel_markup())
-        bot.register_next_step_handler(msg, save_edited_text, target_id, call.message.chat.id)
+        msg = bot.send_message(chat_id, f"✏️ <b>Нажми на код ниже, чтобы скопировать его:</b>\n\n<code>{raw_text}</code>\n\nВставь, исправь и отправь мне!", parse_mode="HTML", reply_markup=get_cancel_markup())
+        bot.register_next_step_handler(msg, save_edited_text, target_id, chat_id)
         return
 
     if call.data == "add_ad":
@@ -472,15 +588,15 @@ def callback_handler(call):
         
         draft['text'] += f"\n\n<blockquote>{ad_text}</blockquote>"
         draft['ad_added'] = True
-        update_draft_inline(call.message.chat.id, target_id, draft) 
+        update_draft_inline(chat_id, target_id, draft) 
         bot.answer_callback_query(call.id, "Реклама добавлена!")
         return
 
     if call.data == "pub_now":
         if publish_post_data(-1, draft['photo'], draft['text'], draft['document'], draft['channel']):
             bot.answer_callback_query(call.id, "✅ Опубликовано!")
-            bot.edit_message_reply_markup(call.message.chat.id, target_id, reply_markup=None)
-            bot.send_message(call.message.chat.id, f"🚀 Отправлено в {draft['channel']}!")
+            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=None)
+            bot.send_message(chat_id, f"🚀 Отправлено в {draft['channel']}!")
             del user_drafts[target_id]
         return
 
@@ -495,14 +611,13 @@ def callback_handler(call):
         )
         markup.add(InlineKeyboardButton("📅 Точная дата и время", callback_data=f"sched_exact_{target_id}"))
         markup.add(InlineKeyboardButton("⬅️ Назад", callback_data="back_to_draft"))
-        bot.edit_message_reply_markup(call.message.chat.id, target_id, reply_markup=markup)
+        bot.edit_message_reply_markup(chat_id, target_id, reply_markup=markup)
         return
 
     if call.data == "back_to_draft":
-        bot.edit_message_reply_markup(call.message.chat.id, target_id, reply_markup=get_draft_markup(target_id))
+        bot.edit_message_reply_markup(chat_id, target_id, reply_markup=get_draft_markup(target_id))
         return
 
-    # ИСПРАВЛЕНИЕ ВРЕМЕНИ (ИНТЕРВАЛЫ)
     if call.data.startswith("sched_interval_"):
         parts = call.data.split('_')
         hours, draft_id = int(parts[2]), int(parts[3])
@@ -516,15 +631,15 @@ def callback_handler(call):
         timestamp = int(future.timestamp())
         
         database.add_to_queue(target_draft['photo'], target_draft['text'], target_draft['document'], target_draft['channel'], timestamp)
-        bot.edit_message_reply_markup(call.message.chat.id, draft_id, reply_markup=None)
-        bot.send_message(call.message.chat.id, f"🕒 Запланировано (через {hours} ч.) для {target_draft['channel']}")
+        bot.edit_message_reply_markup(chat_id, draft_id, reply_markup=None)
+        bot.send_message(chat_id, f"🕒 Запланировано (через {hours} ч.) для {target_draft['channel']}")
         del user_drafts[draft_id]
         return
 
     if call.data.startswith("sched_exact_"):
         draft_id = int(call.data.split('_')[2])
-        msg = bot.send_message(call.message.chat.id, "📅 Отправь дату в формате `ДД.ММ.ГГГГ ЧЧ:ММ`\nНапример: `25.10.2026 15:30`", parse_mode="Markdown", reply_markup=get_cancel_markup())
-        bot.register_next_step_handler(msg, process_exact_time, draft_id, call.message.chat.id)
+        msg = bot.send_message(chat_id, "📅 Отправь дату в формате `ДД.ММ.ГГГГ ЧЧ:ММ`\nНапример: `25.10.2026 15:30`", parse_mode="Markdown", reply_markup=get_cancel_markup())
+        bot.register_next_step_handler(msg, process_exact_time, draft_id, chat_id)
         return
 
 @bot.message_handler(content_types=['document'])
@@ -537,7 +652,7 @@ def handle_document(message):
             return
     bot.reply_to(message, "Сделай Reply на сообщение с кнопками!")
 
-print("Бот v11.4 (Фикс времени и водяных знаков) запущен!")
+print("Бот v13 (Визуальный апгрейд) запущен!")
 while True:
     try:
         bot.polling(none_stop=True, timeout=90)

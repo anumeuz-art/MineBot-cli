@@ -76,3 +76,64 @@ def delete_from_queue(post_id):
     c.execute("DELETE FROM queue WHERE id=?", (post_id,))
     conn.commit()
     conn.close()
+
+def get_last_scheduled_time():
+    """Находит время самого последнего запланированного поста в очереди."""
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("SELECT scheduled_time FROM queue WHERE status='pending' AND scheduled_time IS NOT NULL ORDER BY scheduled_time DESC LIMIT 1")
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+# 🧠 НОВАЯ ФУНКЦИЯ ДЛЯ УМНОЙ ОЧЕРЕДИ
+def get_last_scheduled_time():
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("SELECT scheduled_time FROM queue WHERE status='pending' AND scheduled_time IS NOT NULL ORDER BY scheduled_time DESC LIMIT 1")
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+def get_stats():
+    """Собирает статистику для панели управления"""
+    import pytz
+    from datetime import datetime
+    
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    
+    # Всего постов
+    c.execute("SELECT COUNT(*) FROM queue")
+    total = c.fetchone()[0]
+    
+    # Опубликовано
+    c.execute("SELECT COUNT(*) FROM queue WHERE status='posted'")
+    published = c.fetchone()[0]
+    
+    # В очереди
+    c.execute("SELECT COUNT(*) FROM queue WHERE status='pending'")
+    queue_count = c.fetchone()[0]
+    
+    # Активность за сегодня
+    tashkent_tz = pytz.timezone('Asia/Tashkent')
+    today_start = int(datetime.now(tashkent_tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+    c.execute("SELECT COUNT(*) FROM queue WHERE scheduled_time >= ?", (today_start,))
+    today = c.fetchone()[0]
+    
+    conn.close()
+    return {
+        'total': total,
+        'published': published,
+        'queue': queue_count,
+        'today': today
+    }
+
+def get_all_posts():
+    """Выгружает все посты для бэкапа"""
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM queue")
+    rows = c.fetchall()
+    conn.close()
+    return rows
