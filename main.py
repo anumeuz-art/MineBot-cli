@@ -1,19 +1,24 @@
 import os
-import sys
 import subprocess
+
+print("--- 🔍 DEBUG: FILE SYSTEM STRUCTURE ---")
+# Используем команду find для вывода всей структуры
+try:
+    result = subprocess.run(["find", ".", "-maxdepth", "5"], capture_output=True, text=True)
+    print(result.stdout)
+except Exception as e:
+    print(f"DEBUG ERROR: {e}")
 
 # Ищем launcher.py
 found = None
-for root, dirs, files in os.walk("/app"):
+for root, dirs, files in os.walk("."):
     if "launcher.py" in files and "backup" not in root and "venv" not in root:
         found = os.path.join(root, "launcher.py")
         break
 
-if not found:
-    print("CRITICAL: launcher.py not found in /app")
-    sys.exit(1)
-
-print(f"Starting: {sys.executable} {found}")
-# Запускаем через subprocess, передавая все аргументы
-os.environ["PYTHONPATH"] = os.path.dirname(found)
-subprocess.run([sys.executable, found], cwd=os.path.dirname(found), check=True)
+if found:
+    print(f"--- ✅ FOUND: {found} ---")
+    os.environ["PYTHONPATH"] = os.path.dirname(found)
+    subprocess.run(["python", found], cwd=os.path.dirname(found))
+else:
+    print("--- 💀 FATAL: launcher.py NOT FOUND IN STRUCTURE ---")
