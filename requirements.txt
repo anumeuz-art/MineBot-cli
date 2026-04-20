@@ -1,9 +1,7 @@
-pyTelegramBotAPI==4.15.4
-APScheduler==3.10.4
+pyTelegramBotAPI==4.26.0
+APScheduler==3.11.0
 python-dotenv==1.0.1
-google-genai==0.3.0
-requests==2.31.0
+google-genai==1.2.0
+requests==2.32.3
 beautifulsoup4==4.12.3
-Pillow==10.2.0
-telebot
-apscheduler
+Pillow==11.1.0
