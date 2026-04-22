@@ -107,7 +107,9 @@ def set_language():
 
 @app.route('/logo.png')
 def get_logo():
-    if os.path.exists('logo.png'): return send_file('logo.png', mimetype='image/png')
+    path = os.path.join('templates', 'logo.png')
+    if os.path.exists(path):
+        return send_file(path, mimetype='image/png')
     return "Not found", 404
 
 @app.route('/api/refresh')

@@ -8,7 +8,7 @@ def add_watermark(input_image_path, output_image_path):
         base_image = Image.open(input_image_path).convert("RGBA")
         width, height = base_image.size
 
-        logo_path = "logo.png" 
+        logo_path = "templates/logo.png" 
         if not os.path.exists(logo_path):
             print(f"⚠️ Файл {logo_path} не найден! Просто сохраняю фото.")
             base_image.convert("RGB").save(output_image_path, "JPEG", quality=95)
