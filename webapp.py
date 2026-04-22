@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect
+from flask import Flask, render_template, request, jsonify, redirect, send_file
 import database
 import config
 import os
@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timedelta
 import pytz
 import telebot
+import publisher
 
 app = Flask(__name__)
 bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
@@ -26,7 +27,6 @@ def format_timestamp(ts):
     tz = pytz.timezone('Asia/Tashkent')
     return datetime.fromtimestamp(ts, tz).strftime('%d.%m %H:%M')
 
-# --- Сбор аналитики ---
 def collect_stats():
     channels = database.get_all_managed_channels()
     for ch in channels:
@@ -37,12 +37,13 @@ def collect_stats():
 
 @app.route('/')
 def index():
-    # Собираем данные перед рендером
     collect_stats()
     stats = database.get_stats()
     pending = database.get_all_pending()
     queue = []
     for p in pending:
+        # p = (id, photo_id, text, document_id, channel_id, scheduled_time)
+        doc_ids = p[3].split(',') if p[3] else []
         queue.append({
             'id': p[0],
             'photos': p[1].split(',') if p[1] else [],
@@ -50,7 +51,8 @@ def index():
             'channel': p[4] or config.DEFAULT_CHANNEL,
             'time_str': format_timestamp(p[5]),
             'timestamp': p[5],
-            'iso_time': datetime.fromtimestamp(p[5]).strftime('%Y-%m-%dT%H:%M') if p[5] else ""
+            'iso_time': datetime.fromtimestamp(p[5]).strftime('%Y-%m-%dT%H:%M') if p[5] else "",
+            'files_count': len(doc_ids)
         })
     
     all_posts = database.get_all_posts()
@@ -70,11 +72,25 @@ def index():
     managed_channels = database.get_all_managed_channels()
     return render_template('dashboard.html', stats=stats, queue=queue, history=history, channels=managed_channels, config=config)
 
-# --- API ---
+@app.route('/logo.png')
+def get_logo():
+    if os.path.exists('logo.png'):
+        return send_file('logo.png', mimetype='image/png')
+    return "Not found", 404
+
 @app.route('/api/refresh')
 def api_refresh():
     collect_stats()
     return jsonify({'status': 'ok'})
+
+@app.route('/api/publish/<int:post_id>', methods=['POST'])
+def api_publish_now(post_id):
+    post = database.get_post_by_id(post_id)
+    if post:
+        # post = (id, photo_id, text, document_id, channel_id, scheduled_time, status)
+        if publisher.publish_post_data(bot, post[0], post[1], post[2], post[3], post[4] or config.DEFAULT_CHANNEL):
+            return jsonify({'status': 'success'})
+    return jsonify({'status': 'error'}), 400
 
 @app.route('/api/stats')
 def get_stats_data():
@@ -105,7 +121,7 @@ def api_remove_channel():
 @app.route('/file/<file_id>')
 def proxy_file(file_id):
     url = get_telegram_file_url(file_id)
-    return redirect(url) if url else ("Not found", 404)
+    return redirect(url) if url else ("/static/no-image.png", 404)
 
 @app.route('/api/delete/<int:post_id>', methods=['POST'])
 def delete_post(post_id):

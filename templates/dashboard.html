@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MineBot Dashboard</title>
+    <title>MINE_BOT_PANEL</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
@@ -20,88 +20,115 @@
         body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Minecraftia', sans-serif; letter-spacing: 1px; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: var(--mc-green); }
+        
         .navbar { background-color: #000 !important; border-bottom: 3px solid var(--neon-purple); box-shadow: 0 0 15px var(--neon-purple); }
-        .navbar-brand { color: var(--neon-green) !important; text-shadow: 0 0 5px var(--neon-green); }
-        .card { background-color: var(--card-bg); border: 2px solid #333; border-radius: 0; transition: all 0.3s; margin-bottom: 20px; }
-        .stats-card { border-color: var(--neon-purple); text-align: center; }
+        .navbar-brand { color: var(--neon-green) !important; text-shadow: 0 0 5px var(--neon-green); display: flex; align-items: center; }
+        .nav-logo { height: 40px; margin-right: 15px; image-rendering: pixelated; }
+
+        .card { background-color: var(--card-bg); border: 2px solid #333; border-radius: 0; transition: all 0.3s; margin-bottom: 20px; min-height: 520px; display: flex; flex-direction: column; }
+        .stats-card { border-color: var(--neon-purple); text-align: center; min-height: auto; }
         .stats-label { color: #fff !important; font-size: 0.7rem; text-shadow: 0 0 5px #fff; margin-top: 5px; }
-        .stats-num { font-size: 2.2rem; font-weight: bold; color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
-        .btn-primary { background: transparent; border: 2px solid var(--neon-green); color: var(--neon-green); border-radius: 0; }
-        .btn-primary:hover { background: var(--neon-green); color: #000; }
-        .btn-refresh { border-color: var(--neon-purple); color: var(--neon-purple); }
-        .btn-refresh:hover { background: var(--neon-purple); color: #fff; }
-        .nav-tabs .nav-link { color: #555; border: none; text-transform: uppercase; }
-        .nav-tabs .nav-link.active { background: transparent; color: var(--neon-purple); border-bottom: 3px solid var(--neon-purple); }
-        .post-preview-img { width: 100%; height: 160px; object-fit: cover; border: 1px solid #000; }
-        .handle { cursor: grab; background: #222; color: var(--mc-green); font-size: 0.7rem; text-align: center; padding: 5px; border: 1px dashed #444; }
+        .stats-num { font-size: 2rem; font-weight: bold; color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
+        
+        .btn-mc { border-radius: 0; text-transform: uppercase; font-size: 0.7rem; border-width: 2px; }
+        .btn-primary-mc { border-color: var(--neon-green); color: var(--neon-green); background: transparent; }
+        .btn-primary-mc:hover { background: var(--neon-green); color: #000; }
+        .btn-danger-mc { border-color: #ff0033; color: #ff0033; background: transparent; }
+        .btn-danger-mc:hover { background: #ff0033; color: #fff; }
+        .btn-purple-mc { border-color: var(--neon-purple); color: var(--neon-purple); background: transparent; }
+        .btn-purple-mc:hover { background: var(--neon-purple); color: #fff; }
+
+        .post-media-container { position: relative; height: 200px; background: #000; overflow: hidden; border-bottom: 1px solid #333; }
+        .post-preview-img { width: 100%; height: 100%; object-fit: cover; }
+        .file-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid var(--neon-green); color: var(--neon-green); padding: 2px 8px; font-size: 0.6rem; z-index: 10; }
+        
+        .handle { cursor: grab; background: #222; color: var(--mc-green); font-size: 0.6rem; text-align: center; padding: 5px; border-bottom: 1px solid #333; }
+        
+        .truncate-text { font-size: 0.7rem; color: #aaa; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; margin-bottom: 10px; }
+        
+        .swiper { width: 100%; height: 100%; }
+        .swiper-pagination-bullet-active { background: var(--neon-green) !important; }
+
         .modal-content { background: #111; border: 3px solid var(--neon-purple); border-radius: 0; }
-        .form-control { background: #222; color: #fff; border-radius: 0; border: 1px solid #444; }
+        .form-control { background: #222; color: #fff !important; border-radius: 0; border: 1px solid #444; font-family: monospace; }
+        .form-control:focus { background: #222; border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-dark mb-4">
     <div class="container d-flex justify-content-between">
-        <a class="navbar-brand" href="#">⛏️ MINE_OS v2.0</a>
-        <button class="btn btn-sm btn-refresh" onclick="refreshData()">🔄 REFRESH_SYSTEM</button>
+        <a class="navbar-brand" href="/">
+            <img src="/logo.png" class="nav-logo" alt="MC">
+            MINE_OS v2.1
+        </a>
+        <button class="btn btn-purple-mc btn-mc px-3" onclick="refreshData()">🔄 REFRESH</button>
     </div>
 </nav>
 
 <div class="container">
-    <!-- STATS -->
     <div class="row mb-4">
+        {% for label, val in [('TOTAL', stats.total), ('PUBLISHED', stats.published), ('QUEUE', stats.queue), ('TODAY', stats.today)] %}
         <div class="col-md-3 col-6">
             <div class="card stats-card p-3">
-                <div class="stats-num">{{ stats.total }}</div>
-                <div class="stats-label">TOTAL_POSTS</div>
+                <div class="stats-num">{{ val }}</div>
+                <div class="stats-label">{{ label }}_OPS</div>
             </div>
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card stats-card p-3">
-                <div class="stats-num">{{ stats.published }}</div>
-                <div class="stats-label">PUBLISHED</div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="card stats-card p-3">
-                <div class="stats-num">{{ stats.queue }}</div>
-                <div class="stats-label">IN_QUEUE</div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="card stats-card p-3">
-                <div class="stats-num">{{ stats.today }}</div>
-                <div class="stats-label">TODAY_OPS</div>
-            </div>
-        </div>
+        {% endfor %}
     </div>
 
-    <!-- TABS -->
-    <ul class="nav nav-tabs mb-4">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue">Queue</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics">Analytics</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#channels">Channels</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#history">History</button></li>
+    <ul class="nav nav-tabs mb-4 border-secondary">
+        <li class="nav-item"><button class="nav-link active border-0 text-white" data-bs-toggle="tab" data-bs-target="#queue">Queue</button></li>
+        <li class="nav-item"><button class="nav-link border-0 text-white" data-bs-toggle="tab" data-bs-target="#analytics">Analytics</button></li>
+        <li class="nav-item"><button class="nav-link border-0 text-white" data-bs-toggle="tab" data-bs-target="#channels">Channels</button></li>
+        <li class="nav-item"><button class="nav-link border-0 text-white" data-bs-toggle="tab" data-bs-target="#history">History</button></li>
     </ul>
 
     <div class="tab-content">
-        <!-- QUEUE -->
         <div class="tab-pane fade show active" id="queue">
             <div id="sortable-queue" class="row">
                 {% for post in queue %}
                 <div class="col-md-4 post-card" data-id="{{ post.id }}">
-                    <div class="card p-2 h-100">
+                    <div class="card p-0">
                         <div class="handle">::: MOVE_BLOCK :::</div>
-                        {% if post.photos|length > 0 %}
-                            <img src="/file/{{ post.photos[0] }}" class="post-preview-img">
-                        {% endif %}
-                        <div class="mt-2">
-                            <small class="text-success">{{ post.time_str }}</small>
-                            <p class="mt-1" style="font-size: 0.7rem; color: #aaa; height: 60px; overflow: hidden;">{{ post.text|striptags }}</p>
+                        
+                        <div class="post-media-container">
+                            {% if post.files_count > 0 %}
+                                <div class="file-badge">📎 {{ post.files_count }} FILES</div>
+                            {% endif %}
+                            
+                            {% if post.photos|length > 1 %}
+                                <div class="swiper mySwiper">
+                                    <div class="swiper-wrapper">
+                                        {% for photo in post.photos %}
+                                        <div class="swiper-slide"><img src="/file/{{ photo }}" class="post-preview-img"></div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="swiper-pagination"></div>
+                                </div>
+                            {% elif post.photos|length == 1 %}
+                                <img src="/file/{{ post.photos[0] }}" class="post-preview-img">
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center h-100 text-muted" style="font-size: 0.6rem;">NO_MEDIA</div>
+                            {% endif %}
                         </div>
-                        <div class="d-flex justify-content-between mt-auto pt-2 border-top border-secondary">
-                            <button class="btn btn-sm btn-primary py-1 px-3" onclick="editPost({{ post.id }}, '{{ post.text|e }}', '{{ post.iso_time }}')">EDIT</button>
-                            <button class="btn btn-sm btn-outline-danger py-1 px-3" onclick="deletePost({{ post.id }})">DROP</button>
+
+                        <div class="p-3 flex-grow-1 d-flex flex-column">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-success" style="font-size: 0.6rem;">{{ post.time_str }}</small>
+                                <small class="text-muted" style="font-size: 0.5rem;">#{{ post.id }}</small>
+                            </div>
+                            <p class="mt-2 truncate-text">{{ post.text|striptags }}</p>
+                            <button class="btn btn-link p-0 text-info text-start mb-3" style="font-size: 0.6rem; text-decoration: none;" onclick='viewFullText({{ post|tojson }})'>📜 READ FULL</button>
+                            
+                            <div class="mt-auto">
+                                <button class="btn btn-primary-mc btn-mc w-100 mb-2" onclick="publishNow({{ post.id }})">🚀 POST NOW</button>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-purple-mc btn-mc flex-grow-1" onclick='editPost({{ post|tojson }})'>EDIT</button>
+                                    <button class="btn btn-danger-mc btn-mc flex-grow-1" onclick="deletePost({{ post.id }})">DROP</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -109,165 +136,76 @@
             </div>
         </div>
 
-        <!-- ANALYTICS -->
-        <div class="tab-pane fade" id="analytics">
-            <div class="card p-4">
-                <h5 class="mb-4" style="color: var(--neon-green)">📈 SUBSCRIBERS_GROWTH</h5>
-                <canvas id="subsChart" height="100"></canvas>
-            </div>
-        </div>
-
-        <!-- CHANNELS -->
+        <div class="tab-pane fade" id="analytics"><div class="card p-4"><canvas id="subsChart" height="120"></canvas></div></div>
+        
         <div class="tab-pane fade" id="channels">
             <div class="row">
-                <div class="col-md-6">
-                    <div class="card p-3">
-                        <h6>ADD_NEW_CHANNEL</h6>
-                        <div class="input-group mb-3">
-                            <input type="text" id="new-channel-user" class="form-control" placeholder="@username">
-                            <button class="btn btn-primary" onclick="addChannel()">ADD</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card p-3">
-                        <h6>ACTIVE_CHANNELS</h6>
-                        <ul class="list-group list-group-flush bg-transparent">
-                            {% for ch in channels %}
-                            <li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center">
-                                {{ ch }}
-                                <button class="btn btn-sm btn-outline-danger" onclick="removeChannel('{{ ch }}')">REMOVE</button>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
+                <div class="col-md-6"><div class="card p-3 stats-card"><h6>ADD_CHANNEL</h6><div class="input-group mb-3"><input type="text" id="new-channel-user" class="form-control" placeholder="@user"><button class="btn btn-primary-mc btn-mc px-3" onclick="addChannel()">ADD</button></div></div></div>
+                <div class="col-md-6"><div class="card p-3 stats-card"><h6>ACTIVE_CHANNELS</h6><ul class="list-group list-group-flush bg-transparent">{% for ch in channels %}<li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center" style="font-size: 0.7rem;">{{ ch }}<button class="btn btn-sm btn-danger-mc btn-mc px-2" onclick="removeChannel('{{ ch }}')">DEL</button></li>{% endfor %}</ul></div></div>
             </div>
         </div>
 
-        <!-- HISTORY -->
-        <div class="tab-pane fade" id="history">
-            <div class="row">
-                {% for post in history %}
-                <div class="col-md-4 mb-3">
-                    <div class="card p-2 opacity-75">
-                        <small class="text-muted">{{ post.time_str }} | {{ post.channel }}</small>
-                        <p style="font-size: 0.65rem;" class="mt-1">{{ post.text|striptags|truncate(100) }}</p>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+        <div class="tab-pane fade" id="history"><div class="row">{% for post in history %}<div class="col-md-4 mb-3"><div class="card p-2 stats-card opacity-75" style="min-height: auto;"><small class="text-muted" style="font-size: 0.5rem;">{{ post.time_str }} | {{ post.channel }}</small><p style="font-size: 0.6rem;" class="mt-1">{{ post.text|striptags|truncate(100) }}</p></div></div>{% endfor %}</div></div>
     </div>
 </div>
 
-<!-- EDIT MODAL -->
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title" style="color: var(--neon-purple)">EDIT_CONTENT</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <textarea id="edit-text" class="form-control mb-3" rows="10"></textarea>
-                <input type="datetime-local" id="edit-time" class="form-control">
-            </div>
-            <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-primary" id="save-btn">EXECUTE_SAVE</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- MODALS -->
+<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header border-secondary"><h5 class="modal-title" style="color: var(--neon-purple)">EDIT_BLOCK</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea id="edit-text" class="form-control mb-3" rows="10"></textarea><label style="font-size: 0.6rem;">SCHED_TIME</label><input type="datetime-local" id="edit-time" class="form-control"></div><div class="modal-footer border-secondary"><button type="button" class="btn btn-primary-mc btn-mc px-4" id="save-btn">EXEC_SAVE</button></div></div></div></div>
+
+<div class="modal fade" id="textModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header border-secondary"><h5 class="modal-title">📜 FULL_DATA</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="full-text-content" style="font-size: 0.75rem; white-space: pre-wrap; line-height: 1.6;"></div></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
-    function refreshData() {
-        fetch('/api/refresh').then(() => location.reload());
+    function initSwipers() {
+        new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination", clickable: true } });
     }
+    initSwipers();
+
+    function refreshData() { fetch('/api/refresh').then(() => location.reload()); }
 
     Sortable.create(document.getElementById('sortable-queue'), {
         animation: 150, handle: '.handle',
         onEnd: function() {
             const order = Array.from(document.querySelectorAll('.post-card')).map(item => item.dataset.id);
-            fetch('/api/reorder', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order: order })
-            }).then(() => location.reload());
+            fetch('/api/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: order }) }).then(() => location.reload());
         }
     });
 
-    // CHARTS
     fetch('/api/stats').then(r => r.json()).then(data => {
         const ctx = document.getElementById('subsChart').getContext('2d');
-        const firstChannel = Object.keys(data)[0];
-        if(!firstChannel) return;
-        
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data[firstChannel].labels,
-                datasets: [{
-                    label: 'Subscribers: ' + firstChannel,
-                    data: data[firstChannel].data,
-                    borderColor: '#39ff14',
-                    tension: 0.3,
-                    fill: true,
-                    backgroundColor: 'rgba(57, 255, 20, 0.1)'
-                }]
-            },
-            options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#aaa' } }, x: { ticks: { color: '#aaa' } } } }
-        });
+        const firstCh = Object.keys(data)[0]; if(!firstCh) return;
+        new Chart(ctx, { type: 'line', data: { labels: data[firstCh].labels, datasets: [{ label: firstCh, data: data[firstCh].data, borderColor: '#39ff14', tension: 0.3, fill: true, backgroundColor: 'rgba(57, 255, 20, 0.1)' }] }, options: { plugins: { legend: { labels: { color: '#fff', font: { family: 'Minecraftia' } } } }, scales: { y: { ticks: { color: '#aaa' } }, x: { ticks: { color: '#aaa' } } } } });
     });
-
-    function addChannel() {
-        const user = document.getElementById('new-channel-user').value;
-        fetch('/api/channels', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: user })
-        }).then(() => location.reload());
-    }
-
-    function removeChannel(user) {
-        if(confirm('REMOVE CHANNEL ' + user + '?')) {
-            fetch('/api/channels/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: user })
-            }).then(() => location.reload());
-        }
-    }
 
     let currentPostId = null;
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    const textModal = new bootstrap.Modal(document.getElementById('textModal'));
 
-    function editPost(id, text, time) {
-        currentPostId = id;
-        document.getElementById('edit-text').value = text;
-        document.getElementById('edit-time').value = time;
+    function viewFullText(post) { document.getElementById('full-text-content').innerHTML = post.text; textModal.show(); }
+    
+    function editPost(post) {
+        currentPostId = post.id;
+        document.getElementById('edit-text').value = post.text;
+        document.getElementById('edit-time').value = post.iso_time ? post.iso_time.slice(0,16) : "";
         editModal.show();
     }
 
     document.getElementById('save-btn').onclick = function() {
-        fetch('/api/edit/' + currentPostId, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                text: document.getElementById('edit-text').value, 
-                time: document.getElementById('edit-time').value 
-            })
-        }).then(() => location.reload());
+        fetch('/api/edit/' + currentPostId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: document.getElementById('edit-text').value, time: document.getElementById('edit-time').value }) }).then(() => location.reload());
     };
 
-    function deletePost(id) {
-        if (confirm('DELETE POST?')) {
-            fetch('/api/delete/' + id, { method: 'POST' }).then(() => location.reload());
+    function publishNow(id) {
+        if(confirm('PUBLISH THIS BLOCK IMMEDIATELY?')) {
+            fetch('/api/publish/' + id, { method: 'POST' }).then(r => r.ok ? location.reload() : alert('PUBLISH_ERROR'));
         }
     }
+
+    function deletePost(id) { if(confirm('DELETE BLOCK?')) fetch('/api/delete/' + id, { method: 'POST' }).then(() => location.reload()); }
+    function addChannel() { fetch('/api/channels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: document.getElementById('new-channel-user').value }) }).then(() => location.reload()); }
+    function removeChannel(user) { if(confirm('DEL ' + user + '?')) fetch('/api/channels/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user }) }).then(() => location.reload()); }
 </script>
 </body>
 </html>
