@@ -14,70 +14,72 @@ VALID_CATS = [
     '#Addons', '#Building', '#Survival', '#Horror', '#Adventure', '#Utility'
 ]
 
+CAT_LIST = ', '.join(VALID_CATS)
+
 PROMPTS = {
-    "uz": f"""Siz Minecraft muharririsiz. FAQAT o'zbek tilida yozing. 800 belgidan oshmasin.
-    Asosiy blok uchun <blockquote expandable> tegidan foydalaning.
+    "uz": """Siz Minecraft muharririsiz. FAQAT o'zbek tilida yozing. 800 belgidan oshmasin.
+Asosiy blok uchun <blockquote expandable> tegidan foydalaning.
 
-    Format:
-    📦 <b>[Nomi]</b>
+Format:
+📦 <b>[Nomi]</b>
 
-    <blockquote expandable><b>Bu nima?</b>
-    [Tavsif]
+<blockquote expandable><b>Bu nima?</b>
+[Tavsif]
 
-    <b>Asosiy xususiyatlar:</b>
-    • [Xususiyat 1]
-    • [Xususiyat 2]
+<b>Asosiy xususiyatlar:</b>
+• [Xususiyat 1]
+• [Xususiyat 2]
 
-    🎮 Versiya: [Versiya]</blockquote>
+🎮 Versiya: [Versiya]</blockquote>
 
-    <blockquote>💖 - Zo'r
-    💔 - Unchamas</blockquote>
+<blockquote>💖 - Zo'r
+💔 - Unchamas</blockquote>
 
-    HECH QANDAY XESHTEG YOZING! (Men o'zim qo'shaman).
-    """,
+HECH QANDAY XESHTEG YOZING! (Men o'zim qo'shaman).
+""",
 
-    "ru": f"""Ты — редактор канала о Minecraft. Пиши на РУССКОМ. До 800 симв.
-    Используй <blockquote expandable> для описания.
+    "ru": """Ты — редактор канала о Minecraft. Пиши на РУССКОМ. До 800 симв.
+Используй <blockquote expandable> для описания.
 
-    Формат:
-    📦 <b>[Название]</b>
+Формат:
+📦 <b>[Название]</b>
 
-    <blockquote expandable><b>Что это такое?</b>
-    [Описание]
+<blockquote expandable><b>Что это такое?</b>
+[Описание]
 
-    <b>Главные фишки:</b>
-    • [Фишка 1]
-    • [Фишка 2]
+<b>Главные фишки:</b>
+• [Фишка 1]
+• [Фишка 2]
 
-    🎮 Версия: [Версия]</blockquote>
+🎮 Версия: [Версия]</blockquote>
 
-    <blockquote>💖 - Имба
-    💔 - Не оч</blockquote>
+<blockquote>💖 - Имба
+💔 - Не оч</blockquote>
 
-    НЕ ПИШИ ХЭШТЕГИ! (Я добавлю их сам).
-    """,
+НЕ ПИШИ ХЭШТЕГИ! (Я добавлю их сам).
+""",
 
-    "en": f"""Minecraft editor. English only. Max 800 chars.
-    Use <blockquote expandable> for description.
+    "en": """Minecraft editor. English only. Max 800 chars.
+Use <blockquote expandable> for description.
 
-    Format:
-    📦 <b>[Mod Name]</b>
+Format:
+📦 <b>[Mod Name]</b>
 
-    <blockquote expandable><b>What is it?</b>
-    [Description]
+<blockquote expandable><b>What is it?</b>
+[Description]
 
-    <b>Key Features:</b>
-    • [Feature 1]
-    • [Feature 2]
+<b>Key Features:</b>
+• [Feature 1]
+• [Feature 2]
 
-    🎮 Version: [Version]</blockquote>
+🎮 Version: [Version]</blockquote>
 
-    <blockquote>💖 - Awesome
-    💔 - Not great</blockquote>
+<blockquote>💖 - Awesome
+💔 - Not great</blockquote>
 
-    DO NOT WRITE HASHTAGS! (I will add them myself).
-    """
-
+DO NOT WRITE HASHTAGS! (I will add them myself).
+"""
+}
 
 def extract_url(text):
     urls = re.findall(r'(https?://[^\s]+)', text)
@@ -99,7 +101,10 @@ def generate_post(user_input, persona="uz"):
         text = fetch_page_content(url)
         if text: site_context = f"\n\nINFO FROM SITE:\n{text}"
     
-    prompt = f"{PROMPTS.get(persona, PROMPTS['uz'])}\n\nRaw info:\n{user_input}{site_context}"
+    # Вставляем список категорий динамически через replace
+    prompt = PROMPTS.get(persona, PROMPTS['uz']).replace("[Turkum]", CAT_LIST)
+    prompt = f"{prompt}\n\nRaw info:\n{user_input}{site_context}"
+    
     try:
         res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
         gen = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
