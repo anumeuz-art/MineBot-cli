@@ -16,8 +16,8 @@ def add_watermark(input_image_path, output_image_path):
 
         logo = Image.open(logo_path).convert("RGBA")
         
-        # Логотип будет занимать 30% от ширины основного фото
-        target_width = int(width * 0.30) 
+        # Логотип будет занимать 20% от ширины основного фото
+        target_width = int(width * 0.20) 
         if target_width < 100: target_width = 100
         
         w_percent = (target_width / float(logo.size[0]))

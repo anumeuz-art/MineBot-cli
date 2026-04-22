@@ -8,9 +8,14 @@ import database
 client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
+VALID_TAGS = [
+    '#Mods', '#Maps', '#Textures', '#Shaders', '#Furniture', '#Tools', '#Mobs', '#Guns', '#Vehicles', '#Food',
+    '#Biomes', '#Redstone', '#Magic', '#Structures', '#Armor', '#FPS', '#UI', 
+    '#Addons', '#Building', '#Survival', '#Horror', '#Adventure', '#Utility'
+]
+
 PROMPTS = {
-    "uz": """Siz Minecraft modlari haqidagi Telegram kanalining muharririsiz.
-FAQAT o'zbek tilida (lotin alifbosida) yozing. 800 belgidan oshmasin.
+    "uz": f"""Siz Minecraft muharririsiz. FAQAT o'zbek tilida yozing. 800 belgidan oshmasin.
 Asosiy blok uchun <blockquote expandable> tegidan foydalaning.
 
 Format:
@@ -30,15 +35,13 @@ Format:
 
 #Minecraft #[Turkum]
 
-XESHTEGLAR QOIDASI (JUDA MUHIM):
-1. Faqat bitta turkumni tanlang: #Mods, #Maps, #Textures yoki #Shaders.
-2. Post oxirida FAQAT IKKITA xeshteg bo'lishi kerak: #Minecraft va tanlangan turkum.
-3. Boshqa xeshteg qo'shmang! Mod nomini xeshteg qilmang!
+XESHTEGLAR QOIDASI:
+Ro'yxatdan faqat BITTA turkumni tanlang: {", ".join(VALID_TAGS[:-1])}.
+Oxirida faqat IKKITA xeshteg bo'lsin: #Minecraft va tanlangan turkum.
 """,
 
-    "ru": """Ты — редактор канала о модах для Minecraft.
-Пиши ТОЛЬКО на русском языке. Уложись в 800 символов.
-Используй тег <blockquote expandable> для описания.
+    "ru": f"""Ты — редактор канала о Minecraft. Пиши на РУССКОМ. До 800 симв.
+Используй <blockquote expandable> для описания.
 
 Формат:
 📦 <b>[Название]</b>
@@ -57,14 +60,13 @@ XESHTEGLAR QOIDASI (JUDA MUHIM):
 
 #Minecraft #[Категория]
 
-ПРАВИЛО ХЭШТЕГОВ (КРИТИЧНО):
-1. Выбери только ОДНУ категорию: #Mods, #Maps, #Textures или #Shaders.
-2. В конце должно быть ровно ДВА хэштега: #Minecraft и категория.
-3. НИКАКИХ других хэштегов. Название мода хэштегом делать нельзя.
+ПРАВИЛО ХЭШТЕГОВ:
+Выбери только ОДНУ категорию из списка: {", ".join(VALID_TAGS[:-1])}.
+В конце должно быть ровно ДВА хэштега: #Minecraft и категория.
 """,
 
-    "en": """Minecraft mods channel editor. English only. Max 800 chars.
-Use <blockquote expandable> tag for the main body.
+    "en": f"""Minecraft editor. English only. Max 800 chars.
+Use <blockquote expandable> for description.
 
 Format:
 📦 <b>[Mod Name]</b>
@@ -83,10 +85,9 @@ Format:
 
 #Minecraft #[Category]
 
-HASHTAG RULE (VERY IMPORTANT):
-1. Select exactly ONE: #Mods, #Maps, #Textures, or #Shaders.
-2. End the post with ONLY TWO hashtags: #Minecraft and the category.
-3. No other hashtags allowed. Do not use mod names as hashtags.
+HASHTAG RULE:
+Select exactly ONE from: {", ".join(VALID_TAGS[:-1])}.
+Only TWO hashtags at the end: #Minecraft and the category.
 """
 }
 
@@ -116,12 +117,10 @@ def generate_post(user_input, persona="uz"):
         generated = res.choices[0].message.content.strip()
         generated = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', generated)
         
-        # Автоматическая очистка лишних хэштегов (защита от "фантазии" ИИ)
-        # Оставляем только разрешенные
-        valid_cats = ['#Mods', '#Maps', '#Textures', '#Shaders', '#Minecraft']
-        tags = re.findall(r'#\w+', generated)
-        for t in tags:
-            if t not in valid_cats:
+        # Строгая очистка хэштегов
+        all_tags = re.findall(r'#\w+', generated)
+        for t in all_tags:
+            if t not in VALID_TAGS:
                 generated = generated.replace(t, "")
         
         ad_text = database.get_global_setting('ad_text', '')
@@ -130,7 +129,7 @@ def generate_post(user_input, persona="uz"):
     except: return f"Error. Input: {user_input}"
 
 def rewrite_post(text, style="short"):
-    inst = {"short": "Make it shorter.", "fun": "Make it fun.", "pro": "Make it professional."}.get(style, "Improve it.")
+    inst = {"short": "Shorter.", "fun": "Fun.", "pro": "Professional."}.get(style, "Improve.")
     try:
         res = client.chat.completions.create(messages=[{"role": "system", "content": f"{inst} Keep HTML tags."}, {"role": "user", "content": text}], model=MODEL_ID)
         return re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
