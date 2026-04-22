@@ -3,14 +3,14 @@ import re
 import requests
 from bs4 import BeautifulSoup
 from groq import Groq
+import database
 
 client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
 PROMPTS = {
-    "uz": """Siz Minecraft modlari haqidagi Telegram kanalining ijodiy muharririsiz.
-Men sizga matn beraman. Asosiy narsani tanlang va post yozing. 800 belgidan oshmasin.
-FAQAT o'zbek tilida (lotin alifbosida) yozing. Agar versiyani topa olmasangiz, "1.21+" deb yozing.
+    "uz": """Siz Minecraft modlari haqidagi Telegram kanalining muharririsiz.
+FAQAT o'zbek tilida (lotin alifbosida) yozing. 800 belgidan oshmasin.
 Asosiy blok uchun <blockquote expandable> tegidan foydalaning.
 
 Format:
@@ -30,15 +30,15 @@ Format:
 
 #Minecraft #[Turkum]
 
-XESHTEGLAR QOIDALARI:
-Faqat bitta turkumni tanlang: #Mods, #Maps, #Textures yoki #Shaders.
-Post oxirida roppa-rosa IKKITA xeshteg bo'lishi kerak: #Minecraft va tanlangan turkum xeshtegi.
+XESHTEGLAR QOIDASI (JUDA MUHIM):
+1. Faqat bitta turkumni tanlang: #Mods, #Maps, #Textures yoki #Shaders.
+2. Post oxirida FAQAT IKKITA xeshteg bo'lishi kerak: #Minecraft va tanlangan turkum.
+3. Boshqa xeshteg qo'shmang! Mod nomini xeshteg qilmang!
 """,
 
-    "ru": """Ты — креативный редактор Telegram-канала о модах для Minecraft.
-Я передам тебе текст. Вычлени главное и напиши пост. Уложись в 800 символов.
-Пиши ТОЛЬКО на русском языке. Если не нашел версию, пиши "1.21+".
-Используй тег <blockquote expandable> для основного блока.
+    "ru": """Ты — редактор канала о модах для Minecraft.
+Пиши ТОЛЬКО на русском языке. Уложись в 800 символов.
+Используй тег <blockquote expandable> для описания.
 
 Формат:
 📦 <b>[Название]</b>
@@ -57,15 +57,14 @@ Post oxirida roppa-rosa IKKITA xeshteg bo'lishi kerak: #Minecraft va tanlangan t
 
 #Minecraft #[Категория]
 
-ПРАВИЛА ДЛЯ ХЭШТЕГОВ:
-Выбери строго ОДНУ категорию: #Моды, #Карты, #Текстуры или #Шейдеры.
-В конце поста должно быть ровно ДВА хэштега: #Minecraft и хэштег выбранной категории.
+ПРАВИЛО ХЭШТЕГОВ (КРИТИЧНО):
+1. Выбери только ОДНУ категорию: #Mods, #Maps, #Textures или #Shaders.
+2. В конце должно быть ровно ДВА хэштега: #Minecraft и категория.
+3. НИКАКИХ других хэштегов. Название мода хэштегом делать нельзя.
 """,
 
-    "en": """You are a creative editor for a Minecraft mods Telegram channel.
-Extract the main points and write an engaging post. Keep it under 800 characters.
-Write ONLY in English. If version is not found, use "1.21+".
-Use the <blockquote expandable> tag for the main body.
+    "en": """Minecraft mods channel editor. English only. Max 800 chars.
+Use <blockquote expandable> tag for the main body.
 
 Format:
 📦 <b>[Mod Name]</b>
@@ -84,9 +83,10 @@ Format:
 
 #Minecraft #[Category]
 
-HASHTAG RULES:
-Choose exactly ONE category: #Mods, #Maps, #Textures, or #Shaders.
-The post must end with exactly two hashtags: #Minecraft and the chosen category hashtag.
+HASHTAG RULE (VERY IMPORTANT):
+1. Select exactly ONE: #Mods, #Maps, #Textures, or #Shaders.
+2. End the post with ONLY TWO hashtags: #Minecraft and the category.
+3. No other hashtags allowed. Do not use mod names as hashtags.
 """
 }
 
@@ -103,8 +103,6 @@ def fetch_page_content(url):
         return soup.get_text(separator=' ', strip=True)[:5000]
     except: return ""
 
-import database
-
 def generate_post(user_input, persona="uz"):
     url = extract_url(user_input)
     site_context = ""
@@ -115,19 +113,25 @@ def generate_post(user_input, persona="uz"):
     prompt = f"{PROMPTS.get(persona, PROMPTS['uz'])}\n\nRaw info:\n{user_input}{site_context}"
     try:
         res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
-        generated = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
+        generated = res.choices[0].message.content.strip()
+        generated = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', generated)
         
-        # Добавляем рекламу из БД
+        # Автоматическая очистка лишних хэштегов (защита от "фантазии" ИИ)
+        # Оставляем только разрешенные
+        valid_cats = ['#Mods', '#Maps', '#Textures', '#Shaders', '#Minecraft']
+        tags = re.findall(r'#\w+', generated)
+        for t in tags:
+            if t not in valid_cats:
+                generated = generated.replace(t, "")
+        
         ad_text = database.get_global_setting('ad_text', '')
-        if ad_text:
-            generated += f"\n\n{ad_text}"
-            
+        if ad_text: generated += f"\n\n{ad_text}"
         return generated
     except: return f"Error. Input: {user_input}"
 
 def rewrite_post(text, style="short"):
-    inst = {"short": "Make it shorter.", "fun": "Make it fun and use emojis.", "pro": "Make it professional."}.get(style, "Improve it.")
+    inst = {"short": "Make it shorter.", "fun": "Make it fun.", "pro": "Make it professional."}.get(style, "Improve it.")
     try:
-        res = client.chat.completions.create(messages=[{"role": "system", "content": f"{inst}\nKeep tags <b> and <blockquote>."}, {"role": "user", "content": text}], model=MODEL_ID)
+        res = client.chat.completions.create(messages=[{"role": "system", "content": f"{inst} Keep HTML tags."}, {"role": "user", "content": text}], model=MODEL_ID)
         return re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
     except: return text
