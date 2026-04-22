@@ -1,10 +1,12 @@
 import telebot
 from apscheduler.schedulers.background import BackgroundScheduler
 import time
+import threading
 import config
 import database
 import publisher
 import handlers
+import webapp
 
 # Инициализация бота
 database.init_db()
@@ -22,7 +24,14 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(publisher.process_queue, 'interval', minutes=1, args=[bot])
 scheduler.start()
 
+# Запуск Web Dashboard в отдельном потоке
+def start_web():
+    webapp.run_server()
+
 if __name__ == "__main__":
+    print("Запуск Web Dashboard...")
+    threading.Thread(target=start_web, daemon=True).start()
+    
     print("Бот Mine Bot запущен и готов к работе!")
     while True:
         try:

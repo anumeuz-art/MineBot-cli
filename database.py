@@ -143,6 +143,21 @@ def get_all_posts():
     conn.close()
     return rows
 
+def get_post_by_id(post_id):
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time, status FROM queue WHERE id = ?", (post_id,))
+    row = c.fetchone()
+    conn.close()
+    return row
+
+def update_post_content(post_id, text, scheduled_time):
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("UPDATE queue SET text = ?, scheduled_time = ? WHERE id = ?", (text, scheduled_time, post_id))
+    conn.commit()
+    conn.close()
+
 def record_published_post(photo_id, text, document_id, channel_id):
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
