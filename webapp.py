@@ -163,11 +163,27 @@ def edit_post(post_id):
 @app.route('/api/reorder', methods=['POST'])
 def reorder():
     order = request.json.get('order')
-    interval = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6) * 3600
-    start = int(time.time()) + 300
+    if not order: return jsonify({'status': 'error'})
+    
+    # 1. Получаем все текущие запланированные посты
+    pending = database.get_all_pending()
+    # 2. Собираем все существующие временные метки и сортируем их
+    existing_timestamps = sorted([p[5] for p in pending if p[5]])
+    
+    # Если меток меньше чем постов в очереди (на всякий случай), дополняем их
+    if len(existing_timestamps) < len(order):
+        last_time = existing_timestamps[-1] if existing_timestamps else int(time.time())
+        interval = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6) * 3600
+        while len(existing_timestamps) < len(order):
+            last_time += interval
+            existing_timestamps.append(last_time)
+            
+    # 3. Переназначаем эти же метки постам в новом порядке
     for i, p_id in enumerate(order):
         post = database.get_post_by_id(int(p_id))
-        if post: database.update_post_content(post[0], post[2], start + (i * interval))
+        if post:
+            database.update_post_content(post[0], post[2], existing_timestamps[i])
+            
     return jsonify({'status': 'success'})
 
 def run_server():
