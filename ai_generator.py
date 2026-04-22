@@ -1,11 +1,12 @@
-from google import genai
 import config
 import re
 import requests
 from bs4 import BeautifulSoup
+from groq import Groq
 
-client = genai.Client(api_key=config.GEMINI_KEY)
-MODEL_ID = "gemini-1.5-flash"
+# Инициализация Groq
+client = Groq(api_key=config.GROQ_API_KEY)
+MODEL_ID = "llama-3.3-70b-versatile"
 
 PROMPTS = {
     "uz": """Ты — креативный редактор Telegram-канала о модах для Minecraft.
@@ -102,7 +103,6 @@ def fetch_page_content(url):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
-        # Очистка от скриптов и стилей
         for script in soup(["script", "style"]):
             script.extract()
         text = soup.get_text(separator=' ', strip=True)
@@ -122,15 +122,20 @@ def generate_post(user_input, persona="uz"):
 
     selected_prompt = PROMPTS.get(persona, PROMPTS["uz"])
     
-    prompt = f"{selected_prompt}\n\nСырая информация от пользователя:\n{user_input}{site_context}"
-    
     try:
-        response = client.models.generate_content(model=MODEL_ID, contents=prompt)
-        final_text = response.text.strip()
+        completion = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": selected_prompt},
+                {"role": "user", "content": f"Сырая информация:\n{user_input}{site_context}"}
+            ],
+            model=MODEL_ID,
+        )
+        final_text = completion.choices[0].message.content.strip()
+        # Конвертируем Markdown-звездочки в HTML-теги для жирного текста
         final_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_text)
         return final_text
     except Exception as e:
-        print(f"❌ Ошибка генерации ИИ: {e}")
+        print(f"❌ Ошибка генерации Groq: {e}")
         return f"Ошибка генерации поста. Текст пользователя: {user_input}"
 
 def rewrite_post(text, style="short"):
@@ -140,13 +145,18 @@ def rewrite_post(text, style="short"):
         "pro": "Сделай текст более профессиональным, строгим и информативным."
     }
     prompt_instruction = styles.get(style, "Улучши этот текст.")
-    prompt = f"{prompt_instruction}\n\nВАЖНО: Сохрани HTML-теги форматирования (<b>, <blockquote>) и все хэштеги в конце.\n\nОригинальный текст:\n{text}"
     
     try:
-        response = client.models.generate_content(model=MODEL_ID, contents=prompt)
-        final_text = response.text.strip()
+        completion = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": f"{prompt_instruction}\nВАЖНО: Сохрани HTML-теги форматирования (<b>, <blockquote>) и все хэштеги в конце."},
+                {"role": "user", "content": f"Оригинальный текст:\n{text}"}
+            ],
+            model=MODEL_ID,
+        )
+        final_text = completion.choices[0].message.content.strip()
         final_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_text)
         return final_text
     except Exception as e:
-        print(f"❌ Ошибка рерайта: {e}")
+        print(f"❌ Ошибка рерайта Groq: {e}")
         return text

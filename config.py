@@ -6,11 +6,14 @@ load_dotenv()
 ADMIN_IDS = [5703605946] # Твой ID администратора
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_KEY = os.getenv("GEMINI_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not TELEGRAM_TOKEN:
-    raise ValueError("❌ КРИТИЧЕСКАЯ ОШИБКА: TELEGRAM_TOKEN не установлен в переменных окружения!")
+    raise ValueError("❌ КРИТИЧЕСКАЯ ОШИБКА: TELEGRAM_TOKEN не установлен!")
+if not GROQ_API_KEY:
+    print("⚠️ WARNING: GROQ_API_KEY is not set. AI functions might fail.")
 if not GEMINI_KEY:
-    raise ValueError("❌ КРИТИЧЕСКАЯ ОШИБКА: GEMINI_KEY не установлен в переменных окружения!")
+    print("⚠️ WARNING: GEMINI_KEY is not set.")
 
 CHANNELS_STR = os.getenv("CHANNELS", "@lazikomods")
 AVAILABLE_CHANNELS = [ch.strip() for ch in CHANNELS_STR.split(',')]

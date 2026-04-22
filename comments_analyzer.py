@@ -1,12 +1,13 @@
-from google import genai
 import config
 import database
+from groq import Groq
 
-client = genai.Client(api_key=config.GEMINI_KEY)
-MODEL_ID = "gemini-2.5-flash"
+# Инициализация Groq
+client = Groq(api_key=config.GROQ_API_KEY)
+MODEL_ID = "llama-3.3-70b-versatile"
 
 def analyze_comments():
-    """Собирает комментарии из БД и просит Gemini сделать выжимку"""
+    """Собирает комментарии из БД и просит Groq сделать выжимку"""
     comments = database.get_all_comments()
     
     if not comments:
@@ -39,8 +40,13 @@ def analyze_comments():
     """
 
     try:
-        response = client.models.generate_content(model=MODEL_ID, contents=prompt)
-        return response.text.strip()
+        completion = client.chat.completions.create(
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            model=MODEL_ID,
+        )
+        return completion.choices[0].message.content.strip()
     except Exception as e:
         print(f"Ошибка ИИ при анализе: {e}")
-        return "❌ Произошла ошибка при анализе комментариев ИИ."
+        return "❌ Произошла ошибка при анализе комментариев ИИ через Groq."
