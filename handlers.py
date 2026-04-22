@@ -21,10 +21,21 @@ user_current_draft_id = {}
 
 def register_handlers(bot, user_drafts, album_cache):
 
-    @bot.message_handler(commands=['start'])
-    def send_welcome(message):
-        greeting = utils.get_time_greeting()
-        bot.send_message(message.chat.id, f"{greeting}! Бот готов к работе. Все настройки теперь в Панели Управления.", reply_markup=keyboards.get_main_menu())
+    @bot.message_handler(commands=['map'])
+    def send_map(message):
+        posts = database.get_recent_posts(7)
+        if not posts: return bot.reply_to(message, "Нет данных за неделю.")
+        map_text = ai_generator.generate_map(str(posts))
+        bot.send_message(message.chat.id, map_text, parse_mode="HTML")
+
+    @bot.message_handler(commands=['report'])
+    def send_report(message):
+        top_ids = database.get_top_posts(5)
+        # Получаем тексты топ-постов
+        all_posts = database.get_all_posts()
+        top_data = [p for p in all_posts if p[0] in top_ids]
+        report_text = ai_generator.generate_report(str(top_data))
+        bot.send_message(message.chat.id, report_text, parse_mode="HTML")
 
     @bot.message_handler(content_types=['text', 'photo'])
     def handle_text_photo(message):

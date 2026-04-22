@@ -15,10 +15,6 @@ VALID_CATS = [
     '#Addons', '#Building', '#Survival', '#Horror', '#Adventure', '#Utility'
 ]
 
-def get_translations():
-    with open('translations.json', 'r', encoding='utf-8') as f:
-        return json.load(f)
-
 def extract_url(text):
     urls = re.findall(r'(https?://[^\s]+)', text)
     return urls[0] if urls else None
@@ -33,27 +29,21 @@ def fetch_page_content(url):
     except: return ""
 
 def generate_post(user_input, persona="uz"):
-    trans = get_translations().get(persona, get_translations()['uz'])
     url = extract_url(user_input)
-    site_content = f"\n\nSITE CONTENT:\n{fetch_page_content(url)}" if url else ""
+    site_content = f"\n\nINFO FROM SITE:\n{fetch_page_content(url)}" if url else ""
     
-    system_prompt = f"""You are a Minecraft content generator.
+    system_prompt = f"""You are a Minecraft content generator. 
     Language: {persona}.
-    Follow this structure strictly:
+    Format strictly as:
     📦 <b>[Name]</b>
-    <blockquote expandable><b>{trans['title']}</b>
-    [Description]
-    
-    <b>{trans['features']}</b>
+    <blockquote expandable><b>Description:</b> [Text]
+    <b>Features:</b>
     • [F1]
     • [F2]
     • [F3]
-    
-    🎮 {trans['version']}: [Version]
+    🎮 Version: [Version]
     </blockquote>
-    <blockquote>{trans['rating']}</blockquote>
-    
-    {trans['instructions']}
+    <blockquote>💖 - Awesome\n💔 - Not great</blockquote>
     """
     
     try:
@@ -62,17 +52,24 @@ def generate_post(user_input, persona="uz"):
             model=MODEL_ID
         )
         gen = res.choices[0].message.content.strip()
-        
-        # Очистка и вставка тегов
         gen = re.sub(r'#\w+', '', gen)
         gen += "\n\n#Minecraft #Mods"
-        
         ad_text = database.get_global_setting('ad_text', '')
         if ad_text: gen += f"\n\n{ad_text}"
-        
         return gen
     except Exception as e:
         return f"Error: {e}"
 
-def rewrite_post(text, style="short"):
-    return text
+def generate_map(posts_data):
+    prompt = f"Create a structured weekly digest of mods. Categorize them (e.g. 'Weapons', 'Food'). List them with links from text:\n{posts_data}"
+    try:
+        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
+        return res.choices[0].message.content
+    except: return "Error generating map."
+
+def generate_report(posts_data):
+    prompt = f"Create a 'Best of the Week' report based on these popular posts:\n{posts_data}"
+    try:
+        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
+        return res.choices[0].message.content
+    except: return "Error generating report."
