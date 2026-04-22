@@ -186,6 +186,24 @@ def reorder():
             
     return jsonify({'status': 'success'})
 
+@app.route('/debug/db')
+def debug_db():
+    import sqlite3
+    tables = ['queue', 'user_settings', 'managed_channels', 'stats_subscribers']
+    output = ""
+    conn = sqlite3.connect(database.DB_PATH)
+    c = conn.cursor()
+    for table in tables:
+        output += f"=== TABLE: {table} ===\n"
+        try:
+            c.execute(f"SELECT * FROM {table}")
+            rows = c.fetchall()
+            for r in rows: output += f"{r}\n"
+        except Exception as e: output += f"Error: {e}\n"
+        output += "\n"
+    conn.close()
+    return f"<pre>{output}</pre>"
+
 def run_server():
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)

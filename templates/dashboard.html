@@ -9,8 +9,8 @@
     <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0a0a0a; --card: #141414; --mc: #388e3c; --neon-p: #bc13fe; --neon-g: #39ff14; --white: #fff; }
-        body { background: var(--bg); color: #f0f0f0; font-family: 'Minecraftia', sans-serif; letter-spacing: 1px; }
+        :root { --bg: #0a0a0a; --card: #141414; --mc: #388e3c; --neon-p: #bc13fe; --neon-g: #39ff14; --white: #ffffff; }
+        body { background: var(--bg); color: var(--white); font-family: 'Minecraftia', sans-serif; letter-spacing: 1px; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: var(--mc); }
         .navbar { background: #000 !important; border-bottom: 3px solid var(--neon-p); box-shadow: 0 0 20px rgba(188, 19, 254, 0.3); }
@@ -20,34 +20,54 @@
         .stats-card { border-color: var(--neon-p); text-align: center; }
         .stats-label { color: var(--white) !important; font-size: 0.6rem; text-shadow: 0 0 5px #fff; margin-top: 4px; }
         .stats-num { font-size: 2rem; font-weight: bold; color: var(--neon-g); text-shadow: 0 0 10px var(--neon-g); }
-        .growth-up { color: var(--neon-g); font-size: 0.8rem; text-shadow: 0 0 5px var(--neon-g); }
+        
         .btn-mc { border-radius: 0; text-transform: uppercase; font-size: 0.65rem; border-width: 2px; }
         .btn-primary-mc { border-color: var(--neon-g); color: var(--neon-g); background: transparent; }
         .btn-primary-mc:hover { background: var(--neon-g); color: #000; }
         .btn-purple-mc { border-color: var(--neon-p); color: var(--neon-p); background: transparent; }
         .btn-purple-mc:hover { background: var(--neon-p); color: #fff; }
         .btn-danger-mc { border-color: #ff0033; color: #ff0033; background: transparent; }
-        .nav-tabs .nav-link { color: #444; border: none; font-size: 0.7rem; }
-        .nav-tabs .nav-link.active { background: transparent; color: var(--neon-p); border-bottom: 3px solid var(--neon-p); }
-        .post-card .card { min-height: 540px; }
+        .btn-danger-mc:hover { background: #ff0033; color: #fff; }
+
+        .nav-tabs .nav-link { color: #888; border: none; font-size: 0.7rem; }
+        .nav-tabs .nav-link.active { background: transparent; color: var(--neon-p); border-bottom: 3px solid var(--neon-p); text-shadow: 0 0 5px var(--neon-p); }
+        
+        .post-card .card { min-height: 560px; border-color: #333; }
+        .post-card:hover .card { border-color: var(--mc); box-shadow: 0 0 15px rgba(56, 142, 60, 0.2); }
+        
         .post-media { height: 180px; position: relative; background: #000; overflow: hidden; }
         .post-media img { width: 100%; height: 100%; object-fit: cover; }
         .badge-files { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); border: 1px solid var(--neon-g); color: var(--neon-g); padding: 2px 6px; font-size: 0.55rem; z-index: 5; }
         .handle { cursor: grab; background: #1a1a1a; color: var(--mc); font-size: 0.55rem; text-align: center; padding: 4px; border-bottom: 1px solid #333; }
-        .lang-btn { flex: 1; border: 2px solid #333; color: #555; background: transparent; padding: 10px; cursor: pointer; }
-        .lang-btn.active { border-color: var(--neon-g); color: var(--neon-g); text-shadow: 0 0 5px var(--neon-g); }
+        
+        /* Цвета текстов в карточках */
+        .text-success { color: var(--neon-g) !important; text-shadow: 0 0 2px var(--mc); }
+        .truncate-text { font-size: 0.7rem; color: #ffffff !important; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; margin-bottom: 10px; }
+        .post-id-label { color: #555; font-size: 0.5rem; }
+
+        /* Модальные окна */
+        .modal-content { background: #000; border: 3px solid var(--neon-p); border-radius: 0; box-shadow: 0 0 30px rgba(188, 19, 254, 0.4); }
+        .modal-header { border-bottom: 1px solid #222; }
+        .modal-body { color: #ffffff !important; }
+        .form-control { background: #111; color: #fff !important; border-radius: 0; border: 1px solid #444; font-family: monospace; font-size: 0.8rem; }
+        .form-control:focus { background: #111; border-color: var(--neon-g); box-shadow: 0 0 10px var(--neon-g); color: #fff !important; }
+
+        .lang-btn { flex: 1; border: 2px solid #333; color: #555; background: transparent; padding: 12px; cursor: pointer; transition: 0.3s; font-size: 0.7rem; }
+        .lang-btn.active { border-color: var(--neon-g); color: var(--neon-g); text-shadow: 0 0 5px var(--neon-g); background: rgba(57, 255, 20, 0.05); }
+        .lang-btn:hover:not(.active) { border-color: #555; color: #aaa; }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-dark mb-4">
     <div class="container d-flex justify-content-between">
-        <a class="navbar-brand" href="/"><img src="/logo.png" class="nav-logo">MINE_OS v2.5</a>
-        <button class="btn btn-purple-mc btn-mc px-3" onclick="location.reload()">🔄 REFRESH</button>
+        <a class="navbar-brand" href="/"><img src="/logo.png" class="nav-logo">MINE_OS v2.6</a>
+        <button class="btn btn-purple-mc btn-mc px-3" onclick="location.reload()">🔄 REFRESH_SYSTEM</button>
     </div>
 </nav>
 
 <div class="container">
+    <!-- STATS -->
     <div class="row mb-2">
         <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ total_subs }}</div><div class="stats-label">TOTAL_FOLLOWERS</div></div></div>
         <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{% if growth_24h >= 0 %}+{% endif %}{{ growth_24h }}</div><div class="stats-label">24H_GROWTH</div></div></div>
@@ -55,6 +75,7 @@
         <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.published }}</div><div class="stats-label">POSTED_TOTAL</div></div></div>
     </div>
 
+    <!-- TABS -->
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue">Queue</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics">Analytics</button></li>
@@ -63,12 +84,13 @@
     </ul>
 
     <div class="tab-content">
+        <!-- QUEUE -->
         <div class="tab-pane fade show active" id="queue">
             <div id="sortable-queue" class="row">
                 {% for post in queue %}
                 <div class="col-md-4 post-card" data-id="{{ post.id }}">
                     <div class="card p-0 h-100">
-                        <div class="handle">::: SORT_BLOCK :::</div>
+                        <div class="handle">::: MOVE_BLOCK :::</div>
                         <div class="post-media">
                             {% if post.files_count > 0 %}<div class="badge-files">📎 {{ post.files_count }} FILES</div>{% endif %}
                             {% if post.photos|length > 1 %}
@@ -77,12 +99,19 @@
                             {% else %}<div class="d-flex align-items-center justify-content-center h-100 text-muted" style="font-size: 0.5rem;">EMPTY_MEDIA</div>{% endif %}
                         </div>
                         <div class="p-3 d-flex flex-column flex-grow-1">
-                            <small class="text-success" style="font-size: 0.6rem;">{{ post.time_str }} | {{ post.channel }}</small>
-                            <p class="mt-2" style="font-size: 0.65rem; color: #999; height: 75px; overflow: hidden;">{{ post.text|striptags }}</p>
-                            <button class="btn btn-link p-0 text-info text-start mb-3" style="font-size: 0.55rem;" onclick='viewFullText({{ post|tojson }})'>[EXPAND_LOG]</button>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-success" style="font-size: 0.65rem;">{{ post.time_str }}</small>
+                                <span class="post-id-label">#{{ post.id }}</span>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.5rem;">TARGET: {{ post.channel }}</small>
+                            <p class="mt-2 truncate-text">{{ post.text|striptags }}</p>
+                            <button class="btn btn-link p-0 text-info text-start mb-3" style="font-size: 0.6rem; text-decoration: none;" onclick='viewFullText({{ post|tojson }})'>[📜 READ_FULL_DATA]</button>
                             <div class="mt-auto">
                                 <button class="btn btn-primary-mc btn-mc w-100 mb-2" onclick="publishNow({{ post.id }})">🚀 EXECUTE_POST</button>
-                                <div class="d-flex gap-2"><button class="btn btn-purple-mc btn-mc flex-grow-1" onclick='editPost({{ post|tojson }})'>EDIT</button><button class="btn btn-danger-mc btn-mc flex-grow-1" onclick="deletePost({{ post.id }})">DROP</button></div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-purple-mc btn-mc flex-grow-1" onclick='editPost({{ post|tojson }})'>EDIT</button>
+                                    <button class="btn btn-danger-mc btn-mc flex-grow-1" onclick="deletePost({{ post.id }})">DROP</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -91,32 +120,38 @@
             </div>
         </div>
 
+        <!-- ANALYTICS -->
         <div class="tab-pane fade" id="analytics"><div class="card p-4"><h6 class="mb-4" style="color: var(--neon-g)">GROWTH_CURVE.DATA</h6><canvas id="subsChart" height="100"></canvas></div></div>
 
+        <!-- CHANNELS -->
         <div class="tab-pane fade" id="channels">
             <div class="row">
-                <div class="col-md-6"><div class="card p-3"><h6>LINK_NEW_CHANNEL</h6><div class="input-group"><input type="text" id="new-ch" class="form-control" placeholder="@user"><button class="btn btn-primary-mc btn-mc px-3" onclick="addChannel()">LINK</button></div></div></div>
-                <div class="col-md-6"><div class="card p-3"><h6>LINKED_SYSTEMS</h6><ul class="list-group list-group-flush">{% for ch in channels %}<li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between px-0">{{ ch }}<button class="btn btn-sm btn-danger-mc btn-mc px-2" onclick="removeChannel('{{ ch }}')">UNLINK</button></li>{% endfor %}</ul></div></div>
+                <div class="col-md-6"><div class="card p-3"><h6>LINK_NEW_CHANNEL</h6><div class="input-group"><input type="text" id="new-ch" class="form-control" placeholder="@username"><button class="btn btn-primary-mc btn-mc px-3" onclick="addChannel()">LINK</button></div></div></div>
+                <div class="col-md-6"><div class="card p-3"><h6>LINKED_SYSTEMS</h6><ul class="list-group list-group-flush">{% for ch in channels %}<li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between px-0 align-items-center" style="font-size: 0.7rem;">{{ ch }}<button class="btn btn-sm btn-danger-mc btn-mc px-2" onclick="removeChannel('{{ ch }}')">UNLINK</button></li>{% endfor %}</ul></div></div>
             </div>
         </div>
 
+        <!-- SETTINGS -->
         <div class="tab-pane fade" id="settings">
             <div class="card p-4">
-                <h6 class="mb-4">AI_OUTPUT_LANGUAGE</h6>
+                <h6 class="mb-4" style="color: var(--neon-p)">AI_CORE_CONFIGURATION</h6>
+                <label class="mb-2" style="font-size: 0.6rem;">OUTPUT_LANGUAGE:</label>
                 <div class="d-flex gap-2">
-                    <button class="lang-btn {% if current_lang == 'uz' %}active{% endif %}" onclick="setLang('uz')">UZBEK (LAT)</button>
-                    <button class="lang-btn {% if current_lang == 'ru' %}active{% endif %}" onclick="setLang('ru')">RUSSIAN</button>
-                    <button class="lang-btn {% if current_lang == 'en' %}active{% endif %}" onclick="setLang('en')">ENGLISH</button>
+                    <button id="lang-uz" class="lang-btn {% if current_lang == 'uz' %}active{% endif %}" onclick="setLang('uz')">UZBEK (LATIN)</button>
+                    <button id="lang-ru" class="lang-btn {% if current_lang == 'ru' %}active{% endif %}" onclick="setLang('ru')">RUSSIAN (RU)</button>
+                    <button id="lang-en" class="lang-btn {% if current_lang == 'en' %}active{% endif %}" onclick="setLang('en')">ENGLISH (US)</button>
                 </div>
-                <p class="mt-3 text-muted" style="font-size: 0.6rem;">* Changes affect all future AI generations.</p>
+                <p class="mt-3 text-muted" style="font-size: 0.55rem;">* Note: Changes will be applied to all newly generated posts.</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODALS -->
-<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header border-secondary"><h6 class="modal-title">UPDATE_PAYLOAD</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea id="edit-text" class="form-control mb-3" rows="10"></textarea><label style="font-size: 0.5rem;">TIMESTAMP_SEC</label><input type="datetime-local" id="edit-time" class="form-control"></div><div class="modal-footer border-secondary"><button class="btn btn-primary-mc btn-mc px-4" id="save-btn">UPLOAD_CHANGES</button></div></div></div></div>
-<div class="modal fade" id="textModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header border-secondary"><h6>RAW_DATA_VIEW</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="full-text-content" style="font-size: 0.7rem; white-space: pre-wrap;"></div></div></div></div>
+<!-- EDIT MODAL -->
+<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h6 class="modal-title" style="color: var(--neon-p)">DATA_REWRITE_SEQUENCE</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea id="edit-text" class="form-control mb-3" rows="12" style="font-family: monospace;"></textarea><label style="font-size: 0.5rem; color: var(--mc);">TARGET_TIMESTAMP</label><input type="datetime-local" id="edit-time" class="form-control"></div><div class="modal-footer"><button class="btn btn-primary-mc btn-mc px-4" id="save-btn">CONFIRM_CHANGES</button></div></div></div></div>
+
+<!-- VIEW MODAL -->
+<div class="modal fade" id="textModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header border-secondary"><h6 class="modal-title" style="color: var(--neon-g)">RAW_LOG_VIEWER</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="full-text-content" style="font-size: 0.8rem; white-space: pre-wrap; line-height: 1.6; font-family: sans-serif; color: #fff !important;"></div></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -135,13 +170,34 @@
         new Chart(ctx, { type: 'line', data: { labels: data[first].labels, datasets: [{ label: first, data: data[first].data, borderColor: '#39ff14', tension: 0.3, fill: true, backgroundColor: 'rgba(57, 255, 20, 0.05)' }] }, options: { plugins: { legend: { labels: { color: '#fff', font: { family: 'Minecraftia', size: 8 } } } }, scales: { y: { ticks: { color: '#555' } }, x: { ticks: { color: '#555' } } } } });
     });
 
-    function setLang(l) { fetch('/api/settings/language', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) }).then(() => location.reload()); }
-    function viewFullText(p) { document.getElementById('full-text-content').innerHTML = p.text; new bootstrap.Modal(document.getElementById('textModal')).show(); }
+    function setLang(l) { 
+        fetch('/api/settings/language', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) })
+        .then(r => r.ok ? location.reload() : alert('ERROR_UPDATING_LANG'));
+    }
+    
+    function viewFullText(p) { 
+        document.getElementById('full-text-content').innerText = p.text; 
+        new bootstrap.Modal(document.getElementById('textModal')).show(); 
+    }
+    
     let curId = null;
-    function editPost(p) { curId = p.id; document.getElementById('edit-text').value = p.text; document.getElementById('edit-time').value = p.iso_time ? p.iso_time.slice(0,16) : ""; new bootstrap.Modal(document.getElementById('editModal')).show(); }
-    document.getElementById('save-btn').onclick = function() { fetch('/api/edit/'+curId, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text:document.getElementById('edit-text').value, time:document.getElementById('edit-time').value}) }).then(() => location.reload()); };
-    function publishNow(id) { if(confirm('UPLOAD NOW?')) fetch('/api/publish/'+id, {method:'POST'}).then(r => r.ok ? location.reload() : alert('FAIL')); }
-    function deletePost(id) { if(confirm('DROP?')) fetch('/api/delete/'+id, {method:'POST'}).then(() => location.reload()); }
+    function editPost(p) { 
+        curId = p.id; 
+        document.getElementById('edit-text').value = p.text; 
+        document.getElementById('edit-time').value = p.iso_time ? p.iso_time.slice(0,16) : ""; 
+        new bootstrap.Modal(document.getElementById('editModal')).show(); 
+    }
+
+    document.getElementById('save-btn').onclick = function() { 
+        fetch('/api/edit/'+curId, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text:document.getElementById('edit-text').value, time:document.getElementById('edit-time').value}) }).then(() => location.reload()); 
+    };
+    
+    function publishNow(id) { 
+        if(confirm('INITIATE IMMEDIATE PUBLISHING?')) 
+            fetch('/api/publish/'+id, {method:'POST'}).then(r => r.ok ? location.reload() : alert('FAIL')); 
+    }
+    
+    function deletePost(id) { if(confirm('DROP DATA BLOCK?')) fetch('/api/delete/'+id, {method:'POST'}).then(() => location.reload()); }
     function addChannel() { fetch('/api/channels', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:document.getElementById('new-ch').value}) }).then(() => location.reload()); }
     function removeChannel(u) { if(confirm('UNLINK '+u+'?')) fetch('/api/channels/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u}) }).then(() => location.reload()); }
 </script>
