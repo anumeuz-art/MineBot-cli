@@ -4,33 +4,20 @@ import requests
 from bs4 import BeautifulSoup
 from groq import Groq
 import database
+import json
 
 client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
-PROMPT_TEMPLATE = """
-Sen Minecraft modlari bo'yicha Telegram kanali muharririsan. Quyidagi ma'lumotlar asosida post yoz.
-Format va uslubni quyidagidek saqla:
+VALID_CATS = [
+    '#Mods', '#Maps', '#Textures', '#Shaders', '#Furniture', '#Tools', '#Mobs', 
+    '#Biomes', '#Redstone', '#Magic', '#Structures', '#Armor', '#FPS', '#UI', 
+    '#Addons', '#Building', '#Survival', '#Horror', '#Adventure', '#Utility'
+]
 
-📦 <b>[Mod Nomi]</b>
-
-Bu nima?
-[Mod haqida qisqacha ma'lumot]
-
-Asosiy xususiyatlar:
-• [Xususiyat 1]
-• [Xususiyat 2]
-• [Xususiyat 3]
-
-🎮 Versiya: [Versiya]
-
-💖 - juda zo'r
-💔 - unchamas
-
-#Minecraft #[Xeshteg1] #[Xeshteg2] #[Xeshteg3] #[Xeshteg4]
-
-💎 Obuna bo'ling: @Lazikomods (https://t.me/Lazikomods)
-"""
+def get_translations():
+    with open('translations.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
 
 def extract_url(text):
     urls = re.findall(r'(https?://[^\s]+)', text)
@@ -46,23 +33,43 @@ def fetch_page_content(url):
     except: return ""
 
 def generate_post(user_input, persona="uz"):
+    trans = get_translations().get(persona, get_translations()['uz'])
     url = extract_url(user_input)
-    site_content = fetch_page_content(url) if url else ""
+    site_content = f"\n\nSITE CONTENT:\n{fetch_page_content(url)}" if url else ""
     
-    prompt = f"{PROMPT_TEMPLATE}\n\nMa'lumot:\n{user_input}\n{site_content}"
+    system_prompt = f"""You are a Minecraft content generator.
+    Language: {persona}.
+    Follow this structure strictly:
+    📦 <b>[Name]</b>
+    <blockquote expandable><b>{trans['title']}</b>
+    [Description]
+    
+    <b>{trans['features']}</b>
+    • [F1]
+    • [F2]
+    • [F3]
+    
+    🎮 {trans['version']}: [Version]
+    </blockquote>
+    <blockquote>{trans['rating']}</blockquote>
+    
+    {trans['instructions']}
+    """
     
     try:
         res = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}], 
+            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": f"Info: {user_input} {site_content}"}], 
             model=MODEL_ID
         )
         gen = res.choices[0].message.content.strip()
         
-        # Реклама добавляется автоматически из БД, если она есть
+        # Очистка и вставка тегов
+        gen = re.sub(r'#\w+', '', gen)
+        gen += "\n\n#Minecraft #Mods"
+        
         ad_text = database.get_global_setting('ad_text', '')
-        if ad_text and ad_text not in gen:
-            gen += f"\n\n{ad_text}"
-            
+        if ad_text: gen += f"\n\n{ad_text}"
+        
         return gen
     except Exception as e:
         return f"Error: {e}"

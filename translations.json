@@ -1,0 +1,23 @@
+{
+    "uz": {
+        "title": "Bu nima?",
+        "features": "Asosiy xususiyatlar:",
+        "version": "Versiya",
+        "rating": "💖 - Zo'r\n💔 - Unchamas",
+        "instructions": "HECH QANDAY XESHTEG YOZING! (Men o'zim qo'shaman)."
+    },
+    "ru": {
+        "title": "Что это такое?",
+        "features": "Главные фишки:",
+        "version": "Версия",
+        "rating": "💖 - Имба\n💔 - Не оч",
+        "instructions": "НЕ ПИШИ ХЭШТЕГИ! (Я добавлю их сам)."
+    },
+    "en": {
+        "title": "What is it?",
+        "features": "Key Features:",
+        "version": "Version",
+        "rating": "💖 - Awesome\n💔 - Not great",
+        "instructions": "DO NOT WRITE HASHTAGS! (I will add them myself)."
+    }
+}
