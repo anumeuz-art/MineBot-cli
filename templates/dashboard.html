@@ -24,7 +24,6 @@
             letter-spacing: 1px;
         }
 
-        /* Кастомный скроллбар в стиле Minecraft */
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: #111; }
         ::-webkit-scrollbar-thumb { background: var(--mc-green); border: 2px solid #111; }
@@ -40,7 +39,7 @@
         .card { 
             background-color: var(--card-bg); 
             border: 2px solid #333; 
-            border-radius: 0; /* Блочный стиль */
+            border-radius: 0;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -49,10 +48,11 @@
         .stats-card { 
             border-color: var(--neon-purple); 
             box-shadow: inset 0 0 10px rgba(188, 19, 254, 0.2);
+            color: #fff !important;
         }
+        .stats-label { color: #fff !important; text-shadow: 0 0 5px #fff; }
 
         .post-card { transition: transform 0.2s; }
-        .post-card:hover { transform: translateY(-5px); }
         .post-card .card { border-color: var(--mc-green); }
         .post-card:hover .card { box-shadow: 0 0 20px var(--mc-green); border-color: var(--neon-green); }
 
@@ -64,12 +64,11 @@
             color: var(--neon-green);
             border-radius: 0;
             text-transform: uppercase;
-            box-shadow: 0 0 5px var(--neon-green);
         }
         .btn-primary:hover { background-color: var(--neon-green); color: #000; box-shadow: 0 0 20px var(--neon-green); }
 
         .btn-outline-danger { border-radius: 0; border: 2px solid #ff0033; color: #ff0033; }
-        .btn-outline-danger:hover { background-color: #ff0033; color: #fff; box-shadow: 0 0 15px #ff0033; }
+        .btn-outline-danger:hover { background-color: #ff0033; color: #fff; }
 
         .nav-tabs { border-bottom: 2px solid #333; }
         .nav-tabs .nav-link { color: #555; border: none; text-transform: uppercase; }
@@ -77,7 +76,6 @@
             background-color: transparent; 
             color: var(--neon-purple); 
             border-bottom: 3px solid var(--neon-purple); 
-            text-shadow: 0 0 8px var(--neon-purple);
         }
 
         .handle { 
@@ -96,21 +94,18 @@
             height: 180px; 
             object-fit: cover; 
             border: 2px solid #000;
-            image-rendering: pixelated; /* Пиксельный эффект для фото */
         }
-
-        .swiper-pagination-bullet-active { background: var(--neon-green) !important; }
 
         .modal-content { background-color: #111; border: 3px solid var(--neon-purple); border-radius: 0; }
         .form-control { border-radius: 0; background-color: #222; color: #fff; border: 1px solid #444; }
-        .form-control:focus { background-color: #222; color: #fff; border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
-
-        /* Анимация пульсации для времени */
-        .time-badge { animation: pulse 2s infinite; }
-        @keyframes pulse {
-            0% { text-shadow: 0 0 5px var(--mc-green); }
-            50% { text-shadow: 0 0 15px var(--neon-green); }
-            100% { text-shadow: 0 0 5px var(--mc-green); }
+        
+        .truncate-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+            font-size: 0.75rem;
+            color: #bbb;
         }
     </style>
 </head>
@@ -119,7 +114,7 @@
 <nav class="navbar navbar-dark mb-4">
     <div class="container">
         <a class="navbar-brand" href="#">⛏️ MineBot Control</a>
-        <span class="navbar-text text-white" style="font-size: 0.7rem;">SYSTEM ACTIVE</span>
+        <span class="navbar-text text-white" style="font-size: 0.7rem;">SYSTEM ONLINE</span>
     </div>
 </nav>
 
@@ -128,73 +123,71 @@
         <div class="col-md-3 col-6">
             <div class="card stats-card p-3 mb-3">
                 <div class="stats-num">{{ stats.total }}</div>
-                <div style="font-size: 0.6rem;">TOTAL POSTS</div>
+                <div class="stats-label" style="font-size: 0.7rem;">TOTAL POSTS</div>
             </div>
         </div>
         <div class="col-md-3 col-6">
             <div class="card stats-card p-3 mb-3">
                 <div class="stats-num">{{ stats.published }}</div>
-                <div style="font-size: 0.6rem;">PUBLISHED</div>
+                <div class="stats-label" style="font-size: 0.7rem;">PUBLISHED</div>
             </div>
         </div>
         <div class="col-md-3 col-6">
             <div class="card stats-card p-3 mb-3">
                 <div class="stats-num">{{ stats.queue }}</div>
-                <div style="font-size: 0.6rem;">IN QUEUE</div>
+                <div class="stats-label" style="font-size: 0.7rem;">IN QUEUE</div>
             </div>
         </div>
         <div class="col-md-3 col-6">
             <div class="card stats-card p-3 mb-3">
                 <div class="stats-num">{{ stats.today }}</div>
-                <div style="font-size: 0.6rem;">TODAY</div>
+                <div class="stats-label" style="font-size: 0.7rem;">TODAY</div>
             </div>
         </div>
     </div>
 
-    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+    <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
-            <button class="nav-link active" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button">Queue</button>
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue">Queue</button>
         </li>
         <li class="nav-item">
-            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button">History</button>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#history">History</button>
         </li>
     </ul>
 
-    <div class="tab-content" id="myTabContent">
+    <div class="tab-content">
         <!-- ОЧЕРЕДЬ -->
         <div class="tab-pane fade show active" id="queue">
             <div id="sortable-queue" class="row">
                 {% for post in queue %}
                 <div class="col-md-4 post-card mb-4" data-id="{{ post.id }}">
                     <div class="card h-100 p-2">
-                        <div class="handle">::: DRAG TO REORDER :::</div>
+                        <div class="handle">::: DRAG :::</div>
                         
                         {% if post.photos|length > 1 %}
                             <div class="swiper mySwiper">
                                 <div class="swiper-wrapper">
                                     {% for photo in post.photos %}
-                                    <div class="swiper-slide"><img src="https://api.telegram.org/file/bot{{ config.TELEGRAM_TOKEN }}/{{ photo }}" class="post-preview-img" onerror="this.src='https://placehold.co/600x400/222/388e3c?text=Media+ID'"></div>
+                                    <div class="swiper-slide"><img src="/file/{{ photo }}" class="post-preview-img"></div>
                                     {% endfor %}
                                 </div>
                                 <div class="swiper-pagination"></div>
                             </div>
                         {% elif post.photos|length == 1 %}
-                            <img src="https://api.telegram.org/file/bot{{ config.TELEGRAM_TOKEN }}/{{ post.photos[0] }}" class="post-preview-img" onerror="this.src='https://placehold.co/600x400/222/388e3c?text=Media+ID'">
+                            <img src="/file/{{ post.photos[0] }}" class="post-preview-img">
                         {% else %}
-                            <div class="post-preview-img d-flex align-items-center justify-content-center bg-dark" style="border: 1px solid #333;">NO MEDIA</div>
+                            <div class="post-preview-img d-flex align-items-center justify-content-center bg-dark">NO MEDIA</div>
                         {% endif %}
 
                         <div class="mt-2 flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <small class="text-success time-badge">{{ post.time_str }}</small>
-                                <small class="text-muted" style="font-size: 0.5rem;">#{{ post.id }}</small>
-                            </div>
-                            <p class="mt-2" style="font-size: 0.75rem; line-height: 1.4; color: #bbb;">{{ post.text|striptags|truncate(150) }}</p>
+                            <small class="text-success">{{ post.time_str }}</small>
+                            <p class="mt-2 truncate-text" id="text-{{ post.id }}">{{ post.text|striptags }}</p>
+                            <button class="btn btn-link p-0 text-info" style="font-size: 0.6rem;" onclick="viewFullText('{{ post.text|e }}')">📜 READ FULL</button>
                         </div>
                         
                         <div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary">
-                            <button class="btn btn-sm btn-primary py-1 px-3" onclick="editPost({{ post.id }}, '{{ post.text|e }}', {{ post.timestamp }})">EDIT</button>
-                            <button class="btn btn-sm btn-outline-danger py-1 px-3" onclick="deletePost({{ post.id }})">DROP</button>
+                            <button class="btn btn-sm btn-primary px-3" onclick="editPost({{ post.id }}, '{{ post.text|e }}', '{{ post.iso_time }}')">EDIT</button>
+                            <button class="btn btn-sm btn-outline-danger px-3" onclick="deletePost({{ post.id }})">DROP</button>
                         </div>
                     </div>
                 </div>
@@ -208,7 +201,7 @@
                 {% for post in history %}
                 <div class="col-md-3 mb-3">
                     <div class="card p-2 border-secondary opacity-75">
-                        <small class="text-muted" style="font-size: 0.5rem;">{{ post.time_str }}</small>
+                        <small class="text-muted">{{ post.time_str }}</small>
                         <p style="font-size: 0.6rem; margin-top: 5px;">{{ post.text|striptags|truncate(80) }}</p>
                     </div>
                 </div>
@@ -218,24 +211,37 @@
     </div>
 </div>
 
-<!-- Модальное окно -->
+<!-- Модальное окно редактирования -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title" style="color: var(--neon-purple)">EDIT_CONTENT.LOG</h5>
+                <h5 class="modal-title" style="color: var(--neon-purple)">EDIT_POST</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <textarea id="edit-text" class="form-control mb-3" rows="10" style="font-family: monospace;"></textarea>
+                <textarea id="edit-text" class="form-control mb-3" rows="8"></textarea>
                 <div class="mb-3">
-                    <label style="font-size: 0.7rem;">EXECUTION_TIMESTAMP:</label>
-                    <input type="number" id="edit-time" class="form-control">
+                    <label style="font-size: 0.7rem;">SCHEDULE_TIME:</label>
+                    <input type="datetime-local" id="edit-time" class="form-control">
                 </div>
             </div>
             <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-primary" id="save-btn">EXECUTE CHANGES</button>
+                <button type="button" class="btn btn-primary" id="save-btn">SAVE_CHANGES</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно просмотра текста -->
+<div class="modal fade" id="textModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">📜 FULL_DESCRIPTION</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="full-text-content" style="font-size: 0.8rem; white-space: pre-wrap;"></div>
         </div>
     </div>
 </div>
@@ -245,17 +251,12 @@
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
-    const swiper = new Swiper(".mySwiper", {
-        pagination: { el: ".swiper-pagination", clickable: true },
-    });
+    new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination" } });
 
-    const el = document.getElementById('sortable-queue');
-    const sortable = Sortable.create(el, {
-        animation: 150,
-        handle: '.handle',
-        ghostClass: 'sortable-ghost',
+    Sortable.create(document.getElementById('sortable-queue'), {
+        animation: 150, handle: '.handle',
         onEnd: function() {
-            const order = Array.from(el.querySelectorAll('.post-card')).map(item => item.dataset.id);
+            const order = Array.from(document.querySelectorAll('.post-card')).map(item => item.dataset.id);
             fetch('/api/reorder', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -266,28 +267,34 @@
 
     let currentPostId = null;
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    const textModal = new bootstrap.Modal(document.getElementById('textModal'));
+
+    function viewFullText(text) {
+        document.getElementById('full-text-content').innerText = text;
+        textModal.show();
+    }
 
     function editPost(id, text, time) {
         currentPostId = id;
         document.getElementById('edit-text').value = text;
-        document.getElementById('edit-time').value = time;
+        document.getElementById('edit-time').value = time ? time.slice(0, 16) : "";
         editModal.show();
     }
 
     document.getElementById('save-btn').onclick = function() {
-        const text = document.getElementById('edit-text').value;
-        const time = document.getElementById('edit-time').value;
         fetch('/api/edit/' + currentPostId, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text, timestamp: time })
+            body: JSON.stringify({ 
+                text: document.getElementById('edit-text').value, 
+                time: document.getElementById('edit-time').value 
+            })
         }).then(() => location.reload());
     };
 
     function deletePost(id) {
-        if (confirm('TERMINATE THIS POST?')) {
-            fetch('/api/delete/' + id, { method: 'POST' })
-            .then(() => location.reload());
+        if (confirm('DELETE POST?')) {
+            fetch('/api/delete/' + id, { method: 'POST' }).then(() => location.reload());
         }
     }
 </script>

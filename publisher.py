@@ -4,6 +4,7 @@ import database
 
 def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_auto=False):
     try:
+        # 1. Отправка фото или альбома
         if photo_id:
             if ',' in photo_id:
                 ids = photo_id.split(',')
@@ -20,7 +21,16 @@ def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_
         else:
             bot.send_message(channel_id, text, parse_mode='HTML')
             
-        if document_id: bot.send_document(channel_id, document_id)
+        # 2. Отправка документов (поддержка нескольких файлов через запятую)
+        if document_id:
+            doc_ids = document_id.split(',')
+            for d_id in doc_ids:
+                d_id = d_id.strip()
+                if d_id:
+                    try:
+                        bot.send_document(channel_id, d_id)
+                    except Exception as de:
+                        print(f"⚠️ Ошибка отправки документа {d_id}: {de}")
         
         if post_id != -1: 
             database.mark_as_posted(post_id)
@@ -34,7 +44,7 @@ def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_
     except Exception as e:
         if post_id != -1 and is_auto:
             for admin in getattr(config, 'ADMIN_IDS', []):
-                try: bot.send_message(admin, f"❌ <b>Ошибка автопостинга:</b> Пост не опубликован в {channel_id}. Причина: {e}", parse_mode='HTML')
+                try: bot.send_message(admin, f"❌ <b>Ошибка автопостинга:</b> Канал {channel_id}. Ошибка: {e}", parse_mode='HTML')
                 except: pass
         print(f"❌ Ошибка публикации в {channel_id}: {e}")
         return False

@@ -16,6 +16,9 @@ import utils
 import keyboards
 import publisher
 
+# Глобальный словарь для отслеживания последнего активного черновика каждого админа
+user_current_draft_id = {}
+
 def register_handlers(bot, user_drafts, album_cache):
 
     @bot.message_handler(commands=['start'])
@@ -94,7 +97,7 @@ def register_handlers(bot, user_drafts, album_cache):
                 bot.send_message(message.chat.id, "⏳ Генерирую пост...")
 
             draft = {'photo': photo_id, 'text': generated_text, 'document': None, 'ad_added': False, 'channel': utils.get_active_channel(message.from_user.id)}
-            send_draft_preview(message.chat.id, draft)
+            send_draft_preview(message.chat.id, message.from_user.id, draft)
 
         except Exception as e:
             bot.send_message(message.chat.id, f"Ошибка: {e}")
@@ -137,7 +140,7 @@ def register_handlers(bot, user_drafts, album_cache):
                 except: pass
             
             draft = {'photo': photo_id_str, 'text': generated_text, 'document': None, 'ad_added': False, 'channel': utils.get_active_channel(user_id)}
-            send_draft_preview(chat_id, draft)
+            send_draft_preview(chat_id, user_id, draft)
         except Exception as e:
             bot.send_message(chat_id, f"❌ Ошибка альбома: {e}")
         finally:
@@ -148,7 +151,7 @@ def register_handlers(bot, user_drafts, album_cache):
                 if os.path.exists(tin): os.remove(tin)
                 if os.path.exists(tout) and tout != tin: os.remove(tout)
 
-    def send_draft_preview(chat_id, draft):
+    def send_draft_preview(chat_id, user_id, draft):
         text = draft['text']
         photo_id = draft['photo']
         if photo_id:
@@ -171,6 +174,7 @@ def register_handlers(bot, user_drafts, album_cache):
             target_id = sent.message_id
             
         user_drafts[target_id] = draft
+        user_current_draft_id[user_id] = target_id # Запоминаем текущий черновик
         bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_draft_markup(target_id))
 
     def process_ad_step(message):
@@ -204,7 +208,7 @@ def register_handlers(bot, user_drafts, album_cache):
         try: bot.delete_message(chat_id, message.message_id)
         except: pass
         bot.send_message(chat_id, "✅ Текст обновлен!", reply_markup=keyboards.get_main_menu())
-        send_draft_preview(chat_id, draft)
+        send_draft_preview(chat_id, message.from_user.id, draft)
 
     def process_exact_time(message, draft_id, chat_id):
         if message.text and message.text.lower() in ['отмена', '❌ отмена']:
@@ -225,6 +229,8 @@ def register_handlers(bot, user_drafts, album_cache):
                 bot.edit_message_reply_markup(chat_id, draft_id, reply_markup=None)
                 bot.send_message(chat_id, f"🕒 Запланировано на {dt_naive.strftime('%d.%m.%Y %H:%M')} ({draft['channel']})", reply_markup=keyboards.get_main_menu())
                 del user_drafts[draft_id]
+                if user_current_draft_id.get(message.from_user.id) == draft_id:
+                    del user_current_draft_id[message.from_user.id]
         except ValueError:
             msg = bot.send_message(chat_id, "❌ Формат: ДД.ММ.ГГГГ ЧЧ:ММ", reply_markup=keyboards.get_cancel_markup())
             bot.register_next_step_handler(msg, process_exact_time, draft_id, chat_id)
@@ -238,6 +244,8 @@ def register_handlers(bot, user_drafts, album_cache):
             try: bot.delete_message(chat_id, target_id)
             except: pass
             if target_id in user_drafts: del user_drafts[target_id]
+            if user_current_draft_id.get(call.from_user.id) == target_id:
+                del user_current_draft_id[call.from_user.id]
             bot.answer_callback_query(call.id, "🗑 Черновик удален")
             return
 
@@ -314,6 +322,8 @@ def register_handlers(bot, user_drafts, album_cache):
             bot.edit_message_reply_markup(chat_id, target_id, reply_markup=None)
             bot.send_message(chat_id, f"🧠 Пост запланирован на {dt_str} для {draft['channel']}", parse_mode="HTML")
             del user_drafts[target_id]
+            if user_current_draft_id.get(call.from_user.id) == target_id:
+                del user_current_draft_id[call.from_user.id]
             return
 
         if call.data == "edit_text":
@@ -329,6 +339,8 @@ def register_handlers(bot, user_drafts, album_cache):
                 bot.edit_message_reply_markup(chat_id, target_id, reply_markup=None)
                 bot.send_message(chat_id, f"🚀 Отправлено в {draft['channel']}!")
                 del user_drafts[target_id]
+                if user_current_draft_id.get(call.from_user.id) == target_id:
+                    del user_current_draft_id[call.from_user.id]
             return
 
         if call.data == "pub_queue_menu":
@@ -361,6 +373,8 @@ def register_handlers(bot, user_drafts, album_cache):
             bot.edit_message_reply_markup(chat_id, dr_id, reply_markup=None)
             bot.send_message(chat_id, f"🕒 Запланировано (через {hours} ч.) для {t_draft['channel']}")
             del user_drafts[dr_id]
+            if user_current_draft_id.get(call.from_user.id) == dr_id:
+                del user_current_draft_id[call.from_user.id]
             return
 
         if call.data.startswith("sched_exact_"):
@@ -378,13 +392,30 @@ def register_handlers(bot, user_drafts, album_cache):
 
     @bot.message_handler(content_types=['document'])
     def handle_document(message):
+        user_id = message.from_user.id
+        target_id = None
+        
+        # Сначала проверяем Reply
         if message.reply_to_message:
             target_id = message.reply_to_message.message_id
-            if target_id in user_drafts:
-                user_drafts[target_id]['document'] = message.document.file_id
-                bot.reply_to(message, "✅ Файл прикреплен!")
-                return
-        bot.reply_to(message, "Сделай Reply на сообщение с кнопками!")
+        # Если нет реплая, берем последний активный черновик
+        elif user_id in user_current_draft_id:
+            target_id = user_current_draft_id[user_id]
+            
+        if target_id and target_id in user_drafts:
+            current_docs = user_drafts[target_id].get('document')
+            new_doc = message.document.file_id
+            
+            if current_docs:
+                user_drafts[target_id]['document'] = f"{current_docs},{new_doc}"
+            else:
+                user_drafts[target_id]['document'] = new_doc
+            
+            count = len(user_drafts[target_id]['document'].split(','))
+            bot.reply_to(message, f"✅ Файл прикреплен к черновику #{target_id}!\nВсего файлов: <b>{count}</b>", parse_mode="HTML")
+            return
+            
+        bot.reply_to(message, "❌ Не нашел активного черновика. Сначала создай пост или сделай Reply на сообщение с кнопками!")
 
     @bot.message_handler(func=lambda message: message.chat.type in ['group', 'supergroup'], content_types=['text'])
     def catch_group_comments(message):
