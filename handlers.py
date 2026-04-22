@@ -55,6 +55,12 @@ def register_handlers(bot, user_drafts, album_cache):
             # Берем язык из БД (теперь настраивается в Web App)
             persona = database.get_user_setting(message.from_user.id, 'persona', 'uz')
             generated_text = ai_generator.generate_post(user_input, persona)
+            
+            # Приклеиваем рекламу вручную здесь
+            ad_text = database.get_global_setting('ad_text', '')
+            if ad_text:
+                generated_text += f"\n\n{ad_text}"
+            
             photo_id = None
             
             if message.photo:

@@ -109,21 +109,18 @@ def generate_post(user_input, persona="uz"):
         res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
         gen = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
         
-        # Строгая проверка хэштегов
-        tags = re.findall(r'#\w+', gen)
-        found_cat = None
+        # Автоматическая очистка хэштегов
+        tags = re.findall(r'#\w+', generated)
         for t in tags:
-            if t in VALID_CATS: found_cat = t
-            elif t != '#Minecraft': gen = gen.replace(t, "")
-        
-        if '#Minecraft' not in gen: gen += "\n#Minecraft"
-        if not found_cat: gen += " #Mods"
-        else: gen += f" {found_cat}"
-        
-        ad_text = database.get_global_setting('ad_text', '')
-        if ad_text: gen += f"\n\n{ad_text}"
-        return gen.strip()
-    except: return f"Error. Input: {user_input}"
+            if t not in VALID_CATS and t != '#Minecraft':
+                generated = generated.replace(t, "")
+
+        if '#Minecraft' not in generated: generated += "\n#Minecraft"
+        if not any(cat in generated for cat in VALID_CATS): generated += " #Mods"
+
+        return generated.strip()
+        except: return f"Error. Input: {user_input}"
+
 
 def rewrite_post(text, style="short"):
     inst = {"short": "Shorter.", "fun": "Fun.", "pro": "Professional."}.get(style, "Improve.")
