@@ -103,6 +103,8 @@ def fetch_page_content(url):
         return soup.get_text(separator=' ', strip=True)[:5000]
     except: return ""
 
+import database
+
 def generate_post(user_input, persona="uz"):
     url = extract_url(user_input)
     site_context = ""
@@ -113,7 +115,14 @@ def generate_post(user_input, persona="uz"):
     prompt = f"{PROMPTS.get(persona, PROMPTS['uz'])}\n\nRaw info:\n{user_input}{site_context}"
     try:
         res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
-        return re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
+        generated = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
+        
+        # Добавляем рекламу из БД
+        ad_text = database.get_global_setting('ad_text', '')
+        if ad_text:
+            generated += f"\n\n{ad_text}"
+            
+        return generated
     except: return f"Error. Input: {user_input}"
 
 def rewrite_post(text, style="short"):

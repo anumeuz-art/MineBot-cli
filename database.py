@@ -1,3 +1,4 @@
+
 import sqlite3
 import time
 import os
@@ -40,8 +41,28 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS stats_posts
                  (post_id INTEGER PRIMARY KEY, views INTEGER, date TEXT)''')
 
+    # Таблица для глобальных настроек бота
+    c.execute('''CREATE TABLE IF NOT EXISTS global_settings
+                 (key TEXT PRIMARY KEY, value TEXT)''')
+
     conn.commit()
     conn.close()
+
+# --- Глобальные настройки ---
+def set_global_setting(key, value):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO global_settings (key, value) VALUES (?, ?)", (key, str(value)))
+    conn.commit()
+    conn.close()
+
+def get_global_setting(key, default=""):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT value FROM global_settings WHERE key = ?", (key,))
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else default
 
 # --- Управление каналами ---
 def add_channel(username):

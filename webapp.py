@@ -81,12 +81,20 @@ def index():
             prev_count = next((h[1] for h in current_history if h[0] == yesterday), current_count)
             growth_24h += (current_count - prev_count)
 
-    # Текущие настройки (берем для первого админа в списке или дефолт)
+    # Текущие настройки
     current_lang = database.get_user_setting(config.ADMIN_IDS[0], 'persona', 'uz')
+    ad_text = database.get_global_setting('ad_text', '')
     
     return render_template('dashboard.html', stats=stats, queue=queue, history=history, 
                            channels=managed_channels, total_subs=total_subs, 
-                           growth_24h=growth_24h, current_lang=current_lang, config=config)
+                           growth_24h=growth_24h, current_lang=current_lang, 
+                           ad_text=ad_text, config=config)
+
+@app.route('/api/settings/ad', methods=['POST'])
+def set_ad():
+    text = request.json.get('text', '')
+    database.set_global_setting('ad_text', text)
+    return jsonify({'status': 'success'})
 
 @app.route('/api/settings/language', methods=['POST'])
 def set_language():
