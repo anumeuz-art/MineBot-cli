@@ -9,11 +9,30 @@ import json
 client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
-VALID_CATS = [
-    '#Mods', '#Maps', '#Textures', '#Shaders', '#Furniture', '#Tools', '#Mobs', 
-    '#Biomes', '#Redstone', '#Magic', '#Structures', '#Armor', '#FPS', '#UI', 
-    '#Addons', '#Building', '#Survival', '#Horror', '#Adventure', '#Utility'
-]
+PROMPT_TEMPLATE = """
+Sen Minecraft modlari bo'yicha Telegram kanali muharririsan. Berilgan ma'lumotdan foydalanib, quyidagi qat'iy shablon bo'yicha post yoz.
+Hech narsani o'zgartirma, faqat ma'lumotni to'ldir!
+
+SHABLON:
+📦 <b>[Mod Nomi]</b>
+
+Bu nima?
+[Mod haqida qisqacha va tushunarli ma'lumot]
+
+Asosiy xususiyatlar:
+• [Xususiyat 1]
+• [Xususiyat 2]
+• [Xususiyat 3]
+
+🎮 Versiya: [Versiya]
+
+💖 - juda zo'r
+💔 - unchamas
+
+#Minecraft #Mods
+
+💎 Obuna bo'ling: @Lazikomods (https://t.me/Lazikomods)
+"""
 
 def extract_url(text):
     urls = re.findall(r'(https?://[^\s]+)', text)
@@ -30,46 +49,28 @@ def fetch_page_content(url):
 
 def generate_post(user_input, persona="uz"):
     url = extract_url(user_input)
-    site_content = f"\n\nINFO FROM SITE:\n{fetch_page_content(url)}" if url else ""
+    site_content = fetch_page_content(url) if url else ""
     
-    system_prompt = f"""You are a Minecraft content generator. 
-    Language: {persona}.
-    Format strictly as:
-    📦 <b>[Name]</b>
-    <blockquote expandable><b>Description:</b> [Text]
-    <b>Features:</b>
-    • [F1]
-    • [F2]
-    • [F3]
-    🎮 Version: [Version]
-    </blockquote>
-    <blockquote>💖 - Awesome\n💔 - Not great</blockquote>
-    """
+    prompt = f"{PROMPT_TEMPLATE}\n\nMa'lumot:\n{user_input}\n{site_content}"
     
     try:
         res = client.chat.completions.create(
-            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": f"Info: {user_input} {site_content}"}], 
+            messages=[{"role": "user", "content": prompt}], 
             model=MODEL_ID
         )
         gen = res.choices[0].message.content.strip()
-        gen = re.sub(r'#\w+', '', gen)
-        gen += "\n\n#Minecraft #Mods"
+        
+        # Авто-добавка рекламы из БД, если она не попала в шаблон
         ad_text = database.get_global_setting('ad_text', '')
-        if ad_text: gen += f"\n\n{ad_text}"
+        if ad_text and ad_text not in gen:
+            gen += f"\n\n{ad_text}"
+            
         return gen
     except Exception as e:
         return f"Error: {e}"
 
 def generate_map(posts_data):
-    prompt = f"Create a structured weekly digest of mods. Categorize them (e.g. 'Weapons', 'Food'). List them with links from text:\n{posts_data}"
-    try:
-        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
-        return res.choices[0].message.content
-    except: return "Error generating map."
+    return "Weekly Map Report..."
 
 def generate_report(posts_data):
-    prompt = f"Create a 'Best of the Week' report based on these popular posts:\n{posts_data}"
-    try:
-        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
-        return res.choices[0].message.content
-    except: return "Error generating report."
+    return "Weekly Top Report..."
