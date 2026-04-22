@@ -4,16 +4,83 @@ import requests
 from bs4 import BeautifulSoup
 from groq import Groq
 import database
-import json
 
 client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
-VALID_CATS = [
-    '#Mods', '#Maps', '#Textures', '#Shaders', '#Furniture', '#Tools', '#Mobs', 
-    '#Biomes', '#Redstone', '#Magic', '#Structures', '#Armor', '#FPS', '#UI', 
-    '#Addons', '#Building', '#Survival', '#Horror', '#Adventure', '#Utility'
-]
+# Теперь промпты нацелены на максимальную информативность
+PROMPTS = {
+    "uz": """Siz Minecraft modlari muharririsiz. 
+Matn berilganda batafsil va qiziqarli post yozing. 
+MUHIM: Iloji boricha ko'proq ma'lumot bering (xususiyatlar, o'zgarishlar, o'yin jarayoni). 
+Faqat o'zbek tilida yozing. Asosiy blok uchun <blockquote> tegidan foydalaning.
+
+Format:
+📦 <b>[Nomi]</b>
+
+<blockquote><b>Bu nima?</b>
+[Batafsil tavsif, 4-5 qator]
+
+<b>Asosiy xususiyatlar:</b>
+• [Batafsil xususiyat 1]
+• [Batafsil xususiyat 2]
+• [Batafsil xususiyat 3]
+• [Batafsil xususiyat 4]
+
+🎮 Versiya: [Versiya]</blockquote>
+
+<blockquote>💖 - Zo'r
+💔 - Unchamas</blockquote>
+
+#Minecraft #[Mod_nomi_yoki_kategoriyasi] #[Qo'shimcha_teg]
+""",
+    "ru": """Ты — редактор канала о модах для Minecraft. 
+При создании поста пиши МАКСИМАЛЬНО подробно. Описывай не только суть, но и детали, атмосферу, влияние на геймплей.
+Используй <blockquote> для описания.
+
+Формат:
+📦 <b>[Название]</b>
+
+<blockquote><b>Что это такое?</b>
+[Развернутое описание, 4-5 строк]
+
+<b>Главные фишки:</b>
+• [Детальная фишка 1]
+• [Детальная фишка 2]
+• [Детальная фишка 3]
+• [Детальная фишка 4]
+
+🎮 Версия: [Версия]</blockquote>
+
+<blockquote>💖 - Имба
+💔 - Не оч</blockquote>
+
+#Minecraft #[Категория] #[Доп_тег]
+""",
+    "en": """You are a Minecraft mods channel editor. 
+Write DETAILED and engaging posts. Provide as much info as possible (features, gameplay impact, atmosphere).
+Use <blockquote> for description.
+
+Format:
+📦 <b>[Mod Name]</b>
+
+<blockquote><b>What is it?</b>
+[Detailed description, 4-5 lines]
+
+<b>Key Features:</b>
+• [Detailed feature 1]
+• [Detailed feature 2]
+• [Detailed feature 3]
+• [Detailed feature 4]
+
+🎮 Version: [Version]</blockquote>
+
+<blockquote>💖 - Awesome
+💔 - Not great</blockquote>
+
+#Minecraft #[Category] #[Tag]
+"""
+}
 
 def extract_url(text):
     urls = re.findall(r'(https?://[^\s]+)', text)
@@ -22,48 +89,28 @@ def extract_url(text):
 def fetch_page_content(url):
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.content, 'html.parser')
         for s in soup(["script", "style"]): s.extract()
-        return soup.get_text(separator=' ', strip=True)[:3000]
+        return soup.get_text(separator=' ', strip=True)[:6000]
     except: return ""
 
 def generate_post(user_input, persona="uz"):
     url = extract_url(user_input)
-    site_content = fetch_page_content(url) if url else ""
+    site_context = f"\n\nSITE CONTENT:\n{fetch_page_content(url)}" if url else ""
     
-    system_prompt = f"""You are a Minecraft content editor. 
-Respond ONLY in JSON format: {{"name": "...", "description": "...", "features": ["...", "..."], "version": "...", "category": "#Mods"}}
-Categories available: {', '.join(VALID_CATS)}
-Language must be: {persona} (uz, ru, en).
-Keep it short and punchy."""
-
+    prompt = f"{PROMPTS.get(persona, PROMPTS['uz'])}\n\nUser input:\n{user_input}{site_context}"
+    
     try:
-        res = client.chat.completions.create(
-            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": f"Info: {user_input} {site_content}"}],
-            model=MODEL_ID, response_format={"type": "json_object"}
-        )
-        data = json.loads(res.choices[0].message.content)
+        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
+        generated = res.choices[0].message.content.strip()
+        generated = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', generated)
         
-        # Шаблон
-        feat = "\n• " + "\n• ".join(data.get('features', []))
-        
-        # Языковые шаблоны
-        if persona == 'uz':
-            post = f"📦 <b>{data['name']}</b>\n\n<blockquote expandable><b>Bu nima?</b>\n{data['description']}\n\n<b>Asosiy xususiyatlar:</b>{feat}\n\n🎮 Versiya: {data['version']}</blockquote>\n\n<blockquote>💖 - Zo'r\n💔 - Unchamas</blockquote>"
-        elif persona == 'ru':
-            post = f"📦 <b>{data['name']}</b>\n\n<blockquote expandable><b>Что это такое?</b>\n{data['description']}\n\n<b>Главные фишки:</b>{feat}\n\n🎮 Версия: {data['version']}</blockquote>\n\n<blockquote>💖 - Имба\n💔 - Не оч</blockquote>"
-        else:
-            post = f"📦 <b>{data['name']}</b>\n\n<blockquote expandable><b>What is it?</b>\n{data['description']}\n\n<b>Key Features:</b>{feat}\n\n🎮 Version: {data['version']}</blockquote>\n\n<blockquote>💖 - Awesome\n💔 - Not great</blockquote>"
-            
-        post += f"\n\n#Minecraft {data.get('category', '#Mods')}"
-        
-        ad = database.get_global_setting('ad_text', '')
-        if ad: post += f"\n\n{ad}"
-        
-        return post
+        ad_text = database.get_global_setting('ad_text', '')
+        if ad_text: generated += f"\n\n{ad_text}"
+        return generated
     except Exception as e:
-        return f"Generation error: {e}"
+        return f"Error: {e}"
 
 def rewrite_post(text, style="short"):
-    return text # Простая переписка через Groq если нужно
+    return text
