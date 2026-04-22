@@ -22,4 +22,4 @@ DEFAULT_CHANNEL = AVAILABLE_CHANNELS[0] if AVAILABLE_CHANNELS else ""
 WATERMARK_TEXT = "@lazikomods"
 
 # 🧠 НОВАЯ НАСТРОЙКА: Интервал умной очереди (в часах)
-SMART_QUEUE_INTERVAL_HOURS = 8
+SMART_QUEUE_INTERVAL_HOURS = 6

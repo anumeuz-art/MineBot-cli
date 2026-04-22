@@ -6,11 +6,9 @@ import utils
 def get_main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(KeyboardButton("📝 Создать пост"))
-    markup.add(KeyboardButton("🎭 Выбор стиля"), KeyboardButton("📢 Выбор канала"))
+    markup.add(KeyboardButton("🌍 Выбор языка"), KeyboardButton("📢 Выбор канала"))
     markup.add(KeyboardButton("➕ Добавить канал"), KeyboardButton("📊 Статус очереди"))
-    markup.add(KeyboardButton("📈 Статистика"), KeyboardButton("📊 Экспорт (CSV)")) 
-    markup.add(KeyboardButton("💰 Реклама"), KeyboardButton("💾 Бэкап базы"))
-    markup.add(KeyboardButton("💡 Запросы подписчиков"))
+    markup.add(KeyboardButton("💰 Реклама"))
     return markup
 
 def get_cancel_markup():
@@ -21,7 +19,7 @@ def get_cancel_markup():
 def get_draft_markup(draft_id):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton(f"🧠 Умная очередь (+{getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 2)} ч)", callback_data="add_to_smart_q")
+        InlineKeyboardButton(f"🧠 Умная очередь (+{getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6)} ч)", callback_data="add_to_smart_q")
     )
     markup.add(
         InlineKeyboardButton("🚀 Сейчас", callback_data="pub_now"),
@@ -32,7 +30,6 @@ def get_draft_markup(draft_id):
         InlineKeyboardButton("✨ Переписать", callback_data="rewrite_menu")
     )
     markup.add(
-        InlineKeyboardButton("💰 +Реклама", callback_data="add_ad"),
         InlineKeyboardButton("❌ Удалить", callback_data="cancel_action")
     )
     return markup
@@ -67,15 +64,3 @@ def show_queue_page(bot, chat_id, page, message_id=None):
         except Exception: pass
     else:
         bot.send_message(chat_id, msg_text, parse_mode='HTML', reply_markup=markup)
-
-def show_stats(bot, chat_id):
-    stats = database.get_stats()
-    active_ch_count = len(utils.get_channels())
-    text = f"""📊 <b>СТАТИСТИКА БОТА</b> 📊
-
-📝 Всего постов создано: <b>{stats['total']}</b>
-✅ Успешно опубликовано: <b>{stats['published']}</b>
-⏳ Ждут в очереди: <b>{stats['queue']}</b>
-📅 Опубликовано сегодня: <b>{stats['today']}</b>
-📢 Подключенных каналов: <b>{active_ch_count}</b>"""
-    bot.send_message(chat_id, text, parse_mode='HTML')

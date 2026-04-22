@@ -47,33 +47,13 @@ def register_handlers(bot, user_drafts, album_cache):
                     markup.add(InlineKeyboardButton(f"{status}{ch}", callback_data=f"set_channel_{ch}"))
                 bot.send_message(message.chat.id, "Выбери канал для публикации:", reply_markup=markup)
                 return
-            elif message.text == "🎭 Выбор стиля":
+            elif message.text == "🌍 Выбор языка":
                 markup = InlineKeyboardMarkup(row_width=1)
                 active_p = utils.get_active_persona(message.from_user.id)
                 markup.add(InlineKeyboardButton(f"{'✅ ' if active_p == 'uz' else ''}🇺🇿 Узбекский", callback_data="set_persona_uz"))
                 markup.add(InlineKeyboardButton(f"{'✅ ' if active_p == 'ru' else ''}🇷🇺 Русский", callback_data="set_persona_ru"))
                 markup.add(InlineKeyboardButton(f"{'✅ ' if active_p == 'en' else ''}🇬🇧 Английский", callback_data="set_persona_en"))
-                bot.send_message(message.chat.id, "Выбери личность бота:", reply_markup=markup)
-                return
-            elif message.text == "💡 Запросы подписчиков":
-                msg = bot.send_message(message.chat.id, "⏳ Читаю комментарии и анализирую...")
-                report = comments_analyzer.analyze_comments()
-                markup = InlineKeyboardMarkup()
-                markup.add(InlineKeyboardButton("🗑 Очистить обработанные", callback_data="clear_comments_db"))
-                bot.delete_message(message.chat.id, msg.message_id)
-                bot.send_message(message.chat.id, report, parse_mode="HTML", reply_markup=markup)
-                return
-            elif message.text == "📈 Статистика":
-                keyboards.show_stats(bot, message.chat.id)
-                return
-            elif message.text == "📊 Экспорт (CSV)":
-                utils.export_to_csv(bot, message.chat.id)
-                return
-            elif message.text == "💾 Бэкап базы":
-                bot.send_message(message.chat.id, "Выгружаю bot_data.db...")
-                if os.path.exists('bot_data.db'):
-                    with open('bot_data.db', 'rb') as f:
-                        bot.send_document(message.chat.id, f)
+                bot.send_message(message.chat.id, "Выбери язык бота:", reply_markup=markup)
                 return
 
         if message.media_group_id:
@@ -254,12 +234,6 @@ def register_handlers(bot, user_drafts, album_cache):
         chat_id = call.message.chat.id
         target_id = call.message.message_id
         
-        if call.data == "clear_comments_db":
-            database.clear_comments()
-            bot.answer_callback_query(call.id, "✅ База комментариев очищена!")
-            bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
-            return
-        
         if call.data == "cancel_action":
             try: bot.delete_message(chat_id, target_id)
             except: pass
@@ -331,7 +305,7 @@ def register_handlers(bot, user_drafts, album_cache):
             last_time = database.get_last_scheduled_time()
             tashkent_tz = pytz.timezone('Asia/Tashkent')
             current_time = int(datetime.now(tashkent_tz).timestamp())
-            interval_seconds = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 2) * 3600
+            interval_seconds = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6) * 3600
             if last_time and last_time > current_time: new_time = last_time + interval_seconds
             else: new_time = current_time + interval_seconds
             database.add_to_queue(draft['photo'], draft['text'], draft['document'], draft['channel'], new_time)
@@ -346,16 +320,6 @@ def register_handlers(bot, user_drafts, album_cache):
             raw_text = html.escape(draft['text'])
             msg = bot.send_message(chat_id, f"✏️ <b>Скопируй код ниже:</b>\n\n<code>{raw_text}</code>", parse_mode="HTML", reply_markup=keyboards.get_cancel_markup())
             bot.register_next_step_handler(msg, save_edited_text, target_id, chat_id)
-            return
-
-        if call.data == "add_ad":
-            if draft.get('ad_added'): return bot.answer_callback_query(call.id, "Уже добавлено!", show_alert=True)
-            ad_text = utils.get_ad_text()
-            if not ad_text: return bot.answer_callback_query(call.id, "Задай рекламу в меню!", show_alert=True)
-            draft['text'] += f"\n\n<blockquote>{ad_text}</blockquote>"
-            draft['ad_added'] = True
-            update_draft_inline(chat_id, target_id, draft) 
-            bot.answer_callback_query(call.id, "Добавлено!")
             return
 
         if call.data == "pub_now":
