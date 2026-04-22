@@ -17,7 +17,7 @@ VALID_CATS = [
 CAT_LIST = ', '.join(VALID_CATS)
 
 PROMPTS = {
-    "uz": """Siz Minecraft muharririsiz. FAQAT o'zbek tilida yozing. 800 belgidan oshmasin.
+    "uz": f"""Siz Minecraft muharririsiz. FAQAT o'zbek tilida yozing. 800 belgidan oshmasin.
 Asosiy blok uchun <blockquote expandable> tegidan foydalaning.
 
 Format:
@@ -38,7 +38,7 @@ Format:
 HECH QANDAY XESHTEG YOZING! (Men o'zim qo'shaman).
 """,
 
-    "ru": """Ты — редактор канала о Minecraft. Пиши на РУССКОМ. До 800 симв.
+    "ru": f"""Ты — редактор канала о Minecraft. Пиши на РУССКОМ. До 800 симв.
 Используй <blockquote expandable> для описания.
 
 Формат:
@@ -59,7 +59,7 @@ HECH QANDAY XESHTEG YOZING! (Men o'zim qo'shaman).
 НЕ ПИШИ ХЭШТЕГИ! (Я добавлю их сам).
 """,
 
-    "en": """Minecraft editor. English only. Max 800 chars.
+    "en": f"""Minecraft editor. English only. Max 800 chars.
 Use <blockquote expandable> for description.
 
 Format:
@@ -101,26 +101,25 @@ def generate_post(user_input, persona="uz"):
         text = fetch_page_content(url)
         if text: site_context = f"\n\nINFO FROM SITE:\n{text}"
     
-    # Вставляем список категорий динамически через replace
-    prompt = PROMPTS.get(persona, PROMPTS['uz']).replace("[Turkum]", CAT_LIST)
-    prompt = f"{prompt}\n\nRaw info:\n{user_input}{site_context}"
-    
+    prompt = f"{PROMPTS.get(persona, PROMPTS['uz'])}\n\nRaw info:\n{user_input}{site_context}"
     try:
         res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
         gen = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
         
-        # Автоматическая очистка хэштегов
-        tags = re.findall(r'#\w+', generated)
+        # Строгая проверка хэштегов
+        tags = re.findall(r'#\w+', gen)
+        found_cat = None
         for t in tags:
-            if t not in VALID_CATS and t != '#Minecraft':
-                generated = generated.replace(t, "")
-
-        if '#Minecraft' not in generated: generated += "\n#Minecraft"
-        if not any(cat in generated for cat in VALID_CATS): generated += " #Mods"
-
-        return generated.strip()
-        except: return f"Error. Input: {user_input}"
-
+            if t in VALID_CATS: found_cat = t
+            elif t != '#Minecraft': gen = gen.replace(t, "")
+        
+        if '#Minecraft' not in gen: gen += "\n#Minecraft"
+        if not found_cat: gen += " #Mods"
+        else: gen += f" {found_cat}"
+        
+        return gen.strip()
+    except Exception as e:
+        return f"Error: {e}"
 
 def rewrite_post(text, style="short"):
     inst = {"short": "Shorter.", "fun": "Fun.", "pro": "Professional."}.get(style, "Improve.")
