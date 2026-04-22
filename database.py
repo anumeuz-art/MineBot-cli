@@ -1,8 +1,16 @@
 import sqlite3
 import time
+import os
 from datetime import datetime
 
+# Путь к БД для Railway Volume
+DB_PATH = 'data/bot_data.db'
+
 def init_db():
+    # Создаем папку data, если её нет (нужно для Railway Volume)
+    if not os.path.exists('data'):
+        os.makedirs('data')
+        
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS queue
@@ -12,7 +20,6 @@ def init_db():
                   document_id TEXT,
                   status TEXT DEFAULT 'pending')''')
     
-    # Добавляем колонки, если их нет
     try: c.execute("ALTER TABLE queue ADD COLUMN channel_id TEXT")
     except: pass
     try: c.execute("ALTER TABLE queue ADD COLUMN scheduled_time INTEGER")
@@ -24,7 +31,6 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS comments
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT, text TEXT, timestamp INTEGER)''')
 
-    # Новые таблицы для аналитики и управления каналами
     c.execute('''CREATE TABLE IF NOT EXISTS managed_channels
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE)''')
 
@@ -94,7 +100,7 @@ def get_latest_post_stats():
     conn.close()
     return rows
 
-# --- Остальные функции ---
+# --- Настройки пользователя ---
 def update_user_setting(user_id, key, value):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -110,6 +116,7 @@ def get_user_setting(user_id, key, default=None):
     conn.close()
     return result[0] if result else default
 
+# --- Очередь ---
 def add_to_queue(photo_id, text, document_id=None, channel_id=None, scheduled_time=None):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -225,21 +232,6 @@ def get_all_comments():
 
 def clear_comments():
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM comments")
-    conn.commit()
-    conn.close()
-
-init_db()
-t('bot_data.db')
-    c = conn.cursor()
-    c.execute("SELECT user_name, text FROM comments ORDER BY timestamp ASC")
-    rows = c.fetchall()
-    conn.close()
-    return rows
-
-def clear_comments():
-    conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
     c.execute("DELETE FROM comments")
     conn.commit()
