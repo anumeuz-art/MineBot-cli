@@ -6,64 +6,157 @@
     <title>Mine Bot Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
     <style>
-        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { background-color: #1e1e1e; border: 1px solid #333; color: #e0e0e0; margin-bottom: 20px; }
-        .btn-primary { background-color: #388e3c; border: none; }
-        .btn-primary:hover { background-color: #2e7d32; }
-        .nav-tabs .nav-link { color: #aaa; border: none; }
-        .nav-tabs .nav-link.active { background-color: #1e1e1e; color: #fff; border-bottom: 3px solid #388e3c; }
-        .post-preview-img { width: 100%; height: 200px; object-fit: cover; border-radius: 4px; }
-        .sortable-ghost { opacity: 0.4; background-color: #388e3c !important; }
-        .handle { cursor: grab; padding: 10px; background: #252525; border-radius: 4px; margin-bottom: 10px; display: inline-block; }
-        .swiper { width: 100%; height: 200px; border-radius: 4px; }
-        .stats-card { text-align: center; padding: 20px; }
-        .stats-num { font-size: 2.5rem; font-weight: bold; color: #388e3c; }
+        :root {
+            --bg-color: #0d0d0d;
+            --card-bg: #1a1a1a;
+            --mc-green: #388e3c;
+            --neon-purple: #bc13fe;
+            --neon-green: #39ff14;
+            --text-color: #f0f0f0;
+        }
+
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            font-family: 'Minecraftia', sans-serif; 
+            letter-spacing: 1px;
+        }
+
+        /* Кастомный скроллбар в стиле Minecraft */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: var(--mc-green); border: 2px solid #111; }
+
+        .navbar { 
+            background-color: #000 !important; 
+            border-bottom: 3px solid var(--neon-purple);
+            box-shadow: 0 0 15px var(--neon-purple);
+        }
+
+        .navbar-brand { color: var(--neon-green) !important; text-transform: uppercase; text-shadow: 0 0 5px var(--neon-green); }
+
+        .card { 
+            background-color: var(--card-bg); 
+            border: 2px solid #333; 
+            border-radius: 0; /* Блочный стиль */
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card { 
+            border-color: var(--neon-purple); 
+            box-shadow: inset 0 0 10px rgba(188, 19, 254, 0.2);
+        }
+
+        .post-card { transition: transform 0.2s; }
+        .post-card:hover { transform: translateY(-5px); }
+        .post-card .card { border-color: var(--mc-green); }
+        .post-card:hover .card { box-shadow: 0 0 20px var(--mc-green); border-color: var(--neon-green); }
+
+        .stats-num { font-size: 2.5rem; font-weight: bold; color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
+
+        .btn-primary { 
+            background-color: transparent; 
+            border: 2px solid var(--neon-green); 
+            color: var(--neon-green);
+            border-radius: 0;
+            text-transform: uppercase;
+            box-shadow: 0 0 5px var(--neon-green);
+        }
+        .btn-primary:hover { background-color: var(--neon-green); color: #000; box-shadow: 0 0 20px var(--neon-green); }
+
+        .btn-outline-danger { border-radius: 0; border: 2px solid #ff0033; color: #ff0033; }
+        .btn-outline-danger:hover { background-color: #ff0033; color: #fff; box-shadow: 0 0 15px #ff0033; }
+
+        .nav-tabs { border-bottom: 2px solid #333; }
+        .nav-tabs .nav-link { color: #555; border: none; text-transform: uppercase; }
+        .nav-tabs .nav-link.active { 
+            background-color: transparent; 
+            color: var(--neon-purple); 
+            border-bottom: 3px solid var(--neon-purple); 
+            text-shadow: 0 0 8px var(--neon-purple);
+        }
+
+        .handle { 
+            cursor: grab; 
+            background: #222; 
+            border: 1px dashed var(--mc-green); 
+            color: var(--mc-green);
+            font-size: 0.8rem;
+            padding: 5px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .post-preview-img { 
+            width: 100%; 
+            height: 180px; 
+            object-fit: cover; 
+            border: 2px solid #000;
+            image-rendering: pixelated; /* Пиксельный эффект для фото */
+        }
+
+        .swiper-pagination-bullet-active { background: var(--neon-green) !important; }
+
+        .modal-content { background-color: #111; border: 3px solid var(--neon-purple); border-radius: 0; }
+        .form-control { border-radius: 0; background-color: #222; color: #fff; border: 1px solid #444; }
+        .form-control:focus { background-color: #222; color: #fff; border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+
+        /* Анимация пульсации для времени */
+        .time-badge { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { text-shadow: 0 0 5px var(--mc-green); }
+            50% { text-shadow: 0 0 15px var(--neon-green); }
+            100% { text-shadow: 0 0 5px var(--mc-green); }
+        }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-dark mb-4">
+<nav class="navbar navbar-dark mb-4">
     <div class="container">
-        <a class="navbar-brand" href="#">📦 Mine Bot Panel</a>
-        <span class="navbar-text">Railway Edition</span>
+        <a class="navbar-brand" href="#">⛏️ MineBot Control</a>
+        <span class="navbar-text text-white" style="font-size: 0.7rem;">SYSTEM ACTIVE</span>
     </div>
 </nav>
 
 <div class="container">
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card stats-card">
+        <div class="col-md-3 col-6">
+            <div class="card stats-card p-3 mb-3">
                 <div class="stats-num">{{ stats.total }}</div>
-                <div>Всего постов</div>
+                <div style="font-size: 0.6rem;">TOTAL POSTS</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stats-card">
+        <div class="col-md-3 col-6">
+            <div class="card stats-card p-3 mb-3">
                 <div class="stats-num">{{ stats.published }}</div>
-                <div>Опубликовано</div>
+                <div style="font-size: 0.6rem;">PUBLISHED</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stats-card">
+        <div class="col-md-3 col-6">
+            <div class="card stats-card p-3 mb-3">
                 <div class="stats-num">{{ stats.queue }}</div>
-                <div>В очереди</div>
+                <div style="font-size: 0.6rem;">IN QUEUE</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stats-card">
+        <div class="col-md-3 col-6">
+            <div class="card stats-card p-3 mb-3">
                 <div class="stats-num">{{ stats.today }}</div>
-                <div>За сегодня</div>
+                <div style="font-size: 0.6rem;">TODAY</div>
             </div>
         </div>
     </div>
 
     <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
         <li class="nav-item">
-            <button class="nav-link active" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button">⏳ Очередь</button>
+            <button class="nav-link active" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button">Queue</button>
         </li>
         <li class="nav-item">
-            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button">📜 История</button>
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button">History</button>
         </li>
     </ul>
 
@@ -72,9 +165,9 @@
         <div class="tab-pane fade show active" id="queue">
             <div id="sortable-queue" class="row">
                 {% for post in queue %}
-                <div class="col-md-4 post-card" data-id="{{ post.id }}">
-                    <div class="card p-3">
-                        <div class="handle">⣿ Перетащить</div>
+                <div class="col-md-4 post-card mb-4" data-id="{{ post.id }}">
+                    <div class="card h-100 p-2">
+                        <div class="handle">::: DRAG TO REORDER :::</div>
                         
                         {% if post.photos|length > 1 %}
                             <div class="swiper mySwiper">
@@ -88,17 +181,20 @@
                         {% elif post.photos|length == 1 %}
                             <img src="https://api.telegram.org/file/bot{{ config.TELEGRAM_TOKEN }}/{{ post.photos[0] }}" class="post-preview-img" onerror="this.src='https://placehold.co/600x400/222/388e3c?text=Media+ID'">
                         {% else %}
-                            <div class="post-preview-img d-flex align-items-center justify-content-center bg-secondary">Текстовый пост</div>
+                            <div class="post-preview-img d-flex align-items-center justify-content-center bg-dark" style="border: 1px solid #333;">NO MEDIA</div>
                         {% endif %}
 
-                        <div class="mt-3">
-                            <small class="text-success">{{ post.time_str }}</small> | <small>{{ post.channel }}</small>
-                            <p class="mt-2" style="max-height: 100px; overflow: hidden; font-size: 0.9rem;">{{ post.text|striptags }}</p>
+                        <div class="mt-2 flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-success time-badge">{{ post.time_str }}</small>
+                                <small class="text-muted" style="font-size: 0.5rem;">#{{ post.id }}</small>
+                            </div>
+                            <p class="mt-2" style="font-size: 0.75rem; line-height: 1.4; color: #bbb;">{{ post.text|striptags|truncate(150) }}</p>
                         </div>
                         
-                        <div class="d-flex justify-content-between mt-auto">
-                            <button class="btn btn-sm btn-outline-primary" onclick="editPost({{ post.id }}, '{{ post.text|e }}', {{ post.timestamp }})">✏️</button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deletePost({{ post.id }})">🗑</button>
+                        <div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary">
+                            <button class="btn btn-sm btn-primary py-1 px-3" onclick="editPost({{ post.id }}, '{{ post.text|e }}', {{ post.timestamp }})">EDIT</button>
+                            <button class="btn btn-sm btn-outline-danger py-1 px-3" onclick="deletePost({{ post.id }})">DROP</button>
                         </div>
                     </div>
                 </div>
@@ -110,10 +206,10 @@
         <div class="tab-pane fade" id="history">
             <div class="row">
                 {% for post in history %}
-                <div class="col-md-3">
-                    <div class="card p-2">
-                        <small class="text-muted">{{ post.time_str }}</small>
-                        <p style="font-size: 0.8rem; height: 50px; overflow: hidden;">{{ post.text|striptags }}</p>
+                <div class="col-md-3 mb-3">
+                    <div class="card p-2 border-secondary opacity-75">
+                        <small class="text-muted" style="font-size: 0.5rem;">{{ post.time_str }}</small>
+                        <p style="font-size: 0.6rem; margin-top: 5px;">{{ post.text|striptags|truncate(80) }}</p>
                     </div>
                 </div>
                 {% endfor %}
@@ -122,23 +218,23 @@
     </div>
 </div>
 
-<!-- Модальное окно редактирования -->
+<!-- Модальное окно -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content bg-dark text-white">
-            <div class="modal-header">
-                <h5 class="modal-title">Редактирование поста</h5>
+        <div class="modal-content">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" style="color: var(--neon-purple)">EDIT_CONTENT.LOG</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <textarea id="edit-text" class="form-control bg-secondary text-white border-0 mb-3" rows="10"></textarea>
+                <textarea id="edit-text" class="form-control mb-3" rows="10" style="font-family: monospace;"></textarea>
                 <div class="mb-3">
-                    <label>Время публикации (Timestamp):</label>
-                    <input type="number" id="edit-time" class="form-control bg-secondary text-white border-0">
+                    <label style="font-size: 0.7rem;">EXECUTION_TIMESTAMP:</label>
+                    <input type="number" id="edit-time" class="form-control">
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" id="save-btn">Сохранить</button>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-primary" id="save-btn">EXECUTE CHANGES</button>
             </div>
         </div>
     </div>
@@ -149,12 +245,10 @@
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
-    // Инициализация слайдеров
     const swiper = new Swiper(".mySwiper", {
         pagination: { el: ".swiper-pagination", clickable: true },
     });
 
-    // Инициализация Drag and Drop
     const el = document.getElementById('sortable-queue');
     const sortable = Sortable.create(el, {
         animation: 150,
@@ -191,7 +285,7 @@
     };
 
     function deletePost(id) {
-        if (confirm('Удалить пост?')) {
+        if (confirm('TERMINATE THIS POST?')) {
             fetch('/api/delete/' + id, { method: 'POST' })
             .then(() => location.reload());
         }

@@ -1,4 +1,4 @@
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 import config
 import database
 import utils
@@ -6,9 +6,17 @@ import utils
 def get_main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(KeyboardButton("📝 Создать пост"))
-    markup.add(KeyboardButton("🌍 Выбор языка"), KeyboardButton("📢 Выбор канала"))
-    markup.add(KeyboardButton("➕ Добавить канал"), KeyboardButton("📊 Статус очереди"))
+    markup.add(
+        KeyboardButton("🌍 Выбор языка"), 
+        KeyboardButton("📢 Выбор канала")
+    )
+    markup.add(
+        KeyboardButton("➕ Добавить канал"), 
+        KeyboardButton("📊 Статус очереди")
+    )
     markup.add(KeyboardButton("💰 Реклама"))
+    # Кнопка открытия Web App
+    markup.add(KeyboardButton("🌐 Открыть панель", web_app=WebAppInfo(url="https://hospitable-clarity-production-3350.up.railway.app")))
     return markup
 
 def get_cancel_markup():
