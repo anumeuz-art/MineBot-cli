@@ -9,26 +9,25 @@ client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
 def generate_post(user_input, persona="uz"):
-    # Промпт теперь максимально строгий, без лишних "творческих" вводных
-    system_prompt = f"""You are a Minecraft content bot. 
-    1. Write in {persona}.
-    2. Follow this structure strictly:
-    📦 <b>[Name]</b>
-    <blockquote expandable>
-    <b>Description:</b>
-    [Text]
+    # Жесткий промпт, чтобы ИИ просто заполнил пропуски
+    system_prompt = f"""You are a content generator for Minecraft. 
+    Fill the following template strictly. Do not change structure. Language: {persona}.
     
-    <b>Features:</b>
-    • [F1]
-    • [F2]
-    • [F3]
-    
-    🎮 Version: [Version]
-    </blockquote>
-    <blockquote>💖 - Awesome\n💔 - Not great</blockquote>
-    
-    3. NO hashtags in the output.
-    4. Provide details.
+    📦 <b>[NAME]</b>
+
+    <blockquote expandable><b>Bu nima?</b> (Write description here)
+    [DESCRIPTION]
+
+    <b>Asosiy xususiyatlar:</b>
+    • [Feature 1]
+    • [Feature 2]
+    • [Feature 3]
+    • [Feature 4]
+
+    🎮 Versiya: [VERSION]</blockquote>
+
+    <blockquote>💖 - juda zo'r
+    💔 - unchamas</blockquote>
     """
     
     try:
@@ -38,13 +37,10 @@ def generate_post(user_input, persona="uz"):
         )
         gen = res.choices[0].message.content.strip()
         
-        # 1. Принудительное удаление хэштегов из ответа ИИ
+        # Очистка от лишних хэштегов и вставка нужных
         gen = re.sub(r'#\w+', '', gen)
-        
-        # 2. Добавление хэштегов по правилам
         gen += "\n\n#Minecraft #Mods"
         
-        # 3. Добавление рекламы
         ad_text = database.get_global_setting('ad_text', '')
         if ad_text: gen += f"\n\n{ad_text}"
         
