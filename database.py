@@ -1,5 +1,6 @@
 import sqlite3
 import time
+from datetime import datetime
 
 def init_db():
     conn = sqlite3.connect('bot_data.db')
@@ -11,38 +12,93 @@ def init_db():
                   document_id TEXT,
                   status TEXT DEFAULT 'pending')''')
     
-    # Безопасно добавляем новые колонки, если их нет
-    try:
-        c.execute("ALTER TABLE queue ADD COLUMN channel_id TEXT")
-    except sqlite3.OperationalError:
-        pass 
-    
-    try:
-        c.execute("ALTER TABLE queue ADD COLUMN scheduled_time INTEGER")
-    except sqlite3.OperationalError:
-        pass 
+    # Добавляем колонки, если их нет
+    try: c.execute("ALTER TABLE queue ADD COLUMN channel_id TEXT")
+    except: pass
+    try: c.execute("ALTER TABLE queue ADD COLUMN scheduled_time INTEGER")
+    except: pass
         
-    # Таблица для настроек пользователей (канал, язык и т.д.)
     c.execute('''CREATE TABLE IF NOT EXISTS user_settings
-                 (user_id INTEGER,
-                  key TEXT,
-                  value TEXT,
-                  PRIMARY KEY (user_id, key))''')
+                 (user_id INTEGER, key TEXT, value TEXT, PRIMARY KEY (user_id, key))''')
 
     c.execute('''CREATE TABLE IF NOT EXISTS comments
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  user_name TEXT,
-                  text TEXT,
-                  timestamp INTEGER)''')
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT, text TEXT, timestamp INTEGER)''')
+
+    # Новые таблицы для аналитики и управления каналами
+    c.execute('''CREATE TABLE IF NOT EXISTS managed_channels
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE)''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS stats_subscribers
+                 (channel_id TEXT, count INTEGER, date TEXT, PRIMARY KEY (channel_id, date))''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS stats_posts
+                 (post_id INTEGER PRIMARY KEY, views INTEGER, date TEXT)''')
 
     conn.commit()
     conn.close()
 
+# --- Управление каналами ---
+def add_channel(username):
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    try:
+        c.execute("INSERT OR IGNORE INTO managed_channels (username) VALUES (?)", (username,))
+        conn.commit()
+    finally: conn.close()
+
+def remove_channel(username):
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM managed_channels WHERE username = ?", (username,))
+    conn.commit()
+    conn.close()
+
+def get_all_managed_channels():
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("SELECT username FROM managed_channels")
+    rows = c.fetchall()
+    conn.close()
+    return [r[0] for r in rows]
+
+# --- Статистика ---
+def save_sub_count(channel_id, count):
+    date = datetime.now().strftime('%Y-%m-%d')
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO stats_subscribers (channel_id, count, date) VALUES (?, ?, ?)", (channel_id, count, date))
+    conn.commit()
+    conn.close()
+
+def get_sub_history(channel_id):
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("SELECT date, count FROM stats_subscribers WHERE channel_id = ? ORDER BY date ASC LIMIT 30", (channel_id,))
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def save_post_views(post_id, views):
+    date = datetime.now().strftime('%Y-%m-%d')
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO stats_posts (post_id, views, date) VALUES (?, ?, ?)", (post_id, views, date))
+    conn.commit()
+    conn.close()
+
+def get_latest_post_stats():
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("SELECT post_id, views FROM stats_posts ORDER BY post_id DESC LIMIT 10")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+# --- Остальные функции ---
 def update_user_setting(user_id, key, value):
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO user_settings (user_id, key, value) VALUES (?, ?, ?)", 
-              (user_id, key, str(value)))
+    c.execute("INSERT OR REPLACE INTO user_settings (user_id, key, value) VALUES (?, ?, ?)", (user_id, key, str(value)))
     conn.commit()
     conn.close()
 
@@ -66,8 +122,7 @@ def get_ready_posts():
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
     current_time = int(time.time())
-    c.execute('''SELECT id, photo_id, text, document_id, channel_id 
-                 FROM queue 
+    c.execute('''SELECT id, photo_id, text, document_id, channel_id FROM queue 
                  WHERE status='pending' AND (scheduled_time IS NULL OR scheduled_time <= ?) 
                  ORDER BY scheduled_time ASC''', (current_time,))
     rows = c.fetchall()
@@ -81,13 +136,22 @@ def mark_as_posted(post_id):
     conn.commit()
     conn.close()
 
-def get_queue_count():
+def get_stats():
+    import pytz
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM queue")
+    total = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM queue WHERE status='posted'")
+    published = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM queue WHERE status='pending'")
-    count = c.fetchone()[0]
+    queue_count = c.fetchone()[0]
+    tashkent_tz = pytz.timezone('Asia/Tashkent')
+    today_start = int(datetime.now(tashkent_tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+    c.execute("SELECT COUNT(*) FROM queue WHERE scheduled_time >= ?", (today_start,))
+    today = c.fetchone()[0]
     conn.close()
-    return count
+    return {'total': total, 'published': published, 'queue': queue_count, 'today': today}
 
 def get_all_pending():
     conn = sqlite3.connect('bot_data.db')
@@ -96,44 +160,6 @@ def get_all_pending():
     rows = c.fetchall()
     conn.close()
     return rows
-
-def delete_from_queue(post_id):
-    conn = sqlite3.connect('bot_data.db')
-    c = conn.cursor()
-    c.execute("DELETE FROM queue WHERE id=?", (post_id,))
-    conn.commit()
-    conn.close()
-
-def get_last_scheduled_time():
-    conn = sqlite3.connect('bot_data.db')
-    c = conn.cursor()
-    c.execute("SELECT scheduled_time FROM queue WHERE status='pending' AND scheduled_time IS NOT NULL ORDER BY scheduled_time DESC LIMIT 1")
-    result = c.fetchone()
-    conn.close()
-    return result[0] if result else None
-
-def get_stats():
-    import pytz
-    from datetime import datetime
-    conn = sqlite3.connect('bot_data.db')
-    c = conn.cursor()
-    
-    c.execute("SELECT COUNT(*) FROM queue")
-    total = c.fetchone()[0]
-    
-    c.execute("SELECT COUNT(*) FROM queue WHERE status='posted'")
-    published = c.fetchone()[0]
-    
-    c.execute("SELECT COUNT(*) FROM queue WHERE status='pending'")
-    queue_count = c.fetchone()[0]
-    
-    tashkent_tz = pytz.timezone('Asia/Tashkent')
-    today_start = int(datetime.now(tashkent_tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
-    c.execute("SELECT COUNT(*) FROM queue WHERE scheduled_time >= ?", (today_start,))
-    today = c.fetchone()[0]
-    
-    conn.close()
-    return {'total': total, 'published': published, 'queue': queue_count, 'today': today}
 
 def get_all_posts():
     conn = sqlite3.connect('bot_data.db')
@@ -158,6 +184,21 @@ def update_post_content(post_id, text, scheduled_time):
     conn.commit()
     conn.close()
 
+def delete_from_queue(post_id):
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM queue WHERE id=?", (post_id,))
+    conn.commit()
+    conn.close()
+
+def get_last_scheduled_time():
+    conn = sqlite3.connect('bot_data.db')
+    c = conn.cursor()
+    c.execute("SELECT scheduled_time FROM queue WHERE status='pending' AND scheduled_time IS NOT NULL ORDER BY scheduled_time DESC LIMIT 1")
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else None
+
 def record_published_post(photo_id, text, document_id, channel_id):
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
@@ -170,8 +211,7 @@ def record_published_post(photo_id, text, document_id, channel_id):
 def save_comment(user_name, text, timestamp):
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
-    c.execute("INSERT INTO comments (user_name, text, timestamp) VALUES (?, ?, ?)", 
-              (user_name, text, timestamp))
+    c.execute("INSERT INTO comments (user_name, text, timestamp) VALUES (?, ?, ?)", (user_name, text, timestamp))
     conn.commit()
     conn.close()
 

@@ -10,12 +10,7 @@ def get_main_menu():
         KeyboardButton("🌍 Выбор языка"), 
         KeyboardButton("📢 Выбор канала")
     )
-    markup.add(
-        KeyboardButton("➕ Добавить канал"), 
-        KeyboardButton("📊 Статус очереди")
-    )
-    markup.add(KeyboardButton("💰 Реклама"))
-    # Кнопка открытия Web App
+    # Кнопка открытия Web App (теперь единственная точка управления)
     markup.add(KeyboardButton("🌐 Открыть панель", web_app=WebAppInfo(url="https://hospitable-clarity-production-3350.up.railway.app")))
     return markup
 
@@ -43,32 +38,33 @@ def get_draft_markup(draft_id):
     return markup
 
 def show_queue_page(bot, chat_id, page, message_id=None):
+    # Оставляем функцию для совместимости, но в боте она больше не вызывается кнопкой
     posts = database.get_all_pending()
     if not posts:
-        text = "📭 Очередь пуста."
+        text = "📭 Очередь пуста. Управляйте постами в панели управления."
         if message_id: bot.edit_message_text(text, chat_id, message_id)
         else: bot.send_message(chat_id, text)
         return
 
     if page >= len(posts): page = len(posts) - 1
     if page < 0: page = 0
-
     msg_text = f"🕒 <b>В очереди: {len(posts)} постов</b>\n\n"
     msg_text += utils.format_queue_post(posts[page], page + 1, len(posts))
-
     markup = InlineKeyboardMarkup(row_width=2)
     nav_row = []
     if page > 0: nav_row.append(InlineKeyboardButton("⬅️ Пред.", callback_data=f"q_page_{page-1}"))
     if page < len(posts) - 1: nav_row.append(InlineKeyboardButton("След. ➡️", callback_data=f"q_page_{page+1}"))
     if nav_row: markup.add(*nav_row)
-
     markup.add(
         InlineKeyboardButton("🚀 Выпустить сейчас", callback_data=f"q_pub_{posts[page][0]}"),
         InlineKeyboardButton("🗑 Удалить", callback_data=f"q_del_{posts[page][0]}")
     )
-
     if message_id:
         try: bot.edit_message_text(msg_text, chat_id, message_id, parse_mode='HTML', reply_markup=markup)
-        except Exception: pass
-    else:
-        bot.send_message(chat_id, msg_text, parse_mode='HTML', reply_markup=markup)
+        except: pass
+    else: bot.send_message(chat_id, msg_text, parse_mode='HTML', reply_markup=markup)
+
+def show_stats(bot, chat_id):
+    # Теперь статистика доступна только в Web App
+    text = "📊 Статистика теперь доступна в <b>Панели Управления</b>!"
+    bot.send_message(chat_id, text, parse_mode='HTML')

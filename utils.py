@@ -41,12 +41,12 @@ def format_queue_post(post, index, total):
 ╚════════════════════╝"""
 
 def get_channels():
-    channels = config.AVAILABLE_CHANNELS.copy()
-    if os.path.exists("channels.txt"):
-        with open("channels.txt", "r", encoding="utf-8") as f:
-            extra_channels = [line.strip() for line in f.readlines() if line.strip()]
-            for ch in extra_channels:
-                if ch not in channels: channels.append(ch)
+    channels = database.get_all_managed_channels()
+    if not channels:
+        # При первом запуске переносим каналы из конфига в БД
+        for ch in config.AVAILABLE_CHANNELS:
+            database.add_channel(ch)
+        channels = config.AVAILABLE_CHANNELS
     return channels
 
 def get_active_channel(user_id):

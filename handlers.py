@@ -32,17 +32,6 @@ def register_handlers(bot, user_drafts, album_cache):
             if message.text == "📝 Создать пост":
                 bot.send_message(message.chat.id, "Отправь мне фото, текст или ссылку с описанием мода! 🚀", parse_mode="HTML")
                 return
-            elif message.text == "📊 Статус очереди": 
-                keyboards.show_queue_page(bot, message.chat.id, 0)
-                return
-            elif message.text == "💰 Реклама":
-                msg = bot.send_message(message.chat.id, f"Текущая реклама:\n{utils.get_ad_text() or 'ПУСТО'}\n\nПришли новый текст рекламы:", parse_mode='HTML', reply_markup=keyboards.get_cancel_markup())
-                bot.register_next_step_handler(msg, process_ad_step)
-                return
-            elif message.text == "➕ Добавить канал":
-                msg = bot.send_message(message.chat.id, "Отправь @username нового канала:", reply_markup=keyboards.get_cancel_markup())
-                bot.register_next_step_handler(msg, process_add_channel_step)
-                return
             elif message.text == "📢 Выбор канала":
                 markup = InlineKeyboardMarkup(row_width=1)
                 for ch in utils.get_channels():
@@ -176,25 +165,6 @@ def register_handlers(bot, user_drafts, album_cache):
         user_drafts[target_id] = draft
         user_current_draft_id[user_id] = target_id # Запоминаем текущий черновик
         bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_draft_markup(target_id))
-
-    def process_ad_step(message):
-        if message.text and message.text.lower() in ['отмена', '❌ отмена']:
-            bot.send_message(message.chat.id, "❌ Действие отменено.", reply_markup=keyboards.get_main_menu())
-            return
-        utils.save_ad_text(message.text)
-        bot.send_message(message.chat.id, "✅ Реклама сохранена!", reply_markup=keyboards.get_main_menu())
-
-    def process_add_channel_step(message):
-        if message.text and message.text.lower() in ['отмена', '❌ отмена']:
-            bot.send_message(message.chat.id, "❌ Отменено.", reply_markup=keyboards.get_main_menu())
-            return
-        new_channel = message.text.strip()
-        if not new_channel.startswith('@') and not new_channel.replace('-', '').isdigit(): new_channel = '@' + new_channel
-        channels = utils.get_channels()
-        if new_channel in channels: bot.send_message(message.chat.id, f"⚠️ Канал уже есть!", reply_markup=keyboards.get_main_menu())
-        else:
-            with open("channels.txt", "a", encoding="utf-8") as f: f.write(new_channel + "\n")
-            bot.send_message(message.chat.id, f"✅ Канал добавлен!", reply_markup=keyboards.get_main_menu())
 
     def save_edited_text(message, target_id, chat_id):
         if message.text and message.text.lower() in ['отмена', '❌ отмена']:

@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mine Bot Dashboard</title>
+    <title>MineBot Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -16,178 +17,91 @@
             --neon-green: #39ff14;
             --text-color: #f0f0f0;
         }
-
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            font-family: 'Minecraftia', sans-serif; 
-            letter-spacing: 1px;
-        }
-
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: var(--mc-green); border: 2px solid #111; }
-
-        .navbar { 
-            background-color: #000 !important; 
-            border-bottom: 3px solid var(--neon-purple);
-            box-shadow: 0 0 15px var(--neon-purple);
-        }
-
-        .navbar-brand { color: var(--neon-green) !important; text-transform: uppercase; text-shadow: 0 0 5px var(--neon-green); }
-
-        .card { 
-            background-color: var(--card-bg); 
-            border: 2px solid #333; 
-            border-radius: 0;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stats-card { 
-            border-color: var(--neon-purple); 
-            box-shadow: inset 0 0 10px rgba(188, 19, 254, 0.2);
-            color: #fff !important;
-        }
-        .stats-label { color: #fff !important; text-shadow: 0 0 5px #fff; }
-
-        .post-card { transition: transform 0.2s; }
-        .post-card .card { border-color: var(--mc-green); }
-        .post-card:hover .card { box-shadow: 0 0 20px var(--mc-green); border-color: var(--neon-green); }
-
-        .stats-num { font-size: 2.5rem; font-weight: bold; color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
-
-        .btn-primary { 
-            background-color: transparent; 
-            border: 2px solid var(--neon-green); 
-            color: var(--neon-green);
-            border-radius: 0;
-            text-transform: uppercase;
-        }
-        .btn-primary:hover { background-color: var(--neon-green); color: #000; box-shadow: 0 0 20px var(--neon-green); }
-
-        .btn-outline-danger { border-radius: 0; border: 2px solid #ff0033; color: #ff0033; }
-        .btn-outline-danger:hover { background-color: #ff0033; color: #fff; }
-
-        .nav-tabs { border-bottom: 2px solid #333; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Minecraftia', sans-serif; letter-spacing: 1px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: var(--mc-green); }
+        .navbar { background-color: #000 !important; border-bottom: 3px solid var(--neon-purple); box-shadow: 0 0 15px var(--neon-purple); }
+        .navbar-brand { color: var(--neon-green) !important; text-shadow: 0 0 5px var(--neon-green); }
+        .card { background-color: var(--card-bg); border: 2px solid #333; border-radius: 0; transition: all 0.3s; margin-bottom: 20px; }
+        .stats-card { border-color: var(--neon-purple); text-align: center; }
+        .stats-label { color: #fff !important; font-size: 0.7rem; text-shadow: 0 0 5px #fff; margin-top: 5px; }
+        .stats-num { font-size: 2.2rem; font-weight: bold; color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
+        .btn-primary { background: transparent; border: 2px solid var(--neon-green); color: var(--neon-green); border-radius: 0; }
+        .btn-primary:hover { background: var(--neon-green); color: #000; }
+        .btn-refresh { border-color: var(--neon-purple); color: var(--neon-purple); }
+        .btn-refresh:hover { background: var(--neon-purple); color: #fff; }
         .nav-tabs .nav-link { color: #555; border: none; text-transform: uppercase; }
-        .nav-tabs .nav-link.active { 
-            background-color: transparent; 
-            color: var(--neon-purple); 
-            border-bottom: 3px solid var(--neon-purple); 
-        }
-
-        .handle { 
-            cursor: grab; 
-            background: #222; 
-            border: 1px dashed var(--mc-green); 
-            color: var(--mc-green);
-            font-size: 0.8rem;
-            padding: 5px;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .post-preview-img { 
-            width: 100%; 
-            height: 180px; 
-            object-fit: cover; 
-            border: 2px solid #000;
-        }
-
-        .modal-content { background-color: #111; border: 3px solid var(--neon-purple); border-radius: 0; }
-        .form-control { border-radius: 0; background-color: #222; color: #fff; border: 1px solid #444; }
-        
-        .truncate-text {
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;  
-            overflow: hidden;
-            font-size: 0.75rem;
-            color: #bbb;
-        }
+        .nav-tabs .nav-link.active { background: transparent; color: var(--neon-purple); border-bottom: 3px solid var(--neon-purple); }
+        .post-preview-img { width: 100%; height: 160px; object-fit: cover; border: 1px solid #000; }
+        .handle { cursor: grab; background: #222; color: var(--mc-green); font-size: 0.7rem; text-align: center; padding: 5px; border: 1px dashed #444; }
+        .modal-content { background: #111; border: 3px solid var(--neon-purple); border-radius: 0; }
+        .form-control { background: #222; color: #fff; border-radius: 0; border: 1px solid #444; }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-dark mb-4">
-    <div class="container">
-        <a class="navbar-brand" href="#">⛏️ MineBot Control</a>
-        <span class="navbar-text text-white" style="font-size: 0.7rem;">SYSTEM ONLINE</span>
+    <div class="container d-flex justify-content-between">
+        <a class="navbar-brand" href="#">⛏️ MINE_OS v2.0</a>
+        <button class="btn btn-sm btn-refresh" onclick="refreshData()">🔄 REFRESH_SYSTEM</button>
     </div>
 </nav>
 
 <div class="container">
+    <!-- STATS -->
     <div class="row mb-4">
         <div class="col-md-3 col-6">
-            <div class="card stats-card p-3 mb-3">
+            <div class="card stats-card p-3">
                 <div class="stats-num">{{ stats.total }}</div>
-                <div class="stats-label" style="font-size: 0.7rem;">TOTAL POSTS</div>
+                <div class="stats-label">TOTAL_POSTS</div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card stats-card p-3 mb-3">
+            <div class="card stats-card p-3">
                 <div class="stats-num">{{ stats.published }}</div>
-                <div class="stats-label" style="font-size: 0.7rem;">PUBLISHED</div>
+                <div class="stats-label">PUBLISHED</div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card stats-card p-3 mb-3">
+            <div class="card stats-card p-3">
                 <div class="stats-num">{{ stats.queue }}</div>
-                <div class="stats-label" style="font-size: 0.7rem;">IN QUEUE</div>
+                <div class="stats-label">IN_QUEUE</div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card stats-card p-3 mb-3">
+            <div class="card stats-card p-3">
                 <div class="stats-num">{{ stats.today }}</div>
-                <div class="stats-label" style="font-size: 0.7rem;">TODAY</div>
+                <div class="stats-label">TODAY_OPS</div>
             </div>
         </div>
     </div>
 
+    <!-- TABS -->
     <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue">Queue</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#history">History</button>
-        </li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue">Queue</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics">Analytics</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#channels">Channels</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#history">History</button></li>
     </ul>
 
     <div class="tab-content">
-        <!-- ОЧЕРЕДЬ -->
+        <!-- QUEUE -->
         <div class="tab-pane fade show active" id="queue">
             <div id="sortable-queue" class="row">
                 {% for post in queue %}
-                <div class="col-md-4 post-card mb-4" data-id="{{ post.id }}">
-                    <div class="card h-100 p-2">
-                        <div class="handle">::: DRAG :::</div>
-                        
-                        {% if post.photos|length > 1 %}
-                            <div class="swiper mySwiper">
-                                <div class="swiper-wrapper">
-                                    {% for photo in post.photos %}
-                                    <div class="swiper-slide"><img src="/file/{{ photo }}" class="post-preview-img"></div>
-                                    {% endfor %}
-                                </div>
-                                <div class="swiper-pagination"></div>
-                            </div>
-                        {% elif post.photos|length == 1 %}
+                <div class="col-md-4 post-card" data-id="{{ post.id }}">
+                    <div class="card p-2 h-100">
+                        <div class="handle">::: MOVE_BLOCK :::</div>
+                        {% if post.photos|length > 0 %}
                             <img src="/file/{{ post.photos[0] }}" class="post-preview-img">
-                        {% else %}
-                            <div class="post-preview-img d-flex align-items-center justify-content-center bg-dark">NO MEDIA</div>
                         {% endif %}
-
-                        <div class="mt-2 flex-grow-1">
+                        <div class="mt-2">
                             <small class="text-success">{{ post.time_str }}</small>
-                            <p class="mt-2 truncate-text" id="text-{{ post.id }}">{{ post.text|striptags }}</p>
-                            <button class="btn btn-link p-0 text-info" style="font-size: 0.6rem;" onclick="viewFullText('{{ post.text|e }}')">📜 READ FULL</button>
+                            <p class="mt-1" style="font-size: 0.7rem; color: #aaa; height: 60px; overflow: hidden;">{{ post.text|striptags }}</p>
                         </div>
-                        
-                        <div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary">
-                            <button class="btn btn-sm btn-primary px-3" onclick="editPost({{ post.id }}, '{{ post.text|e }}', '{{ post.iso_time }}')">EDIT</button>
-                            <button class="btn btn-sm btn-outline-danger px-3" onclick="deletePost({{ post.id }})">DROP</button>
+                        <div class="d-flex justify-content-between mt-auto pt-2 border-top border-secondary">
+                            <button class="btn btn-sm btn-primary py-1 px-3" onclick="editPost({{ post.id }}, '{{ post.text|e }}', '{{ post.iso_time }}')">EDIT</button>
+                            <button class="btn btn-sm btn-outline-danger py-1 px-3" onclick="deletePost({{ post.id }})">DROP</button>
                         </div>
                     </div>
                 </div>
@@ -195,14 +109,50 @@
             </div>
         </div>
 
-        <!-- ИСТОРИЯ -->
+        <!-- ANALYTICS -->
+        <div class="tab-pane fade" id="analytics">
+            <div class="card p-4">
+                <h5 class="mb-4" style="color: var(--neon-green)">📈 SUBSCRIBERS_GROWTH</h5>
+                <canvas id="subsChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- CHANNELS -->
+        <div class="tab-pane fade" id="channels">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card p-3">
+                        <h6>ADD_NEW_CHANNEL</h6>
+                        <div class="input-group mb-3">
+                            <input type="text" id="new-channel-user" class="form-control" placeholder="@username">
+                            <button class="btn btn-primary" onclick="addChannel()">ADD</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-3">
+                        <h6>ACTIVE_CHANNELS</h6>
+                        <ul class="list-group list-group-flush bg-transparent">
+                            {% for ch in channels %}
+                            <li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center">
+                                {{ ch }}
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeChannel('{{ ch }}')">REMOVE</button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORY -->
         <div class="tab-pane fade" id="history">
             <div class="row">
                 {% for post in history %}
-                <div class="col-md-3 mb-3">
-                    <div class="card p-2 border-secondary opacity-75">
-                        <small class="text-muted">{{ post.time_str }}</small>
-                        <p style="font-size: 0.6rem; margin-top: 5px;">{{ post.text|striptags|truncate(80) }}</p>
+                <div class="col-md-4 mb-3">
+                    <div class="card p-2 opacity-75">
+                        <small class="text-muted">{{ post.time_str }} | {{ post.channel }}</small>
+                        <p style="font-size: 0.65rem;" class="mt-1">{{ post.text|striptags|truncate(100) }}</p>
                     </div>
                 </div>
                 {% endfor %}
@@ -211,47 +161,32 @@
     </div>
 </div>
 
-<!-- Модальное окно редактирования -->
+<!-- EDIT MODAL -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title" style="color: var(--neon-purple)">EDIT_POST</h5>
+                <h5 class="modal-title" style="color: var(--neon-purple)">EDIT_CONTENT</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <textarea id="edit-text" class="form-control mb-3" rows="8"></textarea>
-                <div class="mb-3">
-                    <label style="font-size: 0.7rem;">SCHEDULE_TIME:</label>
-                    <input type="datetime-local" id="edit-time" class="form-control">
-                </div>
+                <textarea id="edit-text" class="form-control mb-3" rows="10"></textarea>
+                <input type="datetime-local" id="edit-time" class="form-control">
             </div>
             <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-primary" id="save-btn">SAVE_CHANGES</button>
+                <button type="button" class="btn btn-primary" id="save-btn">EXECUTE_SAVE</button>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно просмотра текста -->
-<div class="modal fade" id="textModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title">📜 FULL_DESCRIPTION</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="full-text-content" style="font-size: 0.8rem; white-space: pre-wrap;"></div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
-    new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination" } });
+    function refreshData() {
+        fetch('/api/refresh').then(() => location.reload());
+    }
 
     Sortable.create(document.getElementById('sortable-queue'), {
         animation: 150, handle: '.handle',
@@ -265,19 +200,55 @@
         }
     });
 
+    // CHARTS
+    fetch('/api/stats').then(r => r.json()).then(data => {
+        const ctx = document.getElementById('subsChart').getContext('2d');
+        const firstChannel = Object.keys(data)[0];
+        if(!firstChannel) return;
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data[firstChannel].labels,
+                datasets: [{
+                    label: 'Subscribers: ' + firstChannel,
+                    data: data[firstChannel].data,
+                    borderColor: '#39ff14',
+                    tension: 0.3,
+                    fill: true,
+                    backgroundColor: 'rgba(57, 255, 20, 0.1)'
+                }]
+            },
+            options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#aaa' } }, x: { ticks: { color: '#aaa' } } } }
+        });
+    });
+
+    function addChannel() {
+        const user = document.getElementById('new-channel-user').value;
+        fetch('/api/channels', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user })
+        }).then(() => location.reload());
+    }
+
+    function removeChannel(user) {
+        if(confirm('REMOVE CHANNEL ' + user + '?')) {
+            fetch('/api/channels/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user })
+            }).then(() => location.reload());
+        }
+    }
+
     let currentPostId = null;
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-    const textModal = new bootstrap.Modal(document.getElementById('textModal'));
-
-    function viewFullText(text) {
-        document.getElementById('full-text-content').innerText = text;
-        textModal.show();
-    }
 
     function editPost(id, text, time) {
         currentPostId = id;
         document.getElementById('edit-text').value = text;
-        document.getElementById('edit-time').value = time ? time.slice(0, 16) : "";
+        document.getElementById('edit-time').value = time;
         editModal.show();
     }
 
@@ -298,6 +269,5 @@
         }
     }
 </script>
-
 </body>
 </html>
