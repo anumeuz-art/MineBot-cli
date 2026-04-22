@@ -8,8 +8,8 @@ import database
 client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
-VALID_TAGS = [
-    '#Mods', '#Maps', '#Textures', '#Shaders', '#Furniture', '#Tools', '#Mobs', '#Guns', '#Vehicles', '#Food',
+VALID_CATS = [
+    '#Mods', '#Maps', '#Textures', '#Shaders', '#Furniture', '#Tools', '#Mobs', 
     '#Biomes', '#Redstone', '#Magic', '#Structures', '#Armor', '#FPS', '#UI', 
     '#Addons', '#Building', '#Survival', '#Horror', '#Adventure', '#Utility'
 ]
@@ -36,8 +36,8 @@ Format:
 #Minecraft #[Turkum]
 
 XESHTEGLAR QOIDASI:
-Ro'yxatdan faqat BITTA turkumni tanlang: {", ".join(VALID_TAGS[:-1])}.
-Oxirida faqat IKKITA xeshteg bo'lsin: #Minecraft va tanlangan turkum.
+Faqat bitta turkumni tanlang: {', '.join(VALID_CATS)}.
+Post oxirida FAQAT IKKITA xeshteg bo'lsin: #Minecraft va tanlangan turkum.
 """,
 
     "ru": f"""Ты — редактор канала о Minecraft. Пиши на РУССКОМ. До 800 симв.
@@ -61,7 +61,7 @@ Oxirida faqat IKKITA xeshteg bo'lsin: #Minecraft va tanlangan turkum.
 #Minecraft #[Категория]
 
 ПРАВИЛО ХЭШТЕГОВ:
-Выбери только ОДНУ категорию из списка: {", ".join(VALID_TAGS[:-1])}.
+Выбери строго ОДНУ категорию: {', '.join(VALID_CATS)}.
 В конце должно быть ровно ДВА хэштега: #Minecraft и категория.
 """,
 
@@ -86,7 +86,7 @@ Format:
 #Minecraft #[Category]
 
 HASHTAG RULE:
-Select exactly ONE from: {", ".join(VALID_TAGS[:-1])}.
+Select exactly ONE: {', '.join(VALID_CATS)}.
 Only TWO hashtags at the end: #Minecraft and the category.
 """
 }
@@ -97,7 +97,7 @@ def extract_url(text):
 
 def fetch_page_content(url):
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
         for s in soup(["script", "style"]): s.extract()
@@ -114,18 +114,22 @@ def generate_post(user_input, persona="uz"):
     prompt = f"{PROMPTS.get(persona, PROMPTS['uz'])}\n\nRaw info:\n{user_input}{site_context}"
     try:
         res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
-        generated = res.choices[0].message.content.strip()
-        generated = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', generated)
+        gen = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
         
-        # Строгая очистка хэштегов
-        all_tags = re.findall(r'#\w+', generated)
-        for t in all_tags:
-            if t not in VALID_TAGS:
-                generated = generated.replace(t, "")
+        # Строгая проверка хэштегов
+        tags = re.findall(r'#\w+', gen)
+        found_cat = None
+        for t in tags:
+            if t in VALID_CATS: found_cat = t
+            elif t != '#Minecraft': gen = gen.replace(t, "")
+        
+        if '#Minecraft' not in gen: gen += "\n#Minecraft"
+        if not found_cat: gen += " #Mods"
+        else: gen += f" {found_cat}"
         
         ad_text = database.get_global_setting('ad_text', '')
-        if ad_text: generated += f"\n\n{ad_text}"
-        return generated
+        if ad_text: gen += f"\n\n{ad_text}"
+        return gen.strip()
     except: return f"Error. Input: {user_input}"
 
 def rewrite_post(text, style="short"):
