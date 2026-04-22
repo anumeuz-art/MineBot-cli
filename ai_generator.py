@@ -4,42 +4,40 @@ import requests
 from bs4 import BeautifulSoup
 from groq import Groq
 
-# Инициализация Groq
 client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
 PROMPTS = {
-    "uz": """Ты — креативный редактор Telegram-канала о модах для Minecraft.
-Я передам тебе текст. Вычлени главное и напиши пост. Уложись в 800 символов.
-Пиши ТОЛЬКО на узбекском латинице. Если не смог найти версию напиши "1.21+".
-Используй тег <blockquote expandable> для основного блока. Перепиши текст в более веселом, драйвовом и геймерском стиле. Добавь чуть больше эмодзи.
+    "uz": """Siz Minecraft modlari haqidagi Telegram kanalining ijodiy muharririsiz.
+Men sizga matn beraman. Asosiy narsani tanlang va post yozing. 800 belgidan oshmasin.
+FAQAT o'zbek tilida (lotin alifbosida) yozing. Agar versiyani topa olmasangiz, "1.21+" deb yozing.
+Asosiy blok uchun <blockquote expandable> tegidan foydalaning.
 
-Формат:
-📦 <b>[Название]</b>
+Format:
+📦 <b>[Nomi]</b>
 
 <blockquote expandable><b>Bu nima?</b>
-[Описание]
+[Tavsif]
 
 <b>Asosiy xususiyatlar:</b>
-• [Фишка 1]
-• [Фишка 2]
+• [Xususiyat 1]
+• [Xususiyat 2]
 
-🎮 Versiya: [Версия]</blockquote>
+🎮 Versiya: [Versiya]</blockquote>
 
-<blockquote>💖 - zo`r
+<blockquote>💖 - Zo'r
 💔 - Unchamas</blockquote>
 
-#Minecraft #[Категория]
+#Minecraft #[Turkum]
 
-ПРАВИЛА ДЛЯ ХЭШТЕГОВ (КРИТИЧЕСКИ ВАЖНО):
-1. Внимательно проанализируй, о чем пост. Выбери строго ОДНУ категорию и напиши её хэштег: #Mods, #Maps, #Textures или #Shaders.
-2. В конце поста должно быть ровно ДВА хэштега: #Minecraft и хэштег выбранной категории.
-3. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО писать название мода в виде хэштега! Не придумывай свои слова для хэштегов!
+XESHTEGLAR QOIDALARI:
+Faqat bitta turkumni tanlang: #Mods, #Maps, #Textures yoki #Shaders.
+Post oxirida roppa-rosa IKKITA xeshteg bo'lishi kerak: #Minecraft va tanlangan turkum xeshtegi.
 """,
 
     "ru": """Ты — креативный редактор Telegram-канала о модах для Minecraft.
-Я передам тебе текст. Вычлени главное и напиши пост в драйвовом и веселом стиле. Уложись в 800 символов.
-Пиши ТОЛЬКО на русском языке.
+Я передам тебе текст. Вычлени главное и напиши пост. Уложись в 800 символов.
+Пиши ТОЛЬКО на русском языке. Если не нашел версию, пиши "1.21+".
 Используй тег <blockquote expandable> для основного блока.
 
 Формат:
@@ -59,17 +57,14 @@ PROMPTS = {
 
 #Minecraft #[Категория]
 
-💎 Obuna bo'ling: @Lazikomods (вставь ссылку на текст @lazikomods)
-
-ПРАВИЛА ДЛЯ ХЭШТЕГОВ (КРИТИЧЕСКИ ВАЖНО):
-1. Внимательно проанализируй, о чем пост. Выбери строго ОДНУ категорию и напиши её хэштег на русском: #Моды, #Карты, #Текстуры или #Шейдеры.
-2. В конце поста должно быть ровно ДВА хэштега: #Minecraft и хэштег выбранной категории.
-3. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО писать название мода в виде хэштега! Не придумывай свои слова для хэштегов!
+ПРАВИЛА ДЛЯ ХЭШТЕГОВ:
+Выбери строго ОДНУ категорию: #Моды, #Карты, #Текстуры или #Шейдеры.
+В конце поста должно быть ровно ДВА хэштега: #Minecraft и хэштег выбранной категории.
 """,
 
     "en": """You are a creative editor for a Minecraft mods Telegram channel.
 Extract the main points and write an engaging post. Keep it under 800 characters.
-Write ONLY in English in an exciting tone.
+Write ONLY in English. If version is not found, use "1.21+".
 Use the <blockquote expandable> tag for the main body.
 
 Format:
@@ -89,10 +84,9 @@ Format:
 
 #Minecraft #[Category]
 
-HASHTAG RULES (CRITICAL):
-1. Analyze the content and choose exactly ONE category hashtag from this list: #Mods, #Maps, #Textures, or #Shaders.
-2. The post must end with exactly two hashtags: #Minecraft and the chosen category hashtag.
-3. NEVER use the mod's name as a hashtag! Do not invent your own hashtags!
+HASHTAG RULES:
+Choose exactly ONE category: #Mods, #Maps, #Textures, or #Shaders.
+The post must end with exactly two hashtags: #Minecraft and the chosen category hashtag.
 """
 }
 
@@ -105,60 +99,26 @@ def fetch_page_content(url):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
-        for script in soup(["script", "style"]):
-            script.extract()
-        text = soup.get_text(separator=' ', strip=True)
-        return text[:5000] 
-    except Exception as e:
-        print(f"⚠️ Не смог прочитать сайт {url}: {e}")
-        return ""
+        for s in soup(["script", "style"]): s.extract()
+        return soup.get_text(separator=' ', strip=True)[:5000]
+    except: return ""
 
 def generate_post(user_input, persona="uz"):
     url = extract_url(user_input)
     site_context = ""
-    
     if url:
-        page_text = fetch_page_content(url)
-        if page_text:
-            site_context = f"\n\nИНФОРМАЦИЯ С САЙТА:\n{page_text}"
-
-    selected_prompt = PROMPTS.get(persona, PROMPTS["uz"])
+        text = fetch_page_content(url)
+        if text: site_context = f"\n\nINFO FROM SITE:\n{text}"
     
+    prompt = f"{PROMPTS.get(persona, PROMPTS['uz'])}\n\nRaw info:\n{user_input}{site_context}"
     try:
-        completion = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": selected_prompt},
-                {"role": "user", "content": f"Сырая информация:\n{user_input}{site_context}"}
-            ],
-            model=MODEL_ID,
-        )
-        final_text = completion.choices[0].message.content.strip()
-        # Конвертируем Markdown-звездочки в HTML-теги для жирного текста
-        final_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_text)
-        return final_text
-    except Exception as e:
-        print(f"❌ Ошибка генерации Groq: {e}")
-        return f"Ошибка генерации поста. Текст пользователя: {user_input}"
+        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
+        return re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
+    except: return f"Error. Input: {user_input}"
 
 def rewrite_post(text, style="short"):
-    styles = {
-        "short": "Сделай текст короче и лаконичнее. Оставь только самую суть, убери лишнюю воду.",
-        "fun": "Перепиши текст в более веселом, драйвовом и геймерском стиле. Добавь чуть больше эмодзи.",
-        "pro": "Сделай текст более профессиональным, строгим и информативным."
-    }
-    prompt_instruction = styles.get(style, "Улучши этот текст.")
-    
+    inst = {"short": "Make it shorter.", "fun": "Make it fun and use emojis.", "pro": "Make it professional."}.get(style, "Improve it.")
     try:
-        completion = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": f"{prompt_instruction}\nВАЖНО: Сохрани HTML-теги форматирования (<b>, <blockquote>) и все хэштеги в конце."},
-                {"role": "user", "content": f"Оригинальный текст:\n{text}"}
-            ],
-            model=MODEL_ID,
-        )
-        final_text = completion.choices[0].message.content.strip()
-        final_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_text)
-        return final_text
-    except Exception as e:
-        print(f"❌ Ошибка рерайта Groq: {e}")
-        return text
+        res = client.chat.completions.create(messages=[{"role": "system", "content": f"{inst}\nKeep tags <b> and <blockquote>."}, {"role": "user", "content": text}], model=MODEL_ID)
+        return re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', res.choices[0].message.content.strip())
+    except: return text

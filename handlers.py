@@ -24,28 +24,13 @@ def register_handlers(bot, user_drafts, album_cache):
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
         greeting = utils.get_time_greeting()
-        bot.send_message(message.chat.id, f"{greeting}! Бот готов к работе.", reply_markup=keyboards.get_main_menu())
+        bot.send_message(message.chat.id, f"{greeting}! Бот готов к работе. Все настройки теперь в Панели Управления.", reply_markup=keyboards.get_main_menu())
 
     @bot.message_handler(content_types=['text', 'photo'])
     def handle_text_photo(message):
         if message.content_type == 'text':
             if message.text == "📝 Создать пост":
                 bot.send_message(message.chat.id, "Отправь мне фото, текст или ссылку с описанием мода! 🚀", parse_mode="HTML")
-                return
-            elif message.text == "📢 Выбор канала":
-                markup = InlineKeyboardMarkup(row_width=1)
-                for ch in utils.get_channels():
-                    status = "✅ " if utils.get_active_channel(message.from_user.id) == ch else ""
-                    markup.add(InlineKeyboardButton(f"{status}{ch}", callback_data=f"set_channel_{ch}"))
-                bot.send_message(message.chat.id, "Выбери канал для публикации:", reply_markup=markup)
-                return
-            elif message.text == "🌍 Выбор языка":
-                markup = InlineKeyboardMarkup(row_width=1)
-                active_p = utils.get_active_persona(message.from_user.id)
-                markup.add(InlineKeyboardButton(f"{'✅ ' if active_p == 'uz' else ''}🇺🇿 Узбекский", callback_data="set_persona_uz"))
-                markup.add(InlineKeyboardButton(f"{'✅ ' if active_p == 'ru' else ''}🇷🇺 Русский", callback_data="set_persona_ru"))
-                markup.add(InlineKeyboardButton(f"{'✅ ' if active_p == 'en' else ''}🇬🇧 Английский", callback_data="set_persona_en"))
-                bot.send_message(message.chat.id, "Выбери язык бота:", reply_markup=markup)
                 return
 
         if message.media_group_id:
@@ -67,7 +52,8 @@ def register_handlers(bot, user_drafts, album_cache):
             if not user_input and message.photo: user_input = "Опиши этот мод."
             elif not user_input: return
             
-            persona = utils.get_active_persona(message.from_user.id)
+            # Берем язык из БД (теперь настраивается в Web App)
+            persona = database.get_user_setting(message.from_user.id, 'persona', 'uz')
             generated_text = ai_generator.generate_post(user_input, persona)
             photo_id = None
             
@@ -85,7 +71,9 @@ def register_handlers(bot, user_drafts, album_cache):
             else:
                 bot.send_message(message.chat.id, "⏳ Генерирую пост...")
 
-            draft = {'photo': photo_id, 'text': generated_text, 'document': None, 'ad_added': False, 'channel': utils.get_active_channel(message.from_user.id)}
+            # Берем активный канал из БД
+            active_ch = database.get_user_setting(message.from_user.id, 'active_channel', config.DEFAULT_CHANNEL)
+            draft = {'photo': photo_id, 'text': generated_text, 'document': None, 'ad_added': False, 'channel': active_ch}
             send_draft_preview(message.chat.id, message.from_user.id, draft)
 
         except Exception as e:
@@ -100,7 +88,8 @@ def register_handlers(bot, user_drafts, album_cache):
         messages.sort(key=lambda x: x.message_id)
         caption = next((m.caption for m in messages if m.caption), None)
         bot.send_message(chat_id, "🎨 Обрабатываю альбом...")
-        persona = utils.get_active_persona(user_id)
+        
+        persona = database.get_user_setting(user_id, 'persona', 'uz')
         generated_text = ai_generator.generate_post(caption or "Опиши мод", persona)
         
         temp_files = []
@@ -128,7 +117,8 @@ def register_handlers(bot, user_drafts, album_cache):
                 try: bot.delete_message(chat_id, m.message_id)
                 except: pass
             
-            draft = {'photo': photo_id_str, 'text': generated_text, 'document': None, 'ad_added': False, 'channel': utils.get_active_channel(user_id)}
+            active_ch = database.get_user_setting(user_id, 'active_channel', config.DEFAULT_CHANNEL)
+            draft = {'photo': photo_id_str, 'text': generated_text, 'document': None, 'ad_added': False, 'channel': active_ch}
             send_draft_preview(chat_id, user_id, draft)
         except Exception as e:
             bot.send_message(chat_id, f"❌ Ошибка альбома: {e}")
@@ -163,7 +153,7 @@ def register_handlers(bot, user_drafts, album_cache):
             target_id = sent.message_id
             
         user_drafts[target_id] = draft
-        user_current_draft_id[user_id] = target_id # Запоминаем текущий черновик
+        user_current_draft_id[user_id] = target_id
         bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_draft_markup(target_id))
 
     def save_edited_text(message, target_id, chat_id):
@@ -219,55 +209,14 @@ def register_handlers(bot, user_drafts, album_cache):
             bot.answer_callback_query(call.id, "🗑 Черновик удален")
             return
 
-        if call.data.startswith('q_'):
-            parts = call.data.split('_')
-            action, val = parts[1], int(parts[2])
-            if action == 'page': 
-                keyboards.show_queue_page(bot, chat_id, val, target_id)
-                bot.answer_callback_query(call.id)
-                return
-            elif action == 'del':
-                database.delete_from_queue(val)
-                bot.answer_callback_query(call.id, "🗑 Пост удален!")
-                keyboards.show_queue_page(bot, chat_id, 0, target_id)
-            elif action == 'pub':
-                posts = database.get_all_pending()
-                post = next((p for p in posts if p[0] == val), None)
-                if post and publisher.publish_post_data(bot, post[0], post[1], post[2], post[3], post[4] or config.DEFAULT_CHANNEL):
-                    bot.answer_callback_query(call.id, "🚀 Опубликовано!")
-                    keyboards.show_queue_page(bot, chat_id, 0, target_id)
-                else: bot.answer_callback_query(call.id, "❌ Ошибка!", show_alert=True)
-                return
-
-        if call.data.startswith("set_channel_"):
-            new_ch = call.data.replace("set_channel_", "")
-            database.update_user_setting(call.from_user.id, 'active_channel', new_ch)
-            bot.answer_callback_query(call.id, f"✅ Канал изменен на {new_ch}")
-            bot.edit_message_text(f"✅ Текущий канал для публикаций: <b>{new_ch}</b>", chat_id, target_id, parse_mode='HTML')
-            return
-
-        if call.data.startswith("set_persona_"):
-            new_p = call.data.replace("set_persona_", "")
-            database.update_user_setting(call.from_user.id, 'persona', new_p)
-            langs = {"uz": "Узбекский", "ru": "Русский", "en": "Английский"}
-            bot.answer_callback_query(call.id, f"✅ Язык изменен на {langs.get(new_p, new_p)}")
-            bot.edit_message_text(f"✅ Текущий язык бота: <b>{langs.get(new_p, new_p)}</b>", chat_id, target_id, parse_mode='HTML')
-            return
-
         draft = user_drafts.get(target_id)
         if not draft and not call.data.startswith("sched_"):
             return bot.answer_callback_query(call.id, "Черновик устарел.", show_alert=True)
 
         if call.data == "rewrite_menu":
             markup = InlineKeyboardMarkup(row_width=2)
-            markup.add(
-                InlineKeyboardButton("🤏 Короче", callback_data="rw_short"),
-                InlineKeyboardButton("🤪 Веселее", callback_data="rw_fun")
-            )
-            markup.add(
-                InlineKeyboardButton("👔 Серьезнее", callback_data="rw_pro"),
-                InlineKeyboardButton("⬅️ Назад", callback_data="back_to_draft")
-            )
+            markup.add(InlineKeyboardButton("🤏 Короче", callback_data="rw_short"), InlineKeyboardButton("🤪 Веселее", callback_data="rw_fun"))
+            markup.add(InlineKeyboardButton("👔 Серьезнее", callback_data="rw_pro"), InlineKeyboardButton("⬅️ Назад", callback_data="back_to_draft"))
             bot.edit_message_reply_markup(chat_id, target_id, reply_markup=markup)
             return
 
@@ -315,15 +264,9 @@ def register_handlers(bot, user_drafts, album_cache):
 
         if call.data == "pub_queue_menu":
             markup = InlineKeyboardMarkup(row_width=2)
-            markup.add(
-                InlineKeyboardButton("2 часа", callback_data=f"sched_interval_2_{target_id}"),
-                InlineKeyboardButton("4 часа", callback_data=f"sched_interval_4_{target_id}"),
-                InlineKeyboardButton("6 часов", callback_data=f"sched_interval_6_{target_id}"),
-                InlineKeyboardButton("12 часов", callback_data=f"sched_interval_12_{target_id}"),
-                InlineKeyboardButton("24 часа", callback_data=f"sched_interval_24_{target_id}")
-            )
-            markup.add(InlineKeyboardButton("📅 Точная дата и время", callback_data=f"sched_exact_{target_id}"))
-            markup.add(InlineKeyboardButton("⬅️ Назад", callback_data="back_to_draft"))
+            markup.add(InlineKeyboardButton("2 часа", callback_data=f"sched_interval_2_{target_id}"), InlineKeyboardButton("4 часа", callback_data=f"sched_interval_4_{target_id}"))
+            markup.add(InlineKeyboardButton("6 часов", callback_data=f"sched_interval_6_{target_id}"), InlineKeyboardButton("12 часов", callback_data=f"sched_interval_12_{target_id}"))
+            markup.add(InlineKeyboardButton("📅 Точная дата", callback_data=f"sched_exact_{target_id}"), InlineKeyboardButton("⬅️ Назад", callback_data="back_to_draft"))
             bot.edit_message_reply_markup(chat_id, target_id, reply_markup=markup)
             return
 
@@ -341,7 +284,7 @@ def register_handlers(bot, user_drafts, album_cache):
             timestamp = int(future.timestamp())
             database.add_to_queue(t_draft['photo'], t_draft['text'], t_draft['document'], t_draft['channel'], timestamp)
             bot.edit_message_reply_markup(chat_id, dr_id, reply_markup=None)
-            bot.send_message(chat_id, f"🕒 Запланировано (через {hours} ч.) для {t_draft['channel']}")
+            bot.send_message(chat_id, f"🕒 Запланировано (+{hours} ч.) для {t_draft['channel']}")
             del user_drafts[dr_id]
             if user_current_draft_id.get(call.from_user.id) == dr_id:
                 del user_current_draft_id[call.from_user.id]
@@ -358,36 +301,20 @@ def register_handlers(bot, user_drafts, album_cache):
         try: bot.edit_message_text(text=draft['text'], chat_id=chat_id, message_id=target_id, parse_mode='HTML', reply_markup=markup)
         except:
             try: bot.edit_message_caption(caption=draft['text'], chat_id=chat_id, message_id=target_id, parse_mode='HTML', reply_markup=markup)
-            except Exception: pass
+            except: pass
 
     @bot.message_handler(content_types=['document'])
     def handle_document(message):
         user_id = message.from_user.id
-        target_id = None
-        
-        # Сначала проверяем Reply
-        if message.reply_to_message:
-            target_id = message.reply_to_message.message_id
-        # Если нет реплая, берем последний активный черновик
-        elif user_id in user_current_draft_id:
-            target_id = user_current_draft_id[user_id]
-            
+        target_id = message.reply_to_message.message_id if message.reply_to_message else user_current_draft_id.get(user_id)
         if target_id and target_id in user_drafts:
-            current_docs = user_drafts[target_id].get('document')
-            new_doc = message.document.file_id
-            
-            if current_docs:
-                user_drafts[target_id]['document'] = f"{current_docs},{new_doc}"
-            else:
-                user_drafts[target_id]['document'] = new_doc
-            
-            count = len(user_drafts[target_id]['document'].split(','))
-            bot.reply_to(message, f"✅ Файл прикреплен к черновику #{target_id}!\nВсего файлов: <b>{count}</b>", parse_mode="HTML")
+            current = user_drafts[target_id].get('document', '')
+            user_drafts[target_id]['document'] = f"{current},{message.document.file_id}" if current else message.document.file_id
+            bot.reply_to(message, f"✅ Файл прикреплен! (Всего: {len(user_drafts[target_id]['document'].split(','))})")
             return
-            
-        bot.reply_to(message, "❌ Не нашел активного черновика. Сначала создай пост или сделай Reply на сообщение с кнопками!")
+        bot.reply_to(message, "❌ Нет активного черновика.")
 
     @bot.message_handler(func=lambda message: message.chat.type in ['group', 'supergroup'], content_types=['text'])
     def catch_group_comments(message):
-        if message.text.startswith('/'): return
-        database.save_comment(message.from_user.first_name, message.text, int(time.time()))
+        if not message.text.startswith('/'):
+            database.save_comment(message.from_user.first_name, message.text, int(time.time()))

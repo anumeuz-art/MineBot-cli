@@ -42,7 +42,6 @@ def index():
     pending = database.get_all_pending()
     queue = []
     for p in pending:
-        # p = (id, photo_id, text, document_id, channel_id, scheduled_time)
         doc_ids = p[3].split(',') if p[3] else []
         queue.append({
             'id': p[0],
@@ -58,24 +57,49 @@ def index():
     all_posts = database.get_all_posts()
     history_raw = [p for p in all_posts if p[4] == 'posted']
     history_raw.sort(key=lambda x: x[6] if len(x) > 6 and x[6] else 0, reverse=True)
-    
     history = []
     for p in history_raw[:15]:
         history.append({
-            'id': p[0],
-            'photos': p[1].split(',') if p[1] else [],
-            'text': p[2],
-            'channel': p[5] if len(p) > 5 else config.DEFAULT_CHANNEL,
+            'id': p[0], 'photos': p[1].split(',') if p[1] else [],
+            'text': p[2], 'channel': p[5] if len(p) > 5 else config.DEFAULT_CHANNEL,
             'time_str': format_timestamp(p[6] if len(p) > 6 else None)
         })
 
     managed_channels = database.get_all_managed_channels()
-    return render_template('dashboard.html', stats=stats, queue=queue, history=history, channels=managed_channels, config=config)
+    
+    # Расширенная статистика
+    total_subs = 0
+    growth_24h = 0
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    for ch in managed_channels:
+        current_history = database.get_sub_history(ch)
+        if current_history:
+            current_count = current_history[-1][1]
+            total_subs += current_count
+            # Ищем вчерашнее значение
+            prev_count = next((h[1] for h in current_history if h[0] == yesterday), current_count)
+            growth_24h += (current_count - prev_count)
+
+    # Текущие настройки (берем для первого админа в списке или дефолт)
+    current_lang = database.get_user_setting(config.ADMIN_IDS[0], 'persona', 'uz')
+    
+    return render_template('dashboard.html', stats=stats, queue=queue, history=history, 
+                           channels=managed_channels, total_subs=total_subs, 
+                           growth_24h=growth_24h, current_lang=current_lang, config=config)
+
+@app.route('/api/settings/language', methods=['POST'])
+def set_language():
+    lang = request.json.get('lang')
+    if lang in ['uz', 'ru', 'en']:
+        for admin_id in config.ADMIN_IDS:
+            database.update_user_setting(admin_id, 'persona', lang)
+        return jsonify({'status': 'success'})
+    return jsonify({'status': 'error'}), 400
 
 @app.route('/logo.png')
 def get_logo():
-    if os.path.exists('logo.png'):
-        return send_file('logo.png', mimetype='image/png')
+    if os.path.exists('logo.png'): return send_file('logo.png', mimetype='image/png')
     return "Not found", 404
 
 @app.route('/api/refresh')
@@ -86,10 +110,8 @@ def api_refresh():
 @app.route('/api/publish/<int:post_id>', methods=['POST'])
 def api_publish_now(post_id):
     post = database.get_post_by_id(post_id)
-    if post:
-        # post = (id, photo_id, text, document_id, channel_id, scheduled_time, status)
-        if publisher.publish_post_data(bot, post[0], post[1], post[2], post[3], post[4] or config.DEFAULT_CHANNEL):
-            return jsonify({'status': 'success'})
+    if post and publisher.publish_post_data(bot, post[0], post[1], post[2], post[3], post[4] or config.DEFAULT_CHANNEL):
+        return jsonify({'status': 'success'})
     return jsonify({'status': 'error'}), 400
 
 @app.route('/api/stats')
@@ -98,10 +120,7 @@ def get_stats_data():
     result = {}
     for ch in channels:
         history = database.get_sub_history(ch)
-        result[ch] = {
-            'labels': [h[0] for h in history],
-            'data': [h[1] for h in history]
-        }
+        result[ch] = {'labels': [h[0] for h in history], 'data': [h[1] for h in history]}
     return jsonify(result)
 
 @app.route('/api/channels', methods=['POST'])
