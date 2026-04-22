@@ -16,80 +16,68 @@ VALID_CATS = [
 
 PROMPTS = {
     "uz": f"""Siz Minecraft muharririsiz. FAQAT o'zbek tilida yozing. 800 belgidan oshmasin.
-Asosiy blok uchun <blockquote expandable> tegidan foydalaning.
+    Asosiy blok uchun <blockquote expandable> tegidan foydalaning.
 
-Format:
-📦 <b>[Nomi]</b>
+    Format:
+    📦 <b>[Nomi]</b>
 
-<blockquote expandable><b>Bu nima?</b>
-[Tavsif]
+    <blockquote expandable><b>Bu nima?</b>
+    [Tavsif]
 
-<b>Asosiy xususiyatlar:</b>
-• [Xususiyat 1]
-• [Xususiyat 2]
+    <b>Asosiy xususiyatlar:</b>
+    • [Xususiyat 1]
+    • [Xususiyat 2]
 
-🎮 Versiya: [Versiya]</blockquote>
+    🎮 Versiya: [Versiya]</blockquote>
 
-<blockquote>💖 - Zo'r
-💔 - Unchamas</blockquote>
+    <blockquote>💖 - Zo'r
+    💔 - Unchamas</blockquote>
 
-#Minecraft #[Turkum]
-
-XESHTEGLAR QOIDASI:
-Faqat bitta turkumni tanlang: {', '.join(VALID_CATS)}.
-Post oxirida FAQAT IKKITA xeshteg bo'lsin: #Minecraft va tanlangan turkum.
-""",
+    HECH QANDAY XESHTEG YOZING! (Men o'zim qo'shaman).
+    """,
 
     "ru": f"""Ты — редактор канала о Minecraft. Пиши на РУССКОМ. До 800 симв.
-Используй <blockquote expandable> для описания.
+    Используй <blockquote expandable> для описания.
 
-Формат:
-📦 <b>[Название]</b>
+    Формат:
+    📦 <b>[Название]</b>
 
-<blockquote expandable><b>Что это такое?</b>
-[Описание]
+    <blockquote expandable><b>Что это такое?</b>
+    [Описание]
 
-<b>Главные фишки:</b>
-• [Фишка 1]
-• [Фишка 2]
+    <b>Главные фишки:</b>
+    • [Фишка 1]
+    • [Фишка 2]
 
-🎮 Версия: [Версия]</blockquote>
+    🎮 Версия: [Версия]</blockquote>
 
-<blockquote>💖 - Имба
-💔 - Не оч</blockquote>
+    <blockquote>💖 - Имба
+    💔 - Не оч</blockquote>
 
-#Minecraft #[Категория]
-
-ПРАВИЛО ХЭШТЕГОВ:
-Выбери строго ОДНУ категорию: {', '.join(VALID_CATS)}.
-В конце должно быть ровно ДВА хэштега: #Minecraft и категория.
-""",
+    НЕ ПИШИ ХЭШТЕГИ! (Я добавлю их сам).
+    """,
 
     "en": f"""Minecraft editor. English only. Max 800 chars.
-Use <blockquote expandable> for description.
+    Use <blockquote expandable> for description.
 
-Format:
-📦 <b>[Mod Name]</b>
+    Format:
+    📦 <b>[Mod Name]</b>
 
-<blockquote expandable><b>What is it?</b>
-[Description]
+    <blockquote expandable><b>What is it?</b>
+    [Description]
 
-<b>Key Features:</b>
-• [Feature 1]
-• [Feature 2]
+    <b>Key Features:</b>
+    • [Feature 1]
+    • [Feature 2]
 
-🎮 Version: [Version]</blockquote>
+    🎮 Version: [Version]</blockquote>
 
-<blockquote>💖 - Awesome
-💔 - Not great</blockquote>
+    <blockquote>💖 - Awesome
+    💔 - Not great</blockquote>
 
-#Minecraft #[Category]
+    DO NOT WRITE HASHTAGS! (I will add them myself).
+    """
 
-HASHTAG RULE:
-Select exactly ONE: {', '.join(VALID_CATS)}.
-Only TWO hashtags at the end: #Minecraft and the category.
-"""
-}
 
 def extract_url(text):
     urls = re.findall(r'(https?://[^\s]+)', text)
