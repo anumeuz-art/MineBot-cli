@@ -13,15 +13,11 @@ import config
 import database
 import ai_generator
 import watermarker
-import ai_generator
-import watermarker
 import comments_analyzer
 
 database.init_db()
 bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
 user_drafts = {}
-active_channels = {} 
-user_personas = {} 
 album_cache = {}
 
 # --- ВИЗУАЛ И ФОРМАТИРОВАНИЕ ---
@@ -69,13 +65,13 @@ def get_channels():
     return channels
 
 def get_active_channel(user_id):
-    ch = active_channels.get(user_id)
+    ch = database.get_user_setting(user_id, 'active_channel')
     if ch: return ch
     channels = get_channels()
     return channels[0] if channels else config.DEFAULT_CHANNEL
 
 def get_active_persona(user_id):
-    return user_personas.get(user_id, "uz") 
+    return database.get_user_setting(user_id, 'persona', 'uz') 
 
 def save_ad_text(text):
     with open("ad.txt", "w", encoding="utf-8") as f: f.write(text)
@@ -534,6 +530,21 @@ def callback_handler(call):
                 show_queue_page(chat_id, 0, target_id)
             else: bot.answer_callback_query(call.id, "❌ Ошибка!", show_alert=True)
             return
+
+    if call.data.startswith("set_channel_"):
+        new_ch = call.data.replace("set_channel_", "")
+        database.update_user_setting(call.from_user.id, 'active_channel', new_ch)
+        bot.answer_callback_query(call.id, f"✅ Канал изменен на {new_ch}")
+        bot.edit_message_text(f"✅ Текущий канал для публикаций: <b>{new_ch}</b>", chat_id, target_id, parse_mode='HTML')
+        return
+
+    if call.data.startswith("set_persona_"):
+        new_p = call.data.replace("set_persona_", "")
+        database.update_user_setting(call.from_user.id, 'persona', new_p)
+        langs = {"uz": "Узбекский", "ru": "Русский", "en": "Английский"}
+        bot.answer_callback_query(call.id, f"✅ Язык изменен на {langs.get(new_p, new_p)}")
+        bot.edit_message_text(f"✅ Текущий язык бота: <b>{langs.get(new_p, new_p)}</b>", chat_id, target_id, parse_mode='HTML')
+        return
 
     draft = user_drafts.get(target_id)
     if not draft and not call.data.startswith("sched_"):

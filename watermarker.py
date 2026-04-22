@@ -16,7 +16,7 @@ def add_watermark(input_image_path, output_image_path):
 
         logo = Image.open(logo_path).convert("RGBA")
         
-        # Логотип всегда будет занимать 15% от ширины основного фото
+        # Логотип будет занимать 30% от ширины основного фото
         target_width = int(width * 0.30) 
         if target_width < 100: target_width = 100
         
@@ -29,8 +29,8 @@ def add_watermark(input_image_path, output_image_path):
         padding = int(width * 0.03)
         position = (width - target_width - padding, height - target_height - padding)
 
-        # Наложение
-        overlay = Image.new("RGBA", base_image.size, (0, 0, 0, 0))
+        # Наложение: создаем прозрачный слой ТОЧНОГО размера основного фото
+        overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         overlay.paste(logo, position, mask=logo)
         
         combined = Image.alpha_composite(base_image, overlay)

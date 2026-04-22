@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 
 client = genai.Client(api_key=config.GEMINI_KEY)
-MODEL_ID = "gemini-2.5-flash"
+MODEL_ID = "gemini-1.5-flash"
 
 PROMPTS = {
     "uz": """Ты — креативный редактор Telegram-канала о модах для Minecraft.
@@ -102,6 +102,9 @@ def fetch_page_content(url):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
+        # Очистка от скриптов и стилей
+        for script in soup(["script", "style"]):
+            script.extract()
         text = soup.get_text(separator=' ', strip=True)
         return text[:5000] 
     except Exception as e:
@@ -114,17 +117,21 @@ def generate_post(user_input, persona="uz"):
     
     if url:
         page_text = fetch_page_content(url)
+        if page_text:
+            site_context = f"\n\nИНФОРМАЦИЯ С САЙТА:\n{page_text}"
 
     selected_prompt = PROMPTS.get(persona, PROMPTS["uz"])
     
     prompt = f"{selected_prompt}\n\nСырая информация от пользователя:\n{user_input}{site_context}"
-    response = client.models.generate_content(model=MODEL_ID, contents=prompt)
     
-    final_text = response.text.strip()
-    # Конвертируем Markdown-звездочки в HTML-теги для жирного текста
-    final_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_text)
-    
-    return final_text
+    try:
+        response = client.models.generate_content(model=MODEL_ID, contents=prompt)
+        final_text = response.text.strip()
+        final_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_text)
+        return final_text
+    except Exception as e:
+        print(f"❌ Ошибка генерации ИИ: {e}")
+        return f"Ошибка генерации поста. Текст пользователя: {user_input}"
 
 def rewrite_post(text, style="short"):
     styles = {
