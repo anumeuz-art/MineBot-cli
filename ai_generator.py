@@ -4,34 +4,35 @@ import requests
 from bs4 import BeautifulSoup
 from groq import Groq
 import database
-import json
 
 client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
+# не трогать промпт, он уже оптимизирован для генерации постов по Minecraft модам 
 PROMPT_TEMPLATE = """
-Sen Minecraft modlari bo'yicha Telegram kanali muharririsan. Berilgan ma'lumotdan foydalanib, quyidagi qat'iy shablon bo'yicha post yoz.
-Hech narsani o'zgartirma, faqat ma'lumotni to'ldir!
+Sen Minecraft modlari bo'yicha Telegram kanali muharririsan. Quyidagi ma'lumotlar asosida post yoz.
+'#Mods', '#Maps', '#Textures', '#Shaders', '#Addons', '#Mobs', '#Biomes', '#Structures', '#Survival', '#Magic', '#Armor', '#Tools', '#Furniture', '#Redstone', '#Utility', '#Building', '#Horror', '#Adventure', '#FPS', '#UI', '#Guns', '#Vehicles', 
+'#Multiplayer', '#Singleplayer', '#Custom', '#Vanilla', '#Fun', '#Realistic', '#Fantasy', '#SciFi', '#Historical', '#Nature', '#City', '#Space', '#Underwater', '#Animals', '#Tech', '#Combat', '#Farming', '#Roleplay', '#MiniGames',
+Shu xeshteglarni postga mos ravishda qo'sh. Post qisqa, lekin ma'lumotga boy bo'lsin.
+Format va uslubni quyidagidek saqla:
 
-SHABLON:
-📦 <b>[Mod Nomi]</b>
+Struktura:
+📦 <b>[Mod/Karta nomi]</b>
 
-Bu nima?
-[Mod haqida qisqacha va tushunarli ma'lumot]
+<blockquote expandable><b>Nima bu? ✨</b>
+[Hayajonli va emojilarga boy tavsif]
 
-Asosiy xususiyatlar:
-• [Xususiyat 1]
-• [Xususiyat 2]
-• [Xususiyat 3]
+<b>Asosiy imkoniyatlar: 🛠</b>
+• [Fakt 1 🔥]
+• [Fact 2 💎]
+• [Fact 3 🚀]</blockquote>
 
-🎮 Versiya: [Versiya]
+<blockquote>Sizga yoqdimi? 😎
+🔥 — Albatta! / 🌚 — Shunchaki...</blockquote>
 
-💖 - juda zo'r
-💔 - unchamas
+#Minecraft #[Xeshteg1] #[Xeshteg2] #[Xeshteg3] #[Xeshteg4]
 
-#Minecraft #Mods
-
-💎 Obuna bo'ling: @Lazikomods (https://t.me/Lazikomods)
+💎 Obuna bo'ling: @Lazikomods
 """
 
 def extract_url(text):
@@ -60,7 +61,7 @@ def generate_post(user_input, persona="uz"):
         )
         gen = res.choices[0].message.content.strip()
         
-        # Авто-добавка рекламы из БД, если она не попала в шаблон
+        # Реклама добавляется автоматически из БД, если она есть
         ad_text = database.get_global_setting('ad_text', '')
         if ad_text and ad_text not in gen:
             gen += f"\n\n{ad_text}"
@@ -69,8 +70,5 @@ def generate_post(user_input, persona="uz"):
     except Exception as e:
         return f"Error: {e}"
 
-def generate_map(posts_data):
-    return "Weekly Map Report..."
-
-def generate_report(posts_data):
-    return "Weekly Top Report..."
+def rewrite_post(text, style="short"):
+    return text
