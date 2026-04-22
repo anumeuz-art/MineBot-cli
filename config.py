@@ -8,9 +8,9 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_KEY = os.getenv("GEMINI_KEY")
 
 if not TELEGRAM_TOKEN:
-    print("❌ ERROR: TELEGRAM_TOKEN is not set in environment variables!")
+    raise ValueError("❌ КРИТИЧЕСКАЯ ОШИБКА: TELEGRAM_TOKEN не установлен в переменных окружения!")
 if not GEMINI_KEY:
-    print("❌ ERROR: GEMINI_KEY is not set in environment variables!")
+    raise ValueError("❌ КРИТИЧЕСКАЯ ОШИБКА: GEMINI_KEY не установлен в переменных окружения!")
 
 CHANNELS_STR = os.getenv("CHANNELS", "@lazikomods")
 AVAILABLE_CHANNELS = [ch.strip() for ch in CHANNELS_STR.split(',')]
