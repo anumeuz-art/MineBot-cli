@@ -10,6 +10,8 @@ import strings
 def get_msg(key, lang='uz', **kwargs):
     msg = strings.MESSAGES.get(lang, strings.MESSAGES['uz']).get(key, key)
     return msg.format(**kwargs)
+
+def get_time_greeting():
     tashkent_tz = pytz.timezone('Asia/Tashkent')
     hour = datetime.now(tashkent_tz).hour
     if hour < 6: return "🌙 Доброй ночи"
