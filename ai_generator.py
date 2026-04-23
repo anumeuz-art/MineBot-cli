@@ -71,4 +71,12 @@ def generate_post(user_input, persona="uz"):
         return f"Error: {e}"
 
 def rewrite_post(text, style="short"):
-    return text
+    try:
+        prompt = f"Перепиши этот пост про Minecraft мод, сделай его {style}. Сохрани структуру и эмодзи. Вот текст:\n\n{text}"
+        res = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}], 
+            model=MODEL_ID
+        )
+        return res.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Error rewriting: {e}"

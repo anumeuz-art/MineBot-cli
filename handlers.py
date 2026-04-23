@@ -16,43 +16,28 @@ import keyboards
 import publisher
 
 user_current_draft_id = {}
+user_states = {} # Для отслеживания состояний редактирования
 
 def register_handlers(bot, user_drafts, album_cache):
 
-    @bot.message_handler(commands=['start'])
-    def send_welcome(message):
-        greeting = utils.get_time_greeting()
-        welcome_text = f"""{greeting}! 🤖 Mine Bot ishga tushirildi.
-Mening imkoniyatlarim:
-• AI orqali avtomatik Minecraft modlari haqida post yaratish.
-• Telegram kanalingizga avtomatik yuklash.
-• Web-panel orqali to'liq boshqaruv (xabarlar, vaqt, kanallar).
-
-Boshlash uchun pastdagi menyudan foydalaning!"""
-        bot.send_message(message.chat.id, welcome_text, parse_mode="HTML", reply_markup=keyboards.get_main_menu())
-
-    @bot.message_handler(commands=['map'])
-    def send_map(message):
-        posts = database.get_recent_posts(7)
-        if not posts: return bot.reply_to(message, "Нет данных за неделю.")
-        map_text = ai_generator.generate_map(str(posts))
-        bot.send_message(message.chat.id, map_text, parse_mode="HTML")
-
-    @bot.message_handler(commands=['report'])
-    def send_report(message):
-        top_ids = database.get_top_posts(5)
-        all_posts = database.get_all_posts()
-        top_data = [p for p in all_posts if p[0] in top_ids]
-        report_text = ai_generator.generate_report(str(top_data))
-        bot.send_message(message.chat.id, report_text, parse_mode="HTML")
-
     @bot.message_handler(content_types=['text', 'photo'])
     def handle_text_photo(message):
+        user_id = message.from_user.id
+        if user_states.get(user_id) == "EDITING":
+            target_id = user_current_draft_id.get(user_id)
+            if target_id and target_id in user_drafts:
+                user_drafts[target_id]['text'] = message.text
+                user_states[user_id] = None
+                bot.send_message(message.chat.id, "✅ Текст обновлен!", reply_markup=keyboards.get_main_menu())
+                send_draft_preview(message.chat.id, user_id, user_drafts[target_id])
+            return
+
         if message.text and message.text.startswith('/'): return
         if message.text == "📝 Создать пост":
             bot.send_message(message.chat.id, "Отправь фото, текст или ссылку:", reply_markup=keyboards.get_cancel_markup())
             return
         if message.text == "❌ Отмена":
+            user_states[user_id] = None
             bot.send_message(message.chat.id, "❌ Действие отменено.", reply_markup=keyboards.get_main_menu())
             return
 
@@ -142,6 +127,21 @@ Boshlash uchun pastdagi menyudan foydalaning!"""
         draft = user_drafts.get(target_id)
         if not draft and not call.data.startswith("sched_"): return
 
+        if call.data == "pub_now":
+            publisher.publish_post_data(bot, -1, draft.get('photo'), draft.get('text'), draft.get('document'), draft.get('channel', config.DEFAULT_CHANNEL))
+            bot.answer_callback_query(call.id, "🚀 Пост опубликован!")
+            bot.delete_message(chat_id, target_id)
+            if target_id in user_drafts: del user_drafts[target_id]
+            return
+
+        if call.data == "add_to_smart_q":
+            scheduled_time = int(time.time()) + (getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6) * 3600)
+            database.add_to_queue(draft.get('photo'), draft.get('text'), draft.get('document'), draft.get('channel', config.DEFAULT_CHANNEL), scheduled_time)
+            bot.answer_callback_query(call.id, "🧠 Добавлено в умную очередь")
+            bot.delete_message(chat_id, target_id)
+            if target_id in user_drafts: del user_drafts[target_id]
+            return
+
         if call.data == "pub_queue_menu":
             markup = InlineKeyboardMarkup(row_width=2)
             markup.add(InlineKeyboardButton("2ч", callback_data=f"sched_interval_2_{target_id}"), InlineKeyboardButton("6ч", callback_data=f"sched_interval_6_{target_id}"))
@@ -153,4 +153,25 @@ Boshlash uchun pastdagi menyudan foydalaning!"""
             bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_draft_markup(target_id))
             return
             
-        # [Логика публикации и планирования остается...]
+        if call.data == "edit_text":
+            user_states[call.from_user.id] = "EDITING"
+            bot.send_message(chat_id, "✍️ Отправь новый текст для поста:")
+            bot.answer_callback_query(call.id)
+            return
+
+        if call.data == "rewrite_menu":
+            markup = InlineKeyboardMarkup(row_width=2)
+            markup.add(InlineKeyboardButton("Коротко", callback_data=f"rewrite_short_{target_id}"), InlineKeyboardButton("Подробно", callback_data=f"rewrite_long_{target_id}"))
+            markup.add(InlineKeyboardButton("⬅️ Назад", callback_data="back_to_draft"))
+            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=markup)
+            return
+
+        if call.data.startswith("rewrite_"):
+            style = "short" if "short" in call.data else "long"
+            bot.answer_callback_query(call.id, "⏳ Переписываю...")
+            new_text = ai_generator.rewrite_post(draft['text'], style)
+            draft['text'] = new_text
+            send_draft_preview(chat_id, call.from_user.id, draft)
+            bot.delete_message(chat_id, target_id)
+            return
+
