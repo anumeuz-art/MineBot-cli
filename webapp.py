@@ -15,30 +15,13 @@ from functools import wraps
 app = Flask(__name__)
 
 # --- АВТОРИЗАЦИЯ ---
-def check_auth(username, password):
-    return username == config.WEB_USERNAME and password == config.WEB_PASSWORD
-
-def authenticate():
-    return Response(
-        'Could not verify your access level for that URL.\n'
-        'You have to login with proper credentials', 401,
-        {'WWW-Authenticate': 'Basic realm="Login Required"'}
-    )
-
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        # Если это запрос из Telegram Web App, проверяем user_id
         user_id = request.args.get('user_id')
-        if user_id:
-            # Если пользователь авторизован в боте, разрешаем вход без пароля
-            # Но он будет видеть только СВОИ посты (логика в index)
+        if user_id and user_id.isdigit():
             return f(*args, **kwargs)
-            
-        auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
-            return authenticate()
-        return f(*args, **kwargs)
+        return Response('Access Denied: Telegram Web App only.', 403)
     return decorated
 
 file_path_cache = {}
@@ -64,7 +47,6 @@ def index():
     if user_id: user_id = int(user_id)
     
     stats = database.get_stats()
-    # ФИЛЬТРАЦИЯ: Если есть user_id и это не админ — показываем только его посты
     pending = database.get_all_pending(user_id)
     
     queue = []
@@ -82,37 +64,35 @@ def index():
         })
     
     managed_channels = database.get_all_managed_channels()
-    total_subs = 0
-    growth_24h = 0
-    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    for ch in managed_channels:
-        current_history = database.get_sub_history(ch)
-        if current_history:
-            current_count = current_history[-1][1]
-            total_subs += current_count
-            prev_count = next((h[1] for h in current_history if h[0] == yesterday), current_count)
-            growth_24h += (current_count - prev_count)
-
     admin_id = config.ADMIN_IDS[0]
-    current_lang = database.get_user_setting(user_id or admin_id, 'persona', 'uz')
-    ad_text = database.get_global_setting('ad_text', '')
-    system_prompt = ai_generator.get_system_prompt()
-    smart_interval = database.get_global_setting('smart_queue_interval', '6')
-    watermark_text = database.get_global_setting('watermark_custom_text', '')
     
     return render_template('dashboard.html', stats=stats, queue=queue, 
-                           channels=managed_channels, total_subs=total_subs, 
-                           growth_24h=growth_24h, current_lang=current_lang, 
-                           ad_text=ad_text, system_prompt=system_prompt, 
-                           smart_interval=smart_interval, watermark_text=watermark_text,
+                           channels=managed_channels, all_channels=managed_channels,
+                           current_lang=database.get_user_setting(user_id or admin_id, 'persona', 'uz'),
+                           ad_text=database.get_global_setting('ad_text', ''),
+                           system_prompt=ai_generator.get_system_prompt(), 
+                           smart_interval=database.get_global_setting('smart_queue_interval', '6'),
+                           watermark_text=database.get_global_setting('watermark_custom_text', ''),
+                           prompts=database.get_prompts(),
+                           selected_prompt_id=database.get_user_setting(user_id or admin_id, 'active_prompt_id', '1'),
                            user_id=user_id, config=config)
 
-@app.route('/api/settings/watermark', methods=['POST'])
+@app.route('/api/settings/prompt/select', methods=['POST'])
 @requires_auth
-def set_watermark():
-    text = request.json.get('text', '')
-    database.set_global_setting('watermark_custom_text', text)
+def select_prompt():
+    prompt_id = request.json.get('id')
+    user_id = request.args.get('user_id')
+    database.update_user_setting(int(user_id), 'active_prompt_id', prompt_id)
     return jsonify({'status': 'success'})
+
+@app.route('/api/upload/logo', methods=['POST'])
+@requires_auth
+def upload_logo():
+    file = request.files.get('file')
+    if file:
+        file.save(os.path.join('templates', 'logo.png'))
+        return jsonify({'status': 'success'})
+    return jsonify({'status': 'error'}), 400
 
 @app.route('/api/settings/prompt', methods=['POST'])
 @requires_auth
@@ -160,10 +140,8 @@ def set_ad():
 def set_language():
     lang = request.json.get('lang')
     user_id = request.args.get('user_id')
-    target_ids = [int(user_id)] if user_id else config.ADMIN_IDS
     if lang in ['uz', 'ru', 'en']:
-        for uid in target_ids:
-            database.update_user_setting(uid, 'persona', lang)
+        database.update_user_setting(int(user_id), 'persona', lang)
         return jsonify({'status': 'success'})
     return jsonify({'status': 'error'}), 400
 
@@ -177,7 +155,7 @@ def get_logo():
 @requires_auth
 def api_publish_now(post_id):
     post = database.get_post_by_id(post_id)
-    if post and publisher.publish_post_data(bot, post[0], post[1], post[2], post[3], post[4] or config.DEFAULT_CHANNEL):
+    if post and publisher.publish_post_data(bot, post[0], post[1], post[2], post[3], post[4]):
         return jsonify({'status': 'success'})
     return jsonify({'status': 'error'}), 400
 
@@ -224,13 +202,14 @@ def delete_post(post_id):
 def edit_post(post_id):
     data = request.json
     text = data.get('text')
+    channels = data.get('channels', [])
     iso_time = data.get('time')
     try:
         tz = pytz.timezone('Asia/Tashkent')
         dt = datetime.fromisoformat(iso_time)
         timestamp = int(tz.localize(dt).timestamp())
     except: timestamp = data.get('timestamp')
-    database.update_post_content(post_id, text, timestamp)
+    database.update_post_content(post_id, text, timestamp, ",".join(channels))
     return jsonify({'status': 'success'})
 
 @app.route('/api/reorder', methods=['POST'])
@@ -238,7 +217,7 @@ def edit_post(post_id):
 def reorder():
     order = request.json.get('order')
     if not order: return jsonify({'status': 'error'})
-    pending = database.get_all_pending()
+    pending = database.get_all_pending(request.args.get('user_id'))
     existing_timestamps = sorted([p[5] for p in pending if p[5]])
     if len(existing_timestamps) < len(order):
         last_time = existing_timestamps[-1] if existing_timestamps else int(time.time())

@@ -170,7 +170,26 @@ def register_handlers(bot_instance, user_drafts, album_cache):
                     photo_id = sent.photo[-1].file_id
                     bot.delete_message(message.chat.id, sent.message_id) 
             bot.delete_message(message.chat.id, status_msg.message_id)
-            draft = {'photo': photo_id, 'text': generated_text, 'document': None, 'channel': database.get_user_setting(user_id, 'active_channel', config.DEFAULT_CHANNEL), 'user_id': user_id}
+            # Выбор каналов
+            channels = database.get_all_managed_channels()
+            draft = {
+                'photo': photo_id, 
+                'text': generated_text, 
+                'document': None, 
+                'channels': [config.DEFAULT_CHANNEL] if config.DEFAULT_CHANNEL else [],
+                'user_id': user_id
+            }
+            
+            if len(channels) > 0:
+                markup = InlineKeyboardMarkup()
+                # Кнопка для выбора каждого канала
+                for ch in channels:
+                    is_selected = ch in draft['channels']
+                    btn_text = f"✅ {ch}" if is_selected else ch
+                    markup.add(InlineKeyboardButton(btn_text, callback_data=f"toggle_ch_{ch}"))
+                markup.add(InlineKeyboardButton("🚀 OKEY", callback_data="finish_channel_selection"))
+                bot.send_message(message.chat.id, get_txt(user_id, 'choose_channel'), reply_markup=markup)
+            
             send_draft_preview(message.chat.id, user_id, draft)
         except Exception as e: bot.edit_message_text(f"❌ Error: {e}", message.chat.id, status_msg.message_id)
         finally:

@@ -160,17 +160,46 @@
                 <p class="mt-3 text-muted" style="font-size: 0.6rem;" id="hint-watermark">* This text will be drawn on all photos. Leave empty to use logo.png.</p>
             </div>
             
-            <div class="card p-4">
-                <h6 class="mb-4" style="color: var(--neon-p)" id="head-prompt">AI_SYSTEM_PROMPT_CONFIG</h6>
-                <textarea id="prompt-text-area" class="form-control mb-3" rows="10" style="font-size: 0.7rem; color: #aaa !important;">{{ system_prompt }}</textarea>
-                <button class="btn btn-purple-mc btn-mc px-4" onclick="savePrompt()" id="btn-save-prompt">SAVE_PROMPT</button>
-                <p class="mt-3 text-muted" style="font-size: 0.6rem;" id="hint-prompt">* This is the main instruction for the AI. Change it to adapt the bot for other niches (Movies, News, etc.).</p>
+            <div class="card p-4 mb-4">
+                <h6 class="mb-4" style="color: var(--neon-p)" id="head-prompt-lib">AI_PROMPT_LIBRARY</h6>
+                <div class="row" id="prompts-grid">
+                    {% for p in prompts %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card p-3 prompt-card {% if p[0]|string == selected_prompt_id|string %}selected{% endif %}" 
+                             onclick="selectPrompt('{{ p[0] }}')" style="cursor: pointer; border: 1px solid #444; height: 100%;">
+                            <h6 style="font-size: 0.6rem; margin:0;">{{ p[1] }}</h6>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <textarea id="prompt-text-area" class="form-control mb-3" rows="6">{{ system_prompt }}</textarea>
+                <button class="btn btn-purple-mc btn-mc px-4" onclick="savePrompt()" id="btn-save-prompt">SAVE_CUSTOM_PROMPT</button>
+            </div>
+
+            <div class="card p-4 mb-4">
+                <h6 class="mb-4" style="color: var(--neon-g)" id="head-logo">CUSTOM_LOGO_UPLOAD</h6>
+                <input type="file" id="logo-file" class="form-control mb-3" accept="image/png">
+                <button class="btn btn-primary-mc btn-mc px-4" onclick="uploadLogo()" id="btn-upload-logo">UPLOAD_LOGO</button>
+                <p class="mt-3 text-muted" style="font-size: 0.6rem;">* Upload a custom PNG logo to replace the default one.</p>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-update">UPDATE_PAYLOAD</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea id="edit-text" class="form-control mb-3" rows="12"></textarea><label style="font-size: 0.5rem;" id="lbl-sched">SCHED_TIME</label><input type="datetime-local" id="edit-time" class="form-control"></div><div class="modal-footer border-secondary"><button class="btn btn-primary-mc btn-mc px-4" id="save-btn">UPLOAD_CHANGES</button></div></div></div></div>
+<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-update">UPDATE_PAYLOAD</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
+    <textarea id="edit-text" class="form-control mb-3" rows="8"></textarea>
+    <label style="font-size: 0.5rem;" id="lbl-channels">CHANNELS</label>
+    <div id="edit-channels" class="mb-3">
+        {% for ch in all_channels %}
+        <div class="form-check">
+            <input class="form-check-input channel-check" type="checkbox" value="{{ ch }}" id="ch_{{ loop.index }}">
+            <label class="form-check-label" for="ch_{{ loop.index }}">{{ ch }}</label>
+        </div>
+        {% endfor %}
+    </div>
+    <label style="font-size: 0.5rem;" id="lbl-sched">SCHED_TIME</label>
+    <input type="datetime-local" id="edit-time" class="form-control">
+</div><div class="modal-footer border-secondary"><button class="btn btn-primary-mc btn-mc px-4" id="save-btn">UPLOAD_CHANGES</button></div></div></div></div>
 <div class="modal fade" id="textModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-view">RAW_DATA_VIEW</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="full-text-content" style="font-size: 0.75rem; white-space: pre-wrap; color: #fff !important;"></div></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -280,15 +309,47 @@
         const first = Object.keys(data)[0]; if(!first) return;
         new Chart(ctx, { type: 'line', data: { labels: data[first].labels, datasets: [{ label: first, data: data[first].data, borderColor: '#39ff14', tension: 0.3, fill: true, backgroundColor: 'rgba(57, 255, 20, 0.05)' }] }, options: { plugins: { legend: { labels: { color: '#fff', font: { family: 'Minecraftia', size: 8 } } } }, scales: { y: { ticks: { color: '#555' } }, x: { ticks: { color: '#555' } } } } });
     });
+const userId = "{{ user_id }}";
+const apiBase = userId ? `?user_id=${userId}` : "";
 
-    function saveAd() { fetch('/api/settings/ad', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('ad-text-area').value}) }).then(() => alert('AD_SAVED')); }
-    function savePrompt() { fetch('/api/settings/prompt', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({prompt: document.getElementById('prompt-text-area').value}) }).then(() => alert('PROMPT_SAVED')); }
-    function saveInterval() { fetch('/api/settings/interval', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({interval: document.getElementById('smart-interval').value}) }).then(() => alert('INTERVAL_SAVED')); }
-    function setLang(l) { fetch('/api/settings/language', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) }).then(() => location.reload()); }
+function selectPrompt() { 
+    const id = document.getElementById('prompt-selector').value;
+    fetch('/api/settings/prompt/select' + apiBase, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id: id}) }).then(() => location.reload()); 
+}
+function uploadLogo() {
+    const file = document.getElementById('logo-file').files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    fetch('/api/upload/logo' + apiBase, { method: 'POST', body: formData }).then(() => alert('LOGO_UPLOADED'));
+}
+function saveAd() { fetch('/api/settings/ad' + apiBase, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('ad-text-area').value}) }).then(() => alert('AD_SAVED')); }
+function savePrompt() { fetch('/api/settings/prompt' + apiBase, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({prompt: document.getElementById('prompt-text-area').value}) }).then(() => alert('PROMPT_SAVED')); }
+function saveInterval() { fetch('/api/settings/interval' + apiBase, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({interval: document.getElementById('smart-interval').value}) }).then(() => alert('INTERVAL_SAVED')); }
+function saveWatermark() { fetch('/api/settings/watermark' + apiBase, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('watermark-text').value}) }).then(() => alert('WATERMARK_SAVED')); }
+function setLang(l) { fetch('/api/settings/language' + apiBase, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) }).then(() => location.reload()); }
+function loadComments() { fetch('/api/comments' + apiBase).then(r => r.json()).then(data => { ...
     function viewFullText(p) { document.getElementById('full-text-content').innerText = p.text; new bootstrap.Modal(document.getElementById('textModal')).show(); }
     let curId = null;
-    function editPost(p) { curId = p.id; document.getElementById('edit-text').value = p.text; document.getElementById('edit-time').value = p.iso_time ? p.iso_time.slice(0,16) : ""; new bootstrap.Modal(document.getElementById('editModal')).show(); }
-    document.getElementById('save-btn').onclick = function() { fetch('/api/edit/'+curId, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text:document.getElementById('edit-text').value, time:document.getElementById('edit-time').value}) }).then(() => location.reload()); };
+    function editPost(p) { 
+        curId = p.id; 
+        document.getElementById('edit-text').value = p.text; 
+        document.getElementById('edit-time').value = p.iso_time ? p.iso_time.slice(0,16) : ""; 
+        const channels = p.channel ? p.channel.split(',') : [];
+        document.querySelectorAll('.channel-check').forEach(cb => cb.checked = channels.includes(cb.value));
+        new bootstrap.Modal(document.getElementById('editModal')).show(); 
+    }
+    document.getElementById('save-btn').onclick = function() { 
+        const selectedChannels = Array.from(document.querySelectorAll('.channel-check:checked')).map(cb => cb.value);
+        fetch('/api/edit/'+curId, { 
+            method:'POST', 
+            headers:{'Content-Type':'application/json'}, 
+            body: JSON.stringify({
+                text: document.getElementById('edit-text').value, 
+                channels: selectedChannels,
+                time: document.getElementById('edit-time').value
+            }) 
+        }).then(() => location.reload()); 
+    };
     function publishNow(id) { if(confirm('UPLOAD NOW?')) fetch('/api/publish/'+id, {method:'POST'}).then(r => r.ok ? location.reload() : alert('FAIL')); }
     function deletePost(id) { if(confirm('DROP?')) fetch('/api/delete/'+id, {method:'POST'}).then(() => location.reload()); }
     function addChannel() { fetch('/api/channels', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:document.getElementById('new-ch').value}) }).then(() => location.reload()); }

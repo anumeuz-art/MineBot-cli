@@ -53,8 +53,45 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS global_settings
                  (key TEXT PRIMARY KEY, value TEXT)''')
 
+    # Библиотека промптов
+    c.execute('''CREATE TABLE IF NOT EXISTS prompts_library
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT,
+                  prompt TEXT)''')
+    
+    # Инициализация библиотеки промптов
+    c.execute("SELECT count(*) FROM prompts_library")
+    if c.fetchone()[0] == 0:
+        default_prompts = [
+            ('Minecraft', 'Sen Minecraft modlari bo\'yicha Telegram kanali muharririsan...'),
+            ('Gaming', 'Sen zamonaviy o\'yinlar sharhlovchisisan. Yangi o\'yinlar, yangiliklar va kiber-sport haqida yoz.'),
+            ('Sport', 'Sen sport ekspertisan. Futbol, basketbol va boshqa sport yangiliklarini dinamik va qiziqarli yoz.'),
+            ('News', 'Sen xolis yangiliklar portali muharririsan. Eng muhim voqealarni qisqa va aniq yetkaz.'),
+            ('Tech', 'Sen texnologiyalar olamining bilimdonisan. Gadjetlar, dasturlash va sun\'iy intellekt haqida yoz.'),
+            ('Food', 'Sen tajribali oshpaz va blogersan. Retseptlar, restoranlar sharhi va ovqatlanish madaniyati haqida yoz.')
+        ]
+        c.executemany("INSERT INTO prompts_library (name, prompt) VALUES (?, ?)", default_prompts)
+        conn.commit()
+
     conn.commit()
     conn.close()
+
+# --- Библиотека промптов ---
+def get_prompts():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, name FROM prompts_library")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def get_prompt_by_id(prompt_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT prompt FROM prompts_library WHERE id = ?", (prompt_id,))
+    res = c.fetchone()
+    conn.close()
+    return res[0] if res else None
 
 def register_user(user_id, username):
     conn = sqlite3.connect(DB_PATH)
@@ -203,10 +240,13 @@ def get_post_by_id(post_id):
     conn.close()
     return row
 
-def update_post_content(post_id, text, scheduled_time):
+def update_post_content(post_id, text, scheduled_time, channels=None):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("UPDATE queue SET text = ?, scheduled_time = ? WHERE id = ?", (text, scheduled_time, post_id))
+    if channels:
+        c.execute("UPDATE queue SET text = ?, scheduled_time = ?, channel_id = ? WHERE id = ?", (text, scheduled_time, channels, post_id))
+    else:
+        c.execute("UPDATE queue SET text = ?, scheduled_time = ? WHERE id = ?", (text, scheduled_time, post_id))
     conn.commit()
     conn.close()
 
