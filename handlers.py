@@ -81,20 +81,22 @@ def register_handlers(bot_instance, user_drafts, album_cache):
     @bot.message_handler(func=lambda m: m.chat.type in ['group', 'supergroup'])
     def handle_group_message(message):
         """Обработка комментариев в группах обсуждения."""
-        if message.from_user.is_bot: return
+        # Игнорируем ботов
+        if message.from_user and message.from_user.is_bot: return
+        # Игнорируем автоматические пересылки из канала
+        if message.sender_chat and message.sender_chat.type == 'channel': return
+        if hasattr(message, 'is_automatic_forward') and message.is_automatic_forward: return
+        # Если текста нет (например, только стикер), тоже пропускаем
+        if not message.text: return
         
-        # 1. Сохраняем комментарий в базу данных для будущего анализа ИИ
-        database.save_comment(message.from_user.first_name, message.text, int(time.time()))
+        # 1. Сохраняем комментарий в базу данных
+        database.save_comment(message.from_user.first_name if message.from_user else "User", message.text, int(time.time()))
         
         # 2. Генерируем автоматический ответ через ИИ
-        # Берем язык админа канала (по умолчанию uz) или определяем по контексту
-        # Для простоты используем глобальную настройку первого админа
         admin_lang = database.get_user_setting(config.ADMIN_IDS[0], 'persona', 'uz')
-        
         reply_text = ai_generator.generate_reply(message.text, admin_lang)
         
         if reply_text:
-            # Отвечаем прямо на сообщение пользователя
             bot.reply_to(message, reply_text)
 
     @bot.message_handler(content_types=['text', 'photo'])

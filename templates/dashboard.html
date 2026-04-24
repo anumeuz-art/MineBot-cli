@@ -222,7 +222,11 @@
     function loadComments() {
         fetch('/api/comments').then(r => r.json()).then(data => {
             const list = document.getElementById('comments-list');
-            list.innerHTML = data.map(c => `<div class="comment-item"><strong>${c.user}:</strong><br>${c.text}</div>`).join('') || '<p class="text-muted">No comments yet</p>';
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="text-white-50" style="font-size: 0.7rem; text-align: center; padding: 20px;">[NO_NEW_DATA_LOGGED]</p>';
+            } else {
+                list.innerHTML = data.map(c => `<div class="comment-item"><strong>${c.user}:</strong><br>${c.text}</div>`).join('');
+            }
         });
     }
 
