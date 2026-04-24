@@ -5,10 +5,13 @@ from bs4 import BeautifulSoup
 from groq import Groq
 import database
 
+# Инициализация клиента Groq для работы с ИИ
 client = Groq(api_key=config.GROQ_API_KEY)
+# Используемая модель ИИ
 MODEL_ID = "llama-3.3-70b-versatile"
 
-# не трогать промпт, он уже оптимизирован для генерации постов по Minecraft модам 
+# Промпт-инструкция для ИИ. Определяет роль, стиль и структуру поста.
+# Содержит список разрешенных хэштегов и пример разметки HTML для Telegram.
 PROMPT_TEMPLATE = """
 Sen Minecraft modlari bo'yicha Telegram kanali muharririsan. Quyidagi ma'lumotlar asosida post yoz.
 '#Mods', '#Maps', '#Textures', '#Shaders', '#Addons', '#Mobs', '#Biomes', '#Structures', '#Survival', '#Magic', '#Armor', '#Tools', '#Furniture', '#Redstone', '#Utility', '#Building', '#Horror', '#Adventure', '#FPS', '#UI', '#Guns', '#Vehicles', 
@@ -36,50 +39,50 @@ Struktura:
 """
 
 def extract_url(text):
+    """Извлекает первую найденную URL-ссылку из текста."""
     urls = re.findall(r'(https?://[^\s]+)', text)
     return urls[0] if urls else None
 
 def fetch_page_content(url):
+    """Загружает содержимое страницы по ссылке и очищает его от скриптов/стилей для передачи в ИИ."""
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
+        # Удаляем лишние теги, которые не несут смысловой нагрузки для описания мода
         for s in soup(["script", "style"]): s.extract()
         return soup.get_text(separator=' ', strip=True)[:3000]
     except: return ""
 
 def limit_hashtags(text, limit=5):
-    # Разделяем текст на основной контент и блок хэштегов (обычно они в конце)
+    """
+    Очищает текст от избыточного количества хэштегов.
+    Оставляет максимум 5 уникальных тегов, где #Minecraft всегда первый.
+    """
     lines = text.strip().split('\n')
     main_body = []
     hashtags = []
     
-    # Регулярка для поиска хэштегов
     hashtag_pattern = re.compile(r'#\w+')
     
     for line in lines:
         found_in_line = hashtag_pattern.findall(line)
-        # Если строка состоит только из хэштегов и пробелов
+        # Если строка состоит только из хэштегов, собираем их в список
         if found_in_line and len(line.strip().replace(' ', '')) == sum(len(h) for h in found_in_line):
             for h in found_in_line:
                 if h not in hashtags:
                     hashtags.append(h)
         else:
-            # Если в строке есть текст, но в конце есть хэштеги — отделяем их (опционально)
-            # В данном случае просто сохраняем строку, если она не является "строкой хэштегов"
             main_body.append(line)
 
-    # Если хэштеги не были в отдельных строках, поищем их во всем тексте (на всякий случай)
+    # Если хэштеги были вплетены в текст, а не в конце, извлекаем их
     if not hashtags:
         all_tags = hashtag_pattern.findall(text)
         for h in all_tags:
             if h not in hashtags:
                 hashtags.append(h)
-        # Удаляем хэштеги из основного тела, если они там перемешаны (но только в конце)
-        # Для простоты — если мы их нашли, мы их пересоберем внизу
 
-    # Ограничиваем количество: #Minecraft + 4 тематических
-    # Убедимся, что #Minecraft на первом месте, если он есть
+    # Формируем финальный список: #Minecraft + остальные до лимита
     final_tags = []
     if '#Minecraft' in hashtags:
         final_tags.append('#Minecraft')
@@ -87,16 +90,18 @@ def limit_hashtags(text, limit=5):
     
     final_tags.extend(hashtags[:limit - len(final_tags)])
     
-    # Очищаем основное тело от "зависших" хэштегов в конце
+    # Очищаем основной текст от хэштегов в самом конце
     clean_body = "\n".join(main_body).strip()
     clean_body = re.sub(r'(#\w+\s*)+$', '', clean_body).strip()
     
     return clean_body + "\n\n" + " ".join(final_tags)
 
 def generate_post(user_input, persona="uz"):
+    """Основная функция генерации поста через Groq API."""
     url = extract_url(user_input)
     site_content = fetch_page_content(url) if url else ""
     
+    # Формируем полный промпт, объединяя шаблон и входные данные
     prompt = f"{PROMPT_TEMPLATE}\n\nMa'lumot:\n{user_input}\n{site_content}"
     
     try:
@@ -106,10 +111,10 @@ def generate_post(user_input, persona="uz"):
         )
         gen = res.choices[0].message.content.strip()
         
-        # Исправляем логику хэштегов (ограничиваем их количество)
+        # Пост-обработка для контроля количества хэштегов
         gen = limit_hashtags(gen)
         
-        # Реклама добавляется автоматически из БД, если она есть
+        # Добавляем рекламную подпись, если она настроена в БД
         ad_text = database.get_global_setting('ad_text', '')
         if ad_text and ad_text not in gen:
             gen += f"\n\n{ad_text}"
@@ -119,6 +124,7 @@ def generate_post(user_input, persona="uz"):
         return f"Error: {e}"
 
 def rewrite_post(text, style="short"):
+    """Переписывает уже готовый текст в заданном стиле (коротко/подробно)."""
     try:
         prompt = f"Перепиши этот пост про Minecraft мод, сделай его {style}. Сохрани структуру и эмодзи. Вот текст:\n\n{text}"
         res = client.chat.completions.create(
