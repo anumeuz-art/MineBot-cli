@@ -5,10 +5,9 @@ import strings
 
 def get_main_menu(lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(KeyboardButton(btns['create']))
-    # Кнопка открытия Web App
-    markup.add(KeyboardButton(btns['open_panel'], web_app=WebAppInfo(url="https://hospitable-clarity-production-3350.up.railway.app")))
+    markup.add(KeyboardButton(btns['lang']), KeyboardButton(btns['open_panel'], web_app=WebAppInfo(url="https://hospitable-clarity-production-3350.up.railway.app")))
     return markup
 
 def get_cancel_markup(lang='uz'):
@@ -40,12 +39,21 @@ def get_draft_markup(draft_id, lang='uz'):
     )
     return markup
 
+def get_language_menu():
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data="set_lang_uz"),
+        InlineKeyboardButton("🇷🇺 Русский", callback_data="set_lang_ru"),
+        InlineKeyboardButton("🇺🇸 English", callback_data="set_lang_en")
+    )
+    return markup
+
 def get_queue_menu(target_id, lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("2ч", callback_data=f"sched_interval_2_{target_id}"), 
-        InlineKeyboardButton("6ч", callback_data=f"sched_interval_6_{target_id}")
+        InlineKeyboardButton("2h", callback_data=f"sched_interval_2_{target_id}"), 
+        InlineKeyboardButton("6h", callback_data=f"sched_interval_6_{target_id}")
     )
     markup.add(
         InlineKeyboardButton(btns['exact'], callback_data=f"sched_exact_{target_id}"), 
@@ -56,9 +64,14 @@ def get_queue_menu(target_id, lang='uz'):
 def get_rewrite_menu(target_id, lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = InlineKeyboardMarkup(row_width=2)
+    # Используем новые стили (персоны)
     markup.add(
         InlineKeyboardButton(btns['short'], callback_data=f"rewrite_short_{target_id}"), 
         InlineKeyboardButton(btns['long'], callback_data=f"rewrite_long_{target_id}")
+    )
+    markup.add(
+        InlineKeyboardButton(btns['funny'], callback_data=f"rewrite_funny_{target_id}"), 
+        InlineKeyboardButton(btns['pro'], callback_data=f"rewrite_pro_{target_id}")
     )
     markup.add(InlineKeyboardButton(btns['back'], callback_data="back_to_draft"))
     return markup

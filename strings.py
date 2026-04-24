@@ -1,6 +1,6 @@
 MESSAGES = {
     'uz': {
-        'welcome': "👋 <b>Assalomu alaykum! Mine Botga xush kelibsiz!</b>\n\nMen Minecraft kanalingiz uchun postlar tayyorlashda yordam beraman.\n\n<b>Nima qila olaman?</b>\n1. Mod/Karta havolasidan chiroyli post yaratish.\n2. Rasmlarga avtomatik logo qo'yish.\n3. Postlarni navbatga qo'yish va rejalashtirish.\n\nBoshlash uchun mod havolasini yuboring yoki rasm yuklang!",
+        'welcome': "👋 <b>Assalomu alaykum! Mine Botga xush kelibsiz!</b>\n\nMen Minecraft kanalingiz uchun postlar tayyorlashda yordam beraman.\n\nBoshlash uchun mod havolasini yuboring yoki rasm yuklang!",
         'generation_start': "⏳ <b>Post tayyorlanmoqda...</b>",
         'processing_photo': "🎨 <b>Rasm qayta ishlanmoqda...</b>",
         'file_attached': "✅ Fayl biriktirildi! (Jami: <b>{count}</b>)",
@@ -19,9 +19,11 @@ MESSAGES = {
         'choose_action': "Tanlang:",
         'album_loading': "📸 Albom yuklanmoqda...",
         'album_processing': "🎨 Albom rasmlari qayta ishlanmoqda {i}/{total}...",
+        'lang_selected': "✅ Til o'zgartirildi: <b>O'zbekcha</b>",
+        'choose_lang': "Interfeys va postlar uchun tilni tanlang:"
     },
     'ru': {
-        'welcome': "👋 <b>Добро пожаловать в Mine Bot!</b>\n\nЯ помогу тебе создавать посты для твоего Minecraft-канала.\n\n<b>Что я умею?</b>\n1. Создавать красивые посты по ссылке на мод.\n2. Автоматически накладывать логотип на фото.\n3. Планировать посты в очередь.\n\nДля начала отправь ссылку на мод или фото!",
+        'welcome': "👋 <b>Добро пожаловать в Mine Bot!</b>\n\nЯ помогу тебе создавать посты для твоего Minecraft-канала.\n\nДля начала отправь ссылку на мод или фото!",
         'generation_start': "⏳ <b>Генерирую пост...</b>",
         'processing_photo': "🎨 <b>Обрабатываю фото...</b>",
         'file_attached': "✅ Файл прикреплен! (Всего: <b>{count}</b>)",
@@ -40,9 +42,11 @@ MESSAGES = {
         'choose_action': "Выберите действие:",
         'album_loading': "📸 Загружаю альбом...",
         'album_processing': "🎨 Обработка фото в альбоме {i}/{total}...",
+        'lang_selected': "✅ Язык изменен: <b>Русский</b>",
+        'choose_lang': "Выберите язык для интерфейса и постов:"
     },
     'en': {
-        'welcome': "👋 <b>Welcome to Mine Bot!</b>\n\nI'll help you create posts for your Minecraft channel.\n\n<b>What can I do?</b>\n1. Create beautiful posts from a mod link.\n2. Automatically add logos to photos.\n3. Schedule posts in a queue.\n\nTo start, send a mod link or a photo!",
+        'welcome': "👋 <b>Welcome to Mine Bot!</b>\n\nI'll help you create posts for your Minecraft channel.\n\nTo start, send a mod link or a photo!",
         'generation_start': "⏳ <b>Generating post...</b>",
         'processing_photo': "🎨 <b>Processing photo...</b>",
         'file_attached': "✅ File attached! (Total: <b>{count}</b>)",
@@ -61,6 +65,8 @@ MESSAGES = {
         'choose_action': "Choose action:",
         'album_loading': "📸 Loading album...",
         'album_processing': "🎨 Processing album photo {i}/{total}...",
+        'lang_selected': "✅ Language changed: <b>English</b>",
+        'choose_lang': "Choose language for interface and posts:"
     }
 }
 
@@ -76,8 +82,11 @@ BUTTONS = {
         'edit': "✏️ Tahrirlash",
         'rewrite': "✨ Qayta yozish",
         'delete': "❌ O'chirish",
-        'short': "Коротко", # Groq logic uses these
-        'long': "Подробно",
+        'lang': "🌍 Til / Tilni o'zgartirish",
+        'short': "Short (Qisqa)",
+        'long': "Detailed (Batafsil)",
+        'funny': "Funny (Qiziqarli)",
+        'pro': "Pro (Professional)",
         'exact': "📅 Aniq vaqt"
     },
     'ru': {
@@ -91,8 +100,11 @@ BUTTONS = {
         'edit': "✏️ Правка",
         'rewrite': "✨ Переписать",
         'delete': "❌ Удалить",
+        'lang': "🌍 Язык / Сменить язык",
         'short': "Коротко",
         'long': "Подробно",
+        'funny': "Весело",
+        'pro': "Профи",
         'exact': "📅 Точная дата"
     },
     'en': {
@@ -106,8 +118,11 @@ BUTTONS = {
         'edit': "✏️ Edit",
         'rewrite': "✨ Rewrite",
         'delete': "❌ Delete",
+        'lang': "🌍 Language / Change Language",
         'short': "Short",
-        'long': "Long",
+        'long': "Detailed",
+        'funny': "Funny",
+        'pro': "Professional",
         'exact': "📅 Exact Time"
     }
 }

@@ -109,6 +109,10 @@ def register_handlers(bot_instance, user_drafts, album_cache):
         if message.text == btns['create']:
             bot.send_message(message.chat.id, get_txt(user_id, 'choose_action'), reply_markup=keyboards.get_cancel_markup(lang))
             return
+
+        if message.text == btns['lang']:
+            bot.send_message(message.chat.id, get_txt(user_id, 'choose_lang'), reply_markup=keyboards.get_language_menu())
+            return
         
         if message.text == btns['cancel']:
             user_states[user_id] = None
@@ -137,8 +141,7 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             bot.send_chat_action(message.chat.id, 'upload_photo')
             user_input = message.caption if message.photo else message.text
             if not user_input: return
-            persona = database.get_user_setting(user_id, 'persona', 'uz')
-            generated_text = ai_generator.generate_post(user_input, persona)
+            generated_text = ai_generator.generate_post(user_input, lang)
             photo_id = None
             if message.photo:
                 bot.edit_message_text(get_txt(user_id, 'processing_photo'), message.chat.id, status_msg.message_id, parse_mode='HTML')
@@ -196,6 +199,14 @@ def register_handlers(bot_instance, user_drafts, album_cache):
         user_id = call.from_user.id
         lang = get_user_lang(user_id)
         
+        if call.data.startswith("set_lang_"):
+            new_lang = call.data.split('_')[2]
+            database.update_user_setting(user_id, 'persona', new_lang)
+            bot.answer_callback_query(call.id)
+            bot.delete_message(chat_id, target_id)
+            bot.send_message(chat_id, get_txt(user_id, 'lang_selected'), parse_mode='HTML', reply_markup=keyboards.get_main_menu(new_lang))
+            return
+
         if call.data == "cancel_action":
             bot.delete_message(chat_id, target_id)
             if target_id in user_drafts: del user_drafts[target_id]
@@ -260,9 +271,10 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             return
 
         if call.data.startswith("rewrite_"):
-            style = "short" if "short" in call.data else "long"
+            # Извлекаем стиль из callback (rewrite_short_123 -> short)
+            style = call.data.split('_')[1]
             bot.answer_callback_query(call.id, get_txt(user_id, 'rewriting'))
-            new_text = ai_generator.rewrite_post(draft['text'], style)
+            new_text = ai_generator.rewrite_post(draft['text'], style, lang)
             draft['text'] = new_text
             send_draft_preview(chat_id, user_id, draft)
             bot.delete_message(chat_id, target_id)
@@ -276,8 +288,7 @@ def register_handlers(bot_instance, user_drafts, album_cache):
         try:
             user_input = next((m.caption for m in messages if m.caption), None)
             if not user_input: user_input = "Album"
-            persona = database.get_user_setting(user_id, 'persona', 'uz')
-            generated_text = ai_generator.generate_post(user_input, persona)
+            generated_text = ai_generator.generate_post(user_input, lang)
             photo_ids = []
             for i, msg in enumerate(messages):
                 bot.edit_message_text(get_txt(user_id, 'album_processing', i=i+1, total=len(messages)), chat_id, status_msg.message_id, parse_mode='HTML')
