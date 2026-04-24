@@ -138,7 +138,34 @@
             </div>
         </div>
         <div class="tab-pane fade" id="settings">
-            <div class="card p-4"><h6 id="head-lang">AI_OUTPUT_LANGUAGE</h6><div class="d-flex gap-2">{% for l in [('uz','UZB'),('ru','RUS'),('en','ENG')] %}<button class="lang-btn {% if current_lang == l[0] %}active{% endif %}" onclick="setLang('{{ l[0] }}')">{{ l[1] }}</button>{% endfor %}</div></div>
+            <div class="card p-4 mb-4"><h6 id="head-lang">AI_OUTPUT_LANGUAGE</h6><div class="d-flex gap-2">{% for l in [('uz','UZB'),('ru','RUS'),('en','ENG')] %}<button class="lang-btn {% if current_lang == l[0] %}active{% endif %}" onclick="setLang('{{ l[0] }}')">{{ l[1] }}</button>{% endfor %}</div></div>
+            
+            <div class="card p-4 mb-4">
+                <h6 class="mb-4" style="color: var(--neon-g)" id="head-smart-q">SMART_QUEUE_INTERVAL_CONFIG</h6>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-white border-secondary" style="font-size: 0.7rem;">INTERVAL (HOURS)</span>
+                    <input type="number" id="smart-interval" class="form-control" value="{{ smart_interval }}" min="1" max="72">
+                    <button class="btn btn-primary-mc btn-mc px-4" onclick="saveInterval()" id="btn-save-interval">SAVE</button>
+                </div>
+                <p class="mt-3 text-muted" style="font-size: 0.6rem;" id="hint-smart-q">* Sets the gap between posts in the smart queue.</p>
+            </div>
+
+            <div class="card p-4 mb-4">
+                <h6 class="mb-4" style="color: var(--neon-p)" id="head-watermark">CUSTOM_WATERMARK_CONFIG</h6>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-white border-secondary" style="font-size: 0.7rem;">TEXT</span>
+                    <input type="text" id="watermark-text" class="form-control" value="{{ watermark_text }}" placeholder="@channel_username">
+                    <button class="btn btn-purple-mc btn-mc px-4" onclick="saveWatermark()" id="btn-save-watermark">SAVE</button>
+                </div>
+                <p class="mt-3 text-muted" style="font-size: 0.6rem;" id="hint-watermark">* This text will be drawn on all photos. Leave empty to use logo.png.</p>
+            </div>
+            
+            <div class="card p-4">
+                <h6 class="mb-4" style="color: var(--neon-p)" id="head-prompt">AI_SYSTEM_PROMPT_CONFIG</h6>
+                <textarea id="prompt-text-area" class="form-control mb-3" rows="10" style="font-size: 0.7rem; color: #aaa !important;">{{ system_prompt }}</textarea>
+                <button class="btn btn-purple-mc btn-mc px-4" onclick="savePrompt()" id="btn-save-prompt">SAVE_PROMPT</button>
+                <p class="mt-3 text-muted" style="font-size: 0.6rem;" id="hint-prompt">* This is the main instruction for the AI. Change it to adapt the bot for other niches (Movies, News, etc.).</p>
+            </div>
         </div>
     </div>
 </div>
@@ -255,6 +282,8 @@
     });
 
     function saveAd() { fetch('/api/settings/ad', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('ad-text-area').value}) }).then(() => alert('AD_SAVED')); }
+    function savePrompt() { fetch('/api/settings/prompt', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({prompt: document.getElementById('prompt-text-area').value}) }).then(() => alert('PROMPT_SAVED')); }
+    function saveInterval() { fetch('/api/settings/interval', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({interval: document.getElementById('smart-interval').value}) }).then(() => alert('INTERVAL_SAVED')); }
     function setLang(l) { fetch('/api/settings/language', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) }).then(() => location.reload()); }
     function viewFullText(p) { document.getElementById('full-text-content').innerText = p.text; new bootstrap.Modal(document.getElementById('textModal')).show(); }
     let curId = null;

@@ -34,7 +34,7 @@
 *   **Language:** Python 3.10+
 *   **Telegram API:** `pyTelegramBotAPI` (Telebot)
 *   **Web Framework:** `Flask` (Dashboard)
-*   **AI Integration:** `Groq SDK` (Llama 3.3 70B)
+*   **AI Integration:** `Groq SDK` (Llama 3.3 70B) + gemini если токены кончились у groq
 *   **Database:** `SQLite` (с миграциями)
 *   **Image Processing:** `Pillow` (Watermarking)
 *   **Scheduling:** `APScheduler`

@@ -1,47 +1,58 @@
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import os
+import database
 
 def add_watermark(input_image_path, output_image_path, watermark_image_path='templates/logo.png'):
     """
-    Накладывает водяной знак (логотип) на изображение.
-    Логотип автоматически масштабируется под размер основного фото и размещается в углу.
+    Накладывает водяной знак. 
+    Приоритет: Текстовый водяной знак из БД -> Логотип (logo.png).
     """
     try:
-        # Открываем основное изображение и логотип
         base_image = Image.open(input_image_path).convert("RGBA")
-        watermark = Image.open(watermark_image_path).convert("RGBA")
-        
         width, height = base_image.size
         
-        # Логотип будет занимать 20% от ширины основного фото
-        wm_width = int(width * 0.20)
-        # Сохраняем пропорции логотипа при изменении размера
-        w_percent = (wm_width / float(watermark.size[0]))
-        h_size = int((float(watermark.size[1]) * float(w_percent)))
-        watermark = watermark.resize((wm_width, h_size), Image.Resampling.LANCZOS)
+        # Создаем слой для водяного знака
+        overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
         
-        wm_w, wm_h = watermark.size
+        # Получаем текст водяного знака из базы
+        wm_text = database.get_global_setting('watermark_custom_text', '')
         
-        # Позиция: правый нижний угол с небольшим отступом (3% от края)
-        offset_x = int(width * 0.03)
-        offset_y = int(height * 0.03)
-        position = (width - wm_w - offset_x, height - wm_h - offset_y)
+        if wm_text:
+            # ТЕКСТОВЫЙ ВАТЕРМАРК
+            # Подбираем размер шрифта (примерно 5% от высоты изображения)
+            font_size = int(height * 0.05)
+            try:
+                # Пытаемся загрузить стандартный шрифт, если есть
+                font = ImageFont.truetype("arial.ttf", font_size)
+            except:
+                font = ImageFont.load_default()
+                
+            # Позиция: правый нижний угол
+            text_width = draw.textlength(wm_text, font=font)
+            position = (width - text_width - 20, height - font_size - 20)
+            
+            # Рисуем текст с небольшой тенью для читаемости
+            draw.text((position[0]+2, position[1]+2), wm_text, font=font, fill=(0, 0, 0, 128))
+            draw.text(position, wm_text, font=font, fill=(255, 255, 255, 180))
+        else:
+            # ГРАФИЧЕСКИЙ ВАТЕРМАРК (LOGO.PNG)
+            if os.path.exists(watermark_image_path):
+                watermark = Image.open(watermark_image_path).convert("RGBA")
+                wm_width = int(width * 0.20)
+                w_percent = (wm_width / float(watermark.size[0]))
+                h_size = int((float(watermark.size[1]) * float(w_percent)))
+                watermark = watermark.resize((wm_width, h_size), Image.Resampling.LANCZOS)
+                
+                offset_x = int(width * 0.03)
+                offset_y = int(height * 0.03)
+                position = (width - watermark.size[0] - offset_x, height - watermark.size[1] - offset_y)
+                overlay.paste(watermark, position, mask=watermark)
         
-        # Создаем прозрачный слой для наложения логотипа
-        transparent = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-        transparent.paste(base_image, (0, 0))
-        # Накладываем водяной знак на прозрачный слой
-        transparent.paste(watermark, position, mask=watermark)
-        
-        # Конвертируем обратно в RGB для сохранения в JPG
-        finished_image = transparent.convert("RGB")
-        finished_image.save(output_image_path, "JPEG", quality=90)
+        # Совмещаем слои
+        finished = Image.alpha_composite(base_image, overlay)
+        finished.convert("RGB").save(output_image_path, "JPEG", quality=95)
         return True
     except Exception as e:
         print(f"Error adding watermark: {e}")
-        # В случае ошибки просто копируем оригинал
-        try:
-            base_image = Image.open(input_image_path).convert("RGB")
-            base_image.save(output_image_path, "JPEG")
-        except: pass
         return False

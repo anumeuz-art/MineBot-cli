@@ -2,9 +2,9 @@ import sqlite3
 import time
 import os
 from datetime import datetime
+import config
 
 # Путь к файлу базы данных SQLite. 
-# Используется папка 'data/', которая обычно мапится на Railway Volume для сохранения данных при перезагрузках.
 DB_PATH = 'data/bot_data.db'
 
 def init_db():
@@ -15,7 +15,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     
-    # Таблица очереди постов: хранит медиа, текст, статус и время публикации
+    # Таблица очереди постов
     c.execute('''CREATE TABLE IF NOT EXISTS queue
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   photo_id TEXT,
@@ -23,40 +23,47 @@ def init_db():
                   document_id TEXT,
                   status TEXT DEFAULT 'pending')''')
     
-    # Динамическое добавление колонок (для миграции старых БД без удаления данных)
+    # Миграции
     try: c.execute("ALTER TABLE queue ADD COLUMN channel_id TEXT")
     except: pass
     try: c.execute("ALTER TABLE queue ADD COLUMN scheduled_time INTEGER")
     except: pass
+    try: c.execute("ALTER TABLE queue ADD COLUMN user_id INTEGER")
+    except: pass
         
-    # Таблица индивидуальных настроек пользователей (язык, активный канал)
+    # Таблица авторизованных пользователей
+    c.execute('''CREATE TABLE IF NOT EXISTS authorized_users
+                 (user_id INTEGER PRIMARY KEY, username TEXT, joined_at INTEGER)''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS user_settings
                  (user_id INTEGER, key TEXT, value TEXT, PRIMARY KEY (user_id, key))''')
 
-    # Таблица комментариев пользователей (для анализа через Groq)
     c.execute('''CREATE TABLE IF NOT EXISTS comments
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT, text TEXT, timestamp INTEGER)''')
 
-    # Таблица списка каналов, которыми управляет бот
     c.execute('''CREATE TABLE IF NOT EXISTS managed_channels
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE)''')
 
-    # Статистика подписчиков (срез по дням)
     c.execute('''CREATE TABLE IF NOT EXISTS stats_subscribers
                  (channel_id TEXT, count INTEGER, date TEXT, PRIMARY KEY (channel_id, date))''')
 
-    # Статистика просмотров постов
     c.execute('''CREATE TABLE IF NOT EXISTS stats_posts
                  (post_id INTEGER PRIMARY KEY, views INTEGER, date TEXT)''')
 
-    # Глобальные настройки (рекламный текст и прочее)
     c.execute('''CREATE TABLE IF NOT EXISTS global_settings
                  (key TEXT PRIMARY KEY, value TEXT)''')
 
     conn.commit()
     conn.close()
 
-# --- Глобальные настройки ---
+def register_user(user_id, username):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO authorized_users (user_id, username, joined_at) VALUES (?, ?, ?)", 
+              (user_id, username, int(time.time())))
+    conn.commit()
+    conn.close()
+
 def set_global_setting(key, value):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -72,7 +79,6 @@ def get_global_setting(key, default=""):
     conn.close()
     return result[0] if result else default
 
-# --- Управление каналами ---
 def add_channel(username):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -96,7 +102,6 @@ def get_all_managed_channels():
     conn.close()
     return [r[0] for r in rows]
 
-# --- Статистика ---
 def save_sub_count(channel_id, count):
     date = datetime.now().strftime('%Y-%m-%d')
     conn = sqlite3.connect(DB_PATH)
@@ -121,7 +126,6 @@ def save_post_views(post_id, views):
     conn.commit()
     conn.close()
 
-# --- Настройки пользователя ---
 def update_user_setting(user_id, key, value):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -137,12 +141,11 @@ def get_user_setting(user_id, key, default=None):
     conn.close()
     return result[0] if result else default
 
-# --- Очередь ---
-def add_to_queue(photo_id, text, document_id=None, channel_id=None, scheduled_time=None):
+def add_to_queue(photo_id, text, document_id=None, channel_id=None, scheduled_time=None, user_id=None):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO queue (photo_id, text, document_id, channel_id, scheduled_time) VALUES (?, ?, ?, ?, ?)", 
-              (photo_id, text, document_id, channel_id, scheduled_time))
+    c.execute("INSERT INTO queue (photo_id, text, document_id, channel_id, scheduled_time, user_id) VALUES (?, ?, ?, ?, ?, ?)", 
+              (photo_id, text, document_id, channel_id, scheduled_time, user_id))
     conn.commit()
     conn.close()
 
@@ -181,18 +184,13 @@ def get_stats():
     conn.close()
     return {'total': total, 'published': published, 'queue': queue_count, 'today': today}
 
-def get_all_pending():
+def get_all_pending(user_id=None):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time FROM queue WHERE status='pending' ORDER BY scheduled_time ASC")
-    rows = c.fetchall()
-    conn.close()
-    return rows
-
-def get_all_posts():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM queue")
+    if user_id and user_id not in config.ADMIN_IDS:
+        c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time FROM queue WHERE status='pending' AND user_id = ? ORDER BY scheduled_time ASC", (user_id,))
+    else:
+        c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time FROM queue WHERE status='pending' ORDER BY scheduled_time ASC")
     rows = c.fetchall()
     conn.close()
     return rows
@@ -216,23 +214,6 @@ def delete_from_queue(post_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("DELETE FROM queue WHERE id=?", (post_id,))
-    conn.commit()
-    conn.close()
-
-def get_last_scheduled_time():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT scheduled_time FROM queue WHERE status='pending' AND scheduled_time IS NOT NULL ORDER BY scheduled_time DESC LIMIT 1")
-    result = c.fetchone()
-    conn.close()
-    return result[0] if result else None
-
-def record_published_post(photo_id, text, document_id, channel_id):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    current_time = int(time.time())
-    c.execute("INSERT INTO queue (photo_id, text, document_id, channel_id, scheduled_time, status) VALUES (?, ?, ?, ?, ?, 'posted')", 
-              (photo_id, text, document_id, channel_id, current_time))
     conn.commit()
     conn.close()
 

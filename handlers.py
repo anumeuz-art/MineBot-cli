@@ -55,11 +55,16 @@ def register_handlers(bot_instance, user_drafts, album_cache):
     @bot.message_handler(commands=['start'])
     def handle_start(message):
         user_id = message.from_user.id
+        username = message.from_user.username or message.from_user.first_name
+        
+        # Регистрируем пользователя (авторизация по факту нажатия /start)
+        database.register_user(user_id, username)
+        
         if not database.get_user_setting(user_id, 'persona'):
             database.update_user_setting(user_id, 'persona', 'uz')
         
         lang = get_user_lang(user_id)
-        # ИСПРАВЛЕНИЕ: Web App кнопки только в ЛС (Private Chat)
+        # Web App кнопки теперь могут передавать ID пользователя (неявно через Web App API)
         markup = keyboards.get_main_menu(lang) if message.chat.type == 'private' else None
         
         bot.send_message(
@@ -72,32 +77,26 @@ def register_handlers(bot_instance, user_drafts, album_cache):
     @bot.message_handler(func=lambda m: m.chat.type in ['group', 'supergroup'])
     def handle_group_message(message):
         """Обработка комментариев в группах."""
-        # Игнорируем сообщения от других ботов
         if message.from_user and message.from_user.is_bot: return
-        
-        # ИСПРАВЛЕНИЕ: Игнорируем ТОЛЬКО автоматические репосты из канала.
-        # Если админ пишет от имени канала или просто пользователь комментирует — слушаем.
         if hasattr(message, 'is_automatic_forward') and message.is_automatic_forward: return
-        
         if not message.text: return
         
-        # Сохраняем для анализа
         user_name = message.from_user.first_name if message.from_user else "User"
         database.save_comment(user_name, message.text, int(time.time()))
         
-        # Генерируем живой ответ
         admin_lang = database.get_user_setting(config.ADMIN_IDS[0], 'persona', 'uz')
-        reply_text = ai_generator.generate_reply(message.text, admin_lang)
-        
+        original_post = ""
+        if message.reply_to_message:
+            original_post = message.reply_to_message.text or message.reply_to_message.caption or ""
+            
+        reply_text = ai_generator.generate_reply(message.text, original_post, admin_lang)
         if reply_text:
             try: bot.reply_to(message, reply_text)
             except: pass
 
     @bot.message_handler(content_types=['text', 'photo'])
     def handle_text_photo(message):
-        # Обрабатываем только в личке, чтобы не мешать комментариям
         if message.chat.type != 'private': return
-        
         user_id = message.from_user.id
         lang = get_user_lang(user_id)
         btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
@@ -122,7 +121,7 @@ def register_handlers(bot_instance, user_drafts, album_cache):
                     if dt.timestamp() < time.time(): dt = dt.replace(year=dt.year + 1)
                     
                     draft = user_drafts[target_id]
-                    database.add_to_queue(draft.get('photo'), draft.get('text'), draft.get('document'), draft.get('channel', config.DEFAULT_CHANNEL), int(dt.timestamp()))
+                    database.add_to_queue(draft.get('photo'), draft.get('text'), draft.get('document'), draft.get('channel', config.DEFAULT_CHANNEL), int(dt.timestamp()), user_id)
                     user_states[user_id] = None
                     bot.delete_message(message.chat.id, target_id)
                     bot.send_message(message.chat.id, get_txt(user_id, 'scheduled', time=dt.strftime('%d.%m %H:%M')), reply_markup=keyboards.get_main_menu(lang))
@@ -148,7 +147,6 @@ def register_handlers(bot_instance, user_drafts, album_cache):
                 threading.Timer(2.0, process_album, args=[message.media_group_id, message.chat.id, message.from_user.id]).start()
             album_cache[message.media_group_id].append(message)
             return
-        
         process_single_message(message)
 
     def process_single_message(message):
@@ -172,7 +170,7 @@ def register_handlers(bot_instance, user_drafts, album_cache):
                     photo_id = sent.photo[-1].file_id
                     bot.delete_message(message.chat.id, sent.message_id) 
             bot.delete_message(message.chat.id, status_msg.message_id)
-            draft = {'photo': photo_id, 'text': generated_text, 'document': None, 'channel': database.get_user_setting(user_id, 'active_channel', config.DEFAULT_CHANNEL)}
+            draft = {'photo': photo_id, 'text': generated_text, 'document': None, 'channel': database.get_user_setting(user_id, 'active_channel', config.DEFAULT_CHANNEL), 'user_id': user_id}
             send_draft_preview(message.chat.id, user_id, draft)
         except Exception as e: bot.edit_message_text(f"❌ Error: {e}", message.chat.id, status_msg.message_id)
         finally:
@@ -233,12 +231,13 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             bot.delete_message(chat_id, target_id)
             bot.send_message(chat_id, get_txt(user_id, 'published'), reply_markup=keyboards.get_main_menu(lang))
         elif call.data == "add_to_smart_q":
-            database.add_to_queue(draft['photo'], draft['text'], draft['document'], draft.get('channel', config.DEFAULT_CHANNEL), int(time.time()) + 21600)
+            interval_h = int(database.get_global_setting('smart_queue_interval', '6'))
+            database.add_to_queue(draft['photo'], draft['text'], draft['document'], draft.get('channel', config.DEFAULT_CHANNEL), int(time.time()) + interval_h*3600, user_id)
             bot.delete_message(chat_id, target_id)
             bot.send_message(chat_id, get_txt(user_id, 'smart_queue_added'), reply_markup=keyboards.get_main_menu(lang))
         elif call.data.startswith("sched_interval_"):
             h = int(call.data.split('_')[2])
-            database.add_to_queue(draft['photo'], draft['text'], draft['document'], draft.get('channel', config.DEFAULT_CHANNEL), int(time.time()) + h*3600)
+            database.add_to_queue(draft['photo'], draft['text'], draft['document'], draft.get('channel', config.DEFAULT_CHANNEL), int(time.time()) + h*3600, user_id)
             bot.delete_message(chat_id, target_id)
             bot.send_message(chat_id, get_txt(user_id, 'scheduled', time=f"+{h}h"), reply_markup=keyboards.get_main_menu(lang))
         elif call.data == "translate_menu":
@@ -283,7 +282,7 @@ def register_handlers(bot_instance, user_drafts, album_cache):
                     p_ids.append(s.photo[-1].file_id)
                     if not hasattr(config, 'LOG_CHANNEL'): bot.delete_message(chat_id, s.message_id)
             bot.delete_message(chat_id, status.message_id)
-            send_draft_preview(chat_id, user_id, {'photo': ",".join(p_ids), 'text': txt, 'document': None})
+            send_draft_preview(chat_id, user_id, {'photo': ",".join(p_ids), 'text': txt, 'document': None, 'user_id': user_id})
         except Exception as e: bot.edit_message_text(f"❌ Error: {e}", chat_id, status.message_id)
         finally:
             if media_group_id in album_cache: del album_cache[media_group_id]
