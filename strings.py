@@ -20,7 +20,8 @@ MESSAGES = {
         'album_loading': "📸 Albom yuklanmoqda...",
         'album_processing': "🎨 Albom rasmlari qayta ishlanmoqda {i}/{total}...",
         'lang_selected': "✅ Til o'zgartirildi: <b>O'zbekcha</b>",
-        'choose_lang': "Interfeys va postlar uchun tilni tanlang:"
+        'choose_lang': "Interfeys va postlar uchun tilni tanlang:",
+        'translating': "⏳ Tarjima qilinmoqda..."
     },
     'ru': {
         'welcome': "👋 <b>Добро пожаловать в Mine Bot!</b>\n\nЯ помогу тебе создавать посты для твоего Minecraft-канала.\n\nДля начала отправь ссылку на мод или фото!",
@@ -43,7 +44,8 @@ MESSAGES = {
         'album_loading': "📸 Загружаю альбом...",
         'album_processing': "🎨 Обработка фото в альбоме {i}/{total}...",
         'lang_selected': "✅ Язык изменен: <b>Русский</b>",
-        'choose_lang': "Выберите язык для интерфейса и постов:"
+        'choose_lang': "Выберите язык для интерфейса и постов:",
+        'translating': "⏳ Перевожу пост..."
     },
     'en': {
         'welcome': "👋 <b>Welcome to Mine Bot!</b>\n\nI'll help you create posts for your Minecraft channel.\n\nTo start, send a mod link or a photo!",
@@ -66,7 +68,8 @@ MESSAGES = {
         'album_loading': "📸 Loading album...",
         'album_processing': "🎨 Processing album photo {i}/{total}...",
         'lang_selected': "✅ Language changed: <b>English</b>",
-        'choose_lang': "Choose language for interface and posts:"
+        'choose_lang': "Choose language for interface and posts:",
+        'translating': "⏳ Translating..."
     }
 }
 
@@ -87,7 +90,8 @@ BUTTONS = {
         'long': "Detailed (Batafsil)",
         'funny': "Funny (Qiziqarli)",
         'pro': "Pro (Professional)",
-        'exact': "📅 Aniq vaqt"
+        'exact': "📅 Aniq vaqt",
+        'translate': "🔄 Tarjima"
     },
     'ru': {
         'create': "📝 Создать пост",
@@ -105,7 +109,8 @@ BUTTONS = {
         'long': "Подробно",
         'funny': "Весело",
         'pro': "Профи",
-        'exact': "📅 Точная дата"
+        'exact': "📅 Точная дата",
+        'translate': "🔄 Перевести"
     },
     'en': {
         'create': "📝 Create Post",
@@ -123,6 +128,7 @@ BUTTONS = {
         'long': "Detailed",
         'funny': "Funny",
         'pro': "Professional",
-        'exact': "📅 Exact Time"
+        'exact': "📅 Exact Time",
+        'translate': "🔄 Translate"
     }
 }

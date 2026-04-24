@@ -35,7 +35,18 @@ def get_draft_markup(draft_id, lang='uz'):
         InlineKeyboardButton(btns['rewrite'], callback_data="rewrite_menu")
     )
     markup.add(
+        InlineKeyboardButton(btns['translate'], callback_data="translate_menu"),
         InlineKeyboardButton(btns['delete'], callback_data="cancel_action")
+    )
+    return markup
+
+def get_translate_menu(target_id):
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data=f"tr_uz_{target_id}"),
+        InlineKeyboardButton("🇷🇺 Русский", callback_data=f"tr_ru_{target_id}"),
+        InlineKeyboardButton("🇺🇸 English", callback_data=f"tr_en_{target_id}"),
+        InlineKeyboardButton("⬅️ Назад", callback_data="back_to_draft")
     )
     return markup
 
@@ -64,7 +75,6 @@ def get_queue_menu(target_id, lang='uz'):
 def get_rewrite_menu(target_id, lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = InlineKeyboardMarkup(row_width=2)
-    # Используем новые стили (персоны)
     markup.add(
         InlineKeyboardButton(btns['short'], callback_data=f"rewrite_short_{target_id}"), 
         InlineKeyboardButton(btns['long'], callback_data=f"rewrite_long_{target_id}")

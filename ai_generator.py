@@ -103,16 +103,15 @@ def generate_post(user_input, persona="uz"):
     
     # Определяем язык вывода
     lang_map = {
-        'uz': "O'zbek tilida",
-        'ru': "на русском языке",
+        'uz': "O'zbek tilida (Uzbek)",
+        'ru': "на русском языке (Russian)",
         'en': "in English"
     }
     target_lang = lang_map.get(persona, "O'zbek tilida")
 
-    # Формируем полный промпт, добавляя инструкцию о языке
-    # Мы вставляем требование к языку в начало, чтобы ИИ сразу его учел
-    lang_instruction = f"IMPORTANT: Write the post {target_lang}."
-    prompt = f"{lang_instruction}\n\n{PROMPT_TEMPLATE}\n\nMa'lumot:\n{user_input}\n{site_content}"
+    # Формируем полный промпт
+    # Вставляем язык в начало и конец, чтобы модель не игнорировала его из-за шаблона
+    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{PROMPT_TEMPLATE}\n\nDATA TO PROCESS:\n{user_input}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
     
     try:
         res = client.chat.completions.create(
@@ -132,6 +131,26 @@ def generate_post(user_input, persona="uz"):
         return gen
     except Exception as e:
         return f"Error: {e}"
+
+def translate_post(text, target_persona="uz"):
+    """Переводит готовый пост на другой язык, сохраняя всю HTML разметку и эмодзи."""
+    try:
+        lang_map = {
+            'uz': "O'zbek tili (Uzbek)",
+            'ru': "Русский язык (Russian)",
+            'en': "English"
+        }
+        target_lang = lang_map.get(target_persona, "English")
+        
+        prompt = f"Translate this Telegram post strictly to {target_lang}. Keep all HTML tags like <b>, <blockquote>, <blockquote expandable> exactly as they are. Do not remove any emojis. Text to translate:\n\n{text}"
+        
+        res = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}], 
+            model=MODEL_ID
+        )
+        return res.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Translation error: {e}"
 
 def rewrite_post(text, style="short", persona="uz"):
     """Переписывает уже готовый текст в заданном стиле (персоне)."""

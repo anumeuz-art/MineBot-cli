@@ -30,6 +30,36 @@ def get_txt(user_id, key, **kwargs):
     text = strings.MESSAGES.get(lang, strings.MESSAGES['uz']).get(key, key)
     return text.format(**kwargs)
 
+def ensure_html_tags(text):
+    """
+    Проверяет наличие необходимых HTML тегов (blockquote). 
+    Если при ручном редактировании пользователь их удалил, бот пытается восстановить структуру.
+    """
+    if '<b>' not in text:
+        # Если нет жирного заголовка, пробуем сделать первую строку жирной
+        lines = text.split('\n')
+        if lines:
+            lines[0] = f"📦 <b>{lines[0].replace('📦', '').strip()}</b>"
+            text = '\n'.join(lines)
+            
+    if '<blockquote' not in text:
+        # Пытаемся обернуть описание (все что между заголовком и вопросом/тегами) в блок
+        # Для простоты: если блока нет, оборачиваем среднюю часть
+        lines = text.split('\n')
+        if len(lines) > 3:
+            # Ищем где начинаются теги или вопрос
+            end_idx = len(lines)
+            for i, line in enumerate(lines):
+                if '#' in line or '?' in line or 'yoqdimi' in line.lower():
+                    end_idx = i
+                    break
+            
+            middle = '\n'.join(lines[1:end_idx]).strip()
+            if middle:
+                new_text = lines[0] + "\n\n<blockquote expandable>" + middle + "</blockquote>\n\n" + '\n'.join(lines[end_idx:])
+                return new_text
+    return text
+
 def register_handlers(bot_instance, user_drafts, album_cache):
     """Регистрация всех обработчиков команд и сообщений бота."""
 
@@ -59,7 +89,9 @@ def register_handlers(bot_instance, user_drafts, album_cache):
         if user_states.get(user_id) == "EDITING":
             target_id = user_current_draft_id.get(user_id)
             if target_id and target_id in user_drafts:
-                user_drafts[target_id]['text'] = message.text
+                # Исправляем теги перед сохранением
+                new_text = ensure_html_tags(message.text)
+                user_drafts[target_id]['text'] = new_text
                 user_states[user_id] = None
                 bot.send_message(message.chat.id, get_txt(user_id, 'text_updated'), reply_markup=keyboards.get_main_menu(lang))
                 send_draft_preview(message.chat.id, user_id, user_drafts[target_id])
@@ -166,16 +198,21 @@ def register_handlers(bot_instance, user_drafts, album_cache):
         lang = get_user_lang(user_id)
         text = draft['text']
         photo_id = draft['photo']
-        if photo_id:
-            if ',' in photo_id:
-                ids = photo_id.split(',')
-                media = [telebot.types.InputMediaPhoto(media=pid) for pid in ids]
-                bot.send_media_group(chat_id, media)
-                sent = bot.send_message(chat_id, text, parse_mode='HTML')
+        try:
+            if photo_id:
+                if ',' in photo_id:
+                    ids = photo_id.split(',')
+                    media = [telebot.types.InputMediaPhoto(media=pid) for pid in ids]
+                    bot.send_media_group(chat_id, media)
+                    sent = bot.send_message(chat_id, text, parse_mode='HTML')
+                else:
+                    sent = bot.send_photo(chat_id, photo_id, caption=text, parse_mode='HTML')
             else:
-                sent = bot.send_photo(chat_id, photo_id, caption=text, parse_mode='HTML')
-        else:
-            sent = bot.send_message(chat_id, text, parse_mode='HTML')
+                sent = bot.send_message(chat_id, text, parse_mode='HTML')
+        except Exception as pe:
+            # Если ошибка разметки, пробуем отправить без неё
+            sent = bot.send_message(chat_id, f"⚠️ HTML Error. Sending raw:\n\n{text}")
+
         target_id = sent.message_id
         user_drafts[target_id] = draft
         user_current_draft_id[user_id] = target_id
@@ -214,7 +251,7 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             return
         
         draft = user_drafts.get(target_id)
-        if not draft and not call.data.startswith("sched_"): 
+        if not draft and not call.data.startswith("sched_") and not call.data.startswith("tr_"): 
             bot.answer_callback_query(call.id, get_txt(user_id, 'err_draft'), show_alert=True)
             return
 
@@ -252,6 +289,21 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             bot.answer_callback_query(call.id)
             return
 
+        if call.data == "translate_menu":
+            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_translate_menu(target_id))
+            return
+
+        if call.data.startswith("tr_"):
+            # tr_uz_123
+            target_lang = call.data.split('_')[1]
+            bot.answer_callback_query(call.id, get_txt(user_id, 'translating'))
+            translated_text = ai_generator.translate_post(draft['text'], target_lang)
+            draft['text'] = translated_text
+            # Не меняем язык интерфейса, только текст поста
+            send_draft_preview(chat_id, user_id, draft)
+            bot.delete_message(chat_id, target_id)
+            return
+
         if call.data == "pub_queue_menu":
             bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_queue_menu(target_id, lang))
             return
@@ -271,7 +323,6 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             return
 
         if call.data.startswith("rewrite_"):
-            # Извлекаем стиль из callback (rewrite_short_123 -> short)
             style = call.data.split('_')[1]
             bot.answer_callback_query(call.id, get_txt(user_id, 'rewriting'))
             new_text = ai_generator.rewrite_post(draft['text'], style, lang)
