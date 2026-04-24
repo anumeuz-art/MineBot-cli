@@ -101,8 +101,18 @@ def generate_post(user_input, persona="uz"):
     url = extract_url(user_input)
     site_content = fetch_page_content(url) if url else ""
     
-    # Формируем полный промпт, объединяя шаблон и входные данные
-    prompt = f"{PROMPT_TEMPLATE}\n\nMa'lumot:\n{user_input}\n{site_content}"
+    # Определяем язык вывода
+    lang_map = {
+        'uz': "O'zbek tilida",
+        'ru': "на русском языке",
+        'en': "in English"
+    }
+    target_lang = lang_map.get(persona, "O'zbek tilida")
+
+    # Формируем полный промпт, добавляя инструкцию о языке
+    # Мы вставляем требование к языку в начало, чтобы ИИ сразу его учел
+    lang_instruction = f"IMPORTANT: Write the post {target_lang}."
+    prompt = f"{lang_instruction}\n\n{PROMPT_TEMPLATE}\n\nMa'lumot:\n{user_input}\n{site_content}"
     
     try:
         res = client.chat.completions.create(
