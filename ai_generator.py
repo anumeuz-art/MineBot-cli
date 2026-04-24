@@ -154,26 +154,33 @@ def translate_post(text, target_persona="uz"):
         return f"Translation error: {e}"
 
 def generate_reply(comment_text, persona="uz"):
-    # ... (код функции остается прежним)
+    """Генерирует живой, человечный ответ на комментарий пользователя."""
     try:
+        # Инструкции для разных языков, чтобы сохранить "вайб"
+        personality = {
+            'uz': "Siz Minecraft fanatisiz va @Lazikomods kanalida moderatormiz. Juda do'stona, samimiy va qisqa javob bering. 'Imba', 'Gap yo'q', 'Zo'r' kabi so'zlarni ishlating. Robotdek gapirmang.",
+            'ru': "Ты — фанат Майнкрафта и модератор канала @Lazikomods. Отвечай как живой человек: используй сленг (имба, годно, топ, чекай), будь на позитиве. Никакого официоза и фраз типа 'чем я могу вам помочь'.",
+            'en': "You are a Minecraft fan and moderator of @Lazikomods. Reply like a real human: use slang (cool, sick, OP, lit), be energetic and very brief. Don't sound like a robot or a support agent."
+        }
+
+        selected_personality = personality.get(persona, personality['uz'])
         lang_map = {'uz': "O'zbek tilida", 'ru': "на русском языке", 'en': "in English"}
         target_lang = lang_map.get(persona, "O'zbek tilida")
 
         prompt = f"""
-        Sen @Lazikomods Telegram kanali yordamchisisan (Minecraft modlari kanali).
-        Foydalanuvchi quyidagi kommentariyani qoldirdi:
-        "{comment_text}"
+        {selected_personality}
+        Foydalanuvchi yozdi: "{comment_text}"
 
-        Vazifang: Ushbu foydalanuvchiga {target_lang} juda qisqa, do'stona va foydali javob qaytarish.
-        Agar u savol so'rasa - javob berishga harakat qil. Agar shunchaki rahmat aytsa - xursandligingni bildir.
-        Hech qanday xeshteg ishlatma. Faqat matn.
+        Vazifa: Ushbu xabarga {target_lang} qisqa (1 ta gap) javob ber. 
+        Agar rahmat aytsa — xursand bo'l. Agar savol so'rasa — do'stona javob ber.
+        Faqat matn, xeshteglar kerak emas.
         """
 
         res = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}], 
             model=MODEL_ID
         )
-        return res.choices[0].message.content.strip()
+        return res.choices[0].message.content.strip().replace('"', '')
     except Exception as e:
         return None
 
