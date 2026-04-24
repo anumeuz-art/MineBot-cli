@@ -46,3 +46,13 @@ def process_queue(bot):
             print(f"Пост {post_id} успешно опубликован.")
         else:
             print(f"Ошибка публикации поста {post_id}.")
+
+def auto_ask_suggestions(bot):
+    """
+    Отправляет админам запрос на новые идеи контента каждые 3 дня.
+    """
+    for admin_id in config.ADMIN_IDS:
+        try:
+            bot.send_message(admin_id, "💡 Админ, пришло время планировать контент! Напиши, что бы ты хотел увидеть в канале на этой неделе?")
+        except:
+            pass
