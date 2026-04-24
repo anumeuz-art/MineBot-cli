@@ -48,6 +48,51 @@ def fetch_page_content(url):
         return soup.get_text(separator=' ', strip=True)[:3000]
     except: return ""
 
+def limit_hashtags(text, limit=5):
+    # Разделяем текст на основной контент и блок хэштегов (обычно они в конце)
+    lines = text.strip().split('\n')
+    main_body = []
+    hashtags = []
+    
+    # Регулярка для поиска хэштегов
+    hashtag_pattern = re.compile(r'#\w+')
+    
+    for line in lines:
+        found_in_line = hashtag_pattern.findall(line)
+        # Если строка состоит только из хэштегов и пробелов
+        if found_in_line and len(line.strip().replace(' ', '')) == sum(len(h) for h in found_in_line):
+            for h in found_in_line:
+                if h not in hashtags:
+                    hashtags.append(h)
+        else:
+            # Если в строке есть текст, но в конце есть хэштеги — отделяем их (опционально)
+            # В данном случае просто сохраняем строку, если она не является "строкой хэштегов"
+            main_body.append(line)
+
+    # Если хэштеги не были в отдельных строках, поищем их во всем тексте (на всякий случай)
+    if not hashtags:
+        all_tags = hashtag_pattern.findall(text)
+        for h in all_tags:
+            if h not in hashtags:
+                hashtags.append(h)
+        # Удаляем хэштеги из основного тела, если они там перемешаны (но только в конце)
+        # Для простоты — если мы их нашли, мы их пересоберем внизу
+
+    # Ограничиваем количество: #Minecraft + 4 тематических
+    # Убедимся, что #Minecraft на первом месте, если он есть
+    final_tags = []
+    if '#Minecraft' in hashtags:
+        final_tags.append('#Minecraft')
+        hashtags.remove('#Minecraft')
+    
+    final_tags.extend(hashtags[:limit - len(final_tags)])
+    
+    # Очищаем основное тело от "зависших" хэштегов в конце
+    clean_body = "\n".join(main_body).strip()
+    clean_body = re.sub(r'(#\w+\s*)+$', '', clean_body).strip()
+    
+    return clean_body + "\n\n" + " ".join(final_tags)
+
 def generate_post(user_input, persona="uz"):
     url = extract_url(user_input)
     site_content = fetch_page_content(url) if url else ""
@@ -60,6 +105,9 @@ def generate_post(user_input, persona="uz"):
             model=MODEL_ID
         )
         gen = res.choices[0].message.content.strip()
+        
+        # Исправляем логику хэштегов (ограничиваем их количество)
+        gen = limit_hashtags(gen)
         
         # Реклама добавляется автоматически из БД, если она есть
         ad_text = database.get_global_setting('ad_text', '')

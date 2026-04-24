@@ -132,6 +132,7 @@ def register_handlers(bot, user_drafts, album_cache):
             bot.answer_callback_query(call.id, "🚀 Пост опубликован!")
             bot.delete_message(chat_id, target_id)
             if target_id in user_drafts: del user_drafts[target_id]
+            bot.send_message(chat_id, "✅ Пост опубликован!", reply_markup=keyboards.get_main_menu())
             return
 
         if call.data == "add_to_smart_q":
@@ -140,6 +141,18 @@ def register_handlers(bot, user_drafts, album_cache):
             bot.answer_callback_query(call.id, "🧠 Добавлено в умную очередь")
             bot.delete_message(chat_id, target_id)
             if target_id in user_drafts: del user_drafts[target_id]
+            bot.send_message(chat_id, "🧠 Пост добавлен в умную очередь!", reply_markup=keyboards.get_main_menu())
+            return
+
+        if call.data.startswith("sched_interval_"):
+            parts = call.data.split('_')
+            hours = int(parts[2])
+            sched_time = int(time.time()) + (hours * 3600)
+            database.add_to_queue(draft.get('photo'), draft.get('text'), draft.get('document'), draft.get('channel', config.DEFAULT_CHANNEL), sched_time)
+            bot.answer_callback_query(call.id, f"📅 Запланировано на через {hours}ч")
+            bot.delete_message(chat_id, target_id)
+            if target_id in user_drafts: del user_drafts[target_id]
+            bot.send_message(chat_id, f"📅 Пост запланирован (через {hours}ч)!", reply_markup=keyboards.get_main_menu())
             return
 
         if call.data == "pub_queue_menu":
@@ -174,4 +187,46 @@ def register_handlers(bot, user_drafts, album_cache):
             send_draft_preview(chat_id, call.from_user.id, draft)
             bot.delete_message(chat_id, target_id)
             return
+
+    def process_album(media_group_id, chat_id, user_id):
+        messages = album_cache.get(media_group_id)
+        if not messages: return
+        
+        status_msg = bot.send_message(chat_id, "⏳ Обрабатываю альбом...")
+        try:
+            user_input = next((m.caption for m in messages if m.caption), None)
+            if not user_input: user_input = "Альбом без описания"
+            
+            persona = database.get_user_setting(user_id, 'persona', 'uz')
+            generated_text = ai_generator.generate_post(user_input, persona)
+            
+            photo_ids = []
+            for i, msg in enumerate(messages):
+                bot.edit_message_text(f"🎨 Обработка фото {i+1}/{len(messages)}...", chat_id, status_msg.message_id)
+                temp_in = f"in_alb_{msg.message_id}.jpg"
+                temp_out = f"out_alb_{msg.message_id}.jpg"
+                
+                file_info = bot.get_file(msg.photo[-1].file_id)
+                downloaded_file = bot.download_file(file_info.file_path)
+                with open(temp_in, 'wb') as f: f.write(downloaded_file)
+                watermarker.add_watermark(temp_in, temp_out)
+                
+                with open(temp_out, 'rb') as f:
+                    sent = bot.send_photo(config.LOG_CHANNEL if hasattr(config, 'LOG_CHANNEL') else chat_id, f)
+                    photo_ids.append(sent.photo[-1].file_id)
+                    if not hasattr(config, 'LOG_CHANNEL'): bot.delete_message(chat_id, sent.message_id)
+                
+                if os.path.exists(temp_in): os.remove(temp_in)
+                if os.path.exists(temp_out): os.remove(temp_out)
+            
+            bot.delete_message(chat_id, status_msg.message_id)
+            active_ch = database.get_user_setting(user_id, 'active_channel', config.DEFAULT_CHANNEL)
+            draft = {'photo': ",".join(photo_ids), 'text': generated_text, 'document': None, 'channel': active_ch}
+            send_draft_preview(chat_id, user_id, draft)
+            
+        except Exception as e:
+            bot.edit_message_text(f"❌ Ошибка альбома: {e}", chat_id, status_msg.message_id)
+        finally:
+            if media_group_id in album_cache: del album_cache[media_group_id]
+
 
