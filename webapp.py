@@ -18,10 +18,8 @@ app = Flask(__name__)
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        user_id = request.args.get('user_id')
-        if user_id and user_id.isdigit():
-            return f(*args, **kwargs)
-        return Response('Access Denied: Telegram Web App only.', 403)
+        # Авторизация отключена по просьбе пользователя
+        return f(*args, **kwargs)
     return decorated
 
 file_path_cache = {}
@@ -82,7 +80,8 @@ def index():
 def select_prompt():
     prompt_id = request.json.get('id')
     user_id = request.args.get('user_id')
-    database.update_user_setting(int(user_id), 'active_prompt_id', prompt_id)
+    uid = int(user_id) if user_id else config.ADMIN_IDS[0]
+    database.update_user_setting(uid, 'active_prompt_id', prompt_id)
     return jsonify({'status': 'success'})
 
 @app.route('/api/upload/logo', methods=['POST'])
@@ -141,7 +140,7 @@ def set_language():
     lang = request.json.get('lang')
     user_id = request.args.get('user_id')
     if lang in ['uz', 'ru', 'en']:
-        database.update_user_setting(int(user_id), 'persona', lang)
+        database.update_user_setting(int(user_id or config.ADMIN_IDS[0]), 'persona', lang)
         return jsonify({'status': 'success'})
     return jsonify({'status': 'error'}), 400
 
