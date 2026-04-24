@@ -91,7 +91,8 @@ BUTTONS = {
         'funny': "Funny (Qiziqarli)",
         'pro': "Pro (Professional)",
         'exact': "📅 Aniq vaqt",
-        'translate': "🔄 Tarjima"
+        'translate': "🔄 Tarjima",
+        'audience': "Auditoriya"
     },
     'ru': {
         'create': "📝 Создать пост",
@@ -110,7 +111,8 @@ BUTTONS = {
         'funny': "Весело",
         'pro': "Профи",
         'exact': "📅 Точная дата",
-        'translate': "🔄 Перевести"
+        'translate': "🔄 Перевести",
+        'audience': "Аудитория"
     },
     'en': {
         'create': "📝 Create Post",
@@ -129,6 +131,7 @@ BUTTONS = {
         'funny': "Funny",
         'pro': "Professional",
         'exact': "📅 Exact Time",
-        'translate': "🔄 Translate"
+        'translate': "🔄 Translate",
+        'audience': "Audience"
     }
 }

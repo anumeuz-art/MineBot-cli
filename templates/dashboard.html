@@ -37,17 +37,13 @@
         .modal-content { background: #000; border: 3px solid var(--neon-p); border-radius: 0; }
         .form-control { background: #111 !important; color: #fff !important; border-radius: 0; border: 1px solid #444; font-family: monospace; }
         .form-control:focus { background: #1a1a1a !important; color: #fff !important; border-color: var(--neon-p); box-shadow: 0 0 10px rgba(188, 19, 254, 0.5); outline: none; }
-        
         #ad-text-area { background: #111 !important; color: #fff !important; }
         .tab-pane { background: var(--bg); color: #fff; }
-        
-        .form-control:-webkit-autofill,
-        .form-control:-webkit-autofill:hover, 
-        .form-control:-webkit-autofill:focus {
-            -webkit-text-fill-color: #fff !important;
-            -webkit-box-shadow: 0 0 0px 1000px #111 inset !important;
-            transition: background-color 5000s ease-in-out 0s;
+        .form-control:-webkit-autofill, .form-control:-webkit-autofill:hover, .form-control:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff !important; -webkit-box-shadow: 0 0 0px 1000px #111 inset !important; transition: background-color 5000s ease-in-out 0s;
         }
+        .ai-summary { background: #111; border: 1px dashed var(--neon-p); padding: 15px; font-size: 0.75rem; white-space: pre-wrap; line-height: 1.6; }
+        .comment-item { border-left: 3px solid var(--neon-g); padding-left: 12px; margin-bottom: 10px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
@@ -55,24 +51,25 @@
 <nav class="navbar navbar-dark mb-4">
     <div class="container d-flex justify-content-between">
         <a class="navbar-brand" href="/"><img src="/logo.png" class="nav-logo">MINE_OS v2.7</a>
-        <button class="btn btn-purple-mc btn-mc px-3" onclick="location.reload()" id="btn-refresh">🔄 REFRESH</button>
+        <button class="btn btn-purple-mc btn-mc px-3" onclick="location.reload()" id="btn-refresh">🔄 YANGILASH</button>
     </div>
 </nav>
 
 <div class="container">
     <div class="row mb-2">
-        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ total_subs }}</div><div class="stats-label" id="lbl-followers">TOTAL_FOLLOWERS</div></div></div>
-        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{% if growth_24h >= 0 %}+{% endif %}{{ growth_24h }}</div><div class="stats-label" id="lbl-growth">24H_GROWTH</div></div></div>
-        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.queue }}</div><div class="stats-label" id="lbl-in-queue">IN_QUEUE</div></div></div>
-        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.published }}</div><div class="stats-label" id="lbl-posted">POSTED_TOTAL</div></div></div>
+        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ total_subs }}</div><div class="stats-label" id="lbl-followers">OBUNACHILAR</div></div></div>
+        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{% if growth_24h >= 0 %}+{% endif %}{{ growth_24h }}</div><div class="stats-label" id="lbl-growth">24SOAT_O'SISH</div></div></div>
+        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.queue }}</div><div class="stats-label" id="lbl-in-queue">NAVBTDA</div></div></div>
+        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.published }}</div><div class="stats-label" id="lbl-posted">CHOP_ETILGAN</div></div></div>
     </div>
 
     <ul class="nav nav-tabs mb-4">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue" id="tab-queue">Queue</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics" id="tab-analytics">Analytics</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#channels" id="tab-channels">Channels</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ad-config" id="tab-ad">Ad_Config</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#settings" id="tab-settings">Settings</button></li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue" id="tab-queue">Navbat</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#audience" id="tab-audience" onclick="loadComments()">Auditoriya</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics" id="tab-analytics">Analitika</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#channels" id="tab-channels">Kanallar</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ad-config" id="tab-ad">Reklama</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#settings" id="tab-settings">Sozlamalar</button></li>
     </ul>
 
     <div class="tab-content">
@@ -104,15 +101,34 @@
             </div>
         </div>
 
-        <div class="tab-pane fade" id="analytics"><div class="card p-4"><h6 id="head-growth">GROWTH_CURVE.DATA</h6><canvas id="subsChart" height="100"></canvas></div></div>
+        <div class="tab-pane fade" id="audience">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card p-4">
+                        <div class="d-flex justify-content-between mb-4">
+                            <h6 id="head-voice">AUDIENCE_VOICE_FEED</h6>
+                            <button class="btn btn-primary-mc btn-mc px-3" onclick="analyzeComments()" id="btn-ai-analyze">🧠 ANALYZE_WITH_AI</button>
+                        </div>
+                        <div id="ai-summary-container" class="ai-summary mb-4" style="display:none;"></div>
+                        <div id="comments-list" style="max-height: 500px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 text-center">
+                        <h6>ACTIONS</h6>
+                        <button class="btn btn-danger-mc btn-mc w-100 mt-3" onclick="clearComments()" id="btn-clear-com">CLEAR_HISTORY</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div class="tab-pane fade" id="analytics"><div class="card p-4"><h6 id="head-growth">GROWTH_CURVE.DATA</h6><canvas id="subsChart" height="100"></canvas></div></div>
         <div class="tab-pane fade" id="channels">
             <div class="row">
                 <div class="col-md-6"><div class="card p-3"><h6 id="head-link">LINK_NEW_CHANNEL</h6><div class="input-group"><input type="text" id="new-ch" class="form-control" placeholder="@user"><button class="btn btn-primary-mc btn-mc px-3 btn-link-sys" onclick="addChannel()">LINK</button></div></div></div>
                 <div class="col-md-6"><div class="card p-3"><h6 id="head-linked">LINKED_SYSTEMS</h6><ul class="list-group list-group-flush">{% for ch in channels %}<li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between px-0 align-items-center" style="font-size: 0.7rem;">{{ ch }}<button class="btn btn-sm btn-danger-mc btn-mc px-2 btn-unlink" onclick="removeChannel('{{ ch }}')">UNLINK</button></li>{% endfor %}</ul></div></div>
             </div>
         </div>
-
         <div class="tab-pane fade" id="ad-config">
             <div class="card p-4">
                 <h6 class="mb-4" style="color: var(--neon-g)" id="head-ad">ADVERTISING_BLOCK_CONFIG</h6>
@@ -121,14 +137,12 @@
                 <p class="mt-3 text-muted" style="font-size: 0.6rem;" id="hint-ad">* This text will be automatically appended to all new AI-generated posts.</p>
             </div>
         </div>
-
         <div class="tab-pane fade" id="settings">
             <div class="card p-4"><h6 id="head-lang">AI_OUTPUT_LANGUAGE</h6><div class="d-flex gap-2">{% for l in [('uz','UZB'),('ru','RUS'),('en','ENG')] %}<button class="lang-btn {% if current_lang == l[0] %}active{% endif %}" onclick="setLang('{{ l[0] }}')">{{ l[1] }}</button>{% endfor %}</div></div>
         </div>
     </div>
 </div>
 
-<!-- MODALS -->
 <div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-update">UPDATE_PAYLOAD</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea id="edit-text" class="form-control mb-3" rows="12"></textarea><label style="font-size: 0.5rem;" id="lbl-sched">SCHED_TIME</label><input type="datetime-local" id="edit-time" class="form-control"></div><div class="modal-footer border-secondary"><button class="btn btn-primary-mc btn-mc px-4" id="save-btn">UPLOAD_CHANGES</button></div></div></div></div>
 <div class="modal fade" id="textModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-view">RAW_DATA_VIEW</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="full-text-content" style="font-size: 0.75rem; white-space: pre-wrap; color: #fff !important;"></div></div></div></div>
 
@@ -140,91 +154,31 @@
     const currentLang = "{{ current_lang }}";
     const translations = {
         'uz': {
-            'refresh': '🔄 YANGILASH',
-            'followers': 'OBUNACHILAR',
-            'growth': '24SOAT_O\'SISH',
-            'queue': 'NAVBTDA',
-            'posted': 'CHOP_ETILGAN',
-            'tab_queue': 'Navbat',
-            'tab_analytics': 'Analitika',
-            'tab_channels': 'Kanallar',
-            'tab_ad': 'Reklama',
-            'tab_settings': 'Sozlamalar',
-            'expand': '[TO\'LIQ_KO\'RISH]',
-            'execute': '🚀 CHOP_ETISH',
-            'edit': 'TAHRIR',
-            'drop': 'O\'CHIRISH',
-            'head_growth': 'O\'SISH_GRAFIKI',
-            'head_link': 'YANGI_KANAL_ULASH',
-            'head_linked': 'ULANGAN_TIZIMLAR',
-            'head_ad': 'REKLAMA_SOZLAMALARI',
-            'head_lang': 'AI_TILINI_TANLASH',
-            'btn_save_ad': 'SAQLASH',
-            'hint_ad': '* Ushbu matn barcha yangi postlarga qo\'shiladi.',
-            'head_update': 'MA\'LUMOTNI_YANGILASH',
-            'lbl_sched': 'REJALASHTIRILGAN_VAQT',
-            'btn_upload': 'YANGILASHNI_YUBORISH',
-            'head_view': 'POST_MATNI',
-            'btn_link': 'ULASH',
-            'btn_unlink': 'UZISH'
+            'refresh': '🔄 YANGILASH', 'followers': 'OBUNACHILAR', 'growth': '24SOAT_O\'SISH', 'queue': 'NAVBTDA', 'posted': 'CHOP_ETILGAN',
+            'tab_queue': 'Navbat', 'tab_audience': 'Auditoriya', 'tab_analytics': 'Analitika', 'tab_channels': 'Kanallar', 'tab_ad': 'Reklama', 'tab_settings': 'Sozlamalar',
+            'expand': '[TO\'LIQ_KO\'RISH]', 'execute': '🚀 CHOP_ETISH', 'edit': 'TAHRIR', 'drop': 'O\'CHIRISH', 'head_growth': 'O\'SISH_GRAFIKI',
+            'head_link': 'YANGI_KANAL_ULASH', 'head_linked': 'ULANGAN_TIZIMLAR', 'head_ad': 'REKLAMA_SOZLAMALARI', 'head_lang': 'AI_TILINI_TANLASH',
+            'btn_save_ad': 'SAQLASH', 'hint_ad': '* Ushbu matn barcha yangi postlarga qo\'shiladi.', 'head_update': 'MA\'LUMOTNI_YANGILASH',
+            'lbl_sched': 'REJALASHTIRILGAN_VAQT', 'btn_upload': 'YANGILASHNI_YUBORISH', 'head_view': 'POST_MATNI', 'btn_link': 'ULASH', 'btn_unlink': 'UZISH',
+            'head_voice': 'AUDITORIYA_TAKLIFLARI', 'btn_ai_analyze': '🧠 AI TAHLILI', 'btn_clear_com': 'TOZALASH'
         },
         'ru': {
-            'refresh': '🔄 ОБНОВИТЬ',
-            'followers': 'ПОДПИСЧИКОВ',
-            'growth': 'РОСТ_24Ч',
-            'queue': 'В_ОЧЕРЕДИ',
-            'posted': 'ОПУБЛИКОВАНО',
-            'tab_queue': 'Очередь',
-            'tab_analytics': 'Аналитика',
-            'tab_channels': 'Каналы',
-            'tab_ad': 'Реклама',
-            'tab_settings': 'Настройки',
-            'expand': '[РАЗВЕРНУТЬ]',
-            'execute': '🚀 ОПУБЛИКОВАТЬ',
-            'edit': 'ПРАВКА',
-            'drop': 'УДАЛИТЬ',
-            'head_growth': 'ГРАФИК_РОСТА',
-            'head_link': 'ПРИВЯЗКА_КАНАЛА',
-            'head_linked': 'ПОДКЛЮЧЕННЫЕ_СИСТЕМЫ',
-            'head_ad': 'НАСТРОЙКА_РЕКЛАМЫ',
-            'head_lang': 'ЯЗЫК_ГЕНЕРАЦИИ_ИИ',
-            'btn_save_ad': 'СОХРАНИТЬ_ТЕКСТ',
-            'hint_ad': '* Этот текст будет автоматически добавлен ко всем новым постам.',
-            'head_update': 'ОБНОВЛЕНИЕ_ДАННЫХ',
-            'lbl_sched': 'ВРЕМЯ_ПУБЛИКАЦИИ',
-            'btn_upload': 'ЗАГРУЗИТЬ_ИЗМЕНЕНИЯ',
-            'head_view': 'ПРОСМОТР_ТЕКСТА',
-            'btn_link': 'СВЯЗАТЬ',
-            'btn_unlink': 'ОТКЛЮЧИТЬ'
+            'refresh': '🔄 ОБНОВИТЬ', 'followers': 'ПОДПИСЧИКОВ', 'growth': 'РОСТ_24Ч', 'queue': 'В_ОЧЕРЕДИ', 'posted': 'ОПУБЛИКОВАНО',
+            'tab_queue': 'Очередь', 'tab_audience': 'Аудитория', 'tab_analytics': 'Аналитика', 'tab_channels': 'Каналы', 'tab_ad': 'Реклама', 'tab_settings': 'Настройки',
+            'expand': '[РАЗВЕРНУТЬ]', 'execute': '🚀 ОПУБЛИКОВАТЬ', 'edit': 'ПРАВКА', 'drop': 'УДАЛИТЬ', 'head_growth': 'ГРАФИК_РОСТА',
+            'head_link': 'ПРИВЯЗКА_КАНАЛА', 'head_linked': 'ПОДКЛЮЧЕННЫЕ_СИСТЕМЫ', 'head_ad': 'НАСТРОЙКА_РЕКЛАМЫ', 'head_lang': 'ЯЗЫК_ГЕНЕРАЦИИ_ИИ',
+            'btn_save_ad': 'СОХРАНИТЬ_ТЕКСТ', 'hint_ad': '* Этот текст будет автоматически добавлен ко всем новым постам.', 'head_update': 'ОБНОВЛЕНИЕ_ДАННЫХ',
+            'lbl_sched': 'ВРЕМЯ_ПУБЛИКАЦИИ', 'btn_upload': 'ЗАГРУЗИТЬ_ИЗМЕНЕНИЯ', 'head_view': 'ПРОСМОТР_ТЕКСТА', 'btn_link': 'СВЯЗАТЬ', 'btn_unlink': 'ОТКЛЮЧИТЬ',
+            'head_voice': 'ПРЕДЛОЖЕНИЯ АУДИТОРИИ', 'btn_ai_analyze': '🧠 АНАЛИЗ ИИ', 'btn_clear_com': 'ОЧИСТИТЬ'
         },
         'en': {
-            'refresh': '🔄 REFRESH',
-            'followers': 'FOLLOWERS',
-            'growth': '24H_GROWTH',
-            'queue': 'IN_QUEUE',
-            'posted': 'POSTED',
-            'tab_queue': 'Queue',
-            'tab_analytics': 'Analytics',
-            'tab_channels': 'Channels',
-            'tab_ad': 'Ad_Config',
-            'tab_settings': 'Settings',
-            'expand': '[EXPAND_LOG]',
-            'execute': '🚀 EXECUTE_POST',
-            'edit': 'EDIT',
-            'drop': 'DROP',
-            'head_growth': 'GROWTH_CURVE.DATA',
-            'head_link': 'LINK_NEW_CHANNEL',
-            'head_linked': 'LINKED_SYSTEMS',
-            'head_ad': 'ADVERTISING_BLOCK_CONFIG',
-            'head_lang': 'AI_OUTPUT_LANGUAGE',
-            'btn_save_ad': 'SAVE_AD_TEXT',
-            'hint_ad': '* This text will be automatically appended to all new AI-generated posts.',
-            'head_update': 'UPDATE_PAYLOAD',
-            'lbl_sched': 'SCHED_TIME',
-            'btn_upload': 'UPLOAD_CHANGES',
-            'head_view': 'RAW_DATA_VIEW',
-            'btn_link': 'LINK',
-            'btn_unlink': 'UNLINK'
+            'refresh': '🔄 REFRESH', 'followers': 'FOLLOWERS', 'growth': '24H_GROWTH', 'queue': 'IN_QUEUE', 'posted': 'POSTED',
+            'tab_queue': 'Queue', 'tab_audience': 'Audience', 'tab_analytics': 'Analytics', 'tab_channels': 'Channels', 'tab_ad': 'Ad_Config', 'tab_settings': 'Settings',
+            'expand': '[EXPAND_LOG]', 'execute': '🚀 EXECUTE_POST', 'edit': 'EDIT', 'drop': 'DROP', 'head_growth': 'GROWTH_CURVE.DATA',
+            'head_link': 'LINK_NEW_CHANNEL', 'head_linked': 'LINKED_SYSTEMS', 'head_ad': 'ADVERTISING_BLOCK_CONFIG', 'head_lang': 'AI_OUTPUT_LANGUAGE',
+            'btn_save_ad': 'SAVE_AD_TEXT', 'hint_ad': '* This text will be automatically appended to all new AI-generated posts.', 'head_update': 'UPDATE_PAYLOAD',
+            'lbl_sched': 'SCHED_TIME', 'btn_upload': 'UPLOAD_CHANGES', 'head_view': 'RAW_DATA_VIEW', 'btn_link': 'LINK', 'btn_unlink': 'UNLINK',
+            'head_voice': 'AUDIENCE_VOICE_FEED', 'btn_ai_analyze': '🧠 AI ANALYZE', 'btn_clear_com': 'CLEAR'
         }
     };
 
@@ -236,6 +190,7 @@
         document.getElementById('lbl-in-queue').innerText = t.queue;
         document.getElementById('lbl-posted').innerText = t.posted;
         document.getElementById('tab-queue').innerText = t.tab_queue;
+        document.getElementById('tab-audience').innerText = t.tab_audience;
         document.getElementById('tab-analytics').innerText = t.tab_analytics;
         document.getElementById('tab-channels').innerText = t.tab_channels;
         document.getElementById('tab-ad').innerText = t.tab_ad;
@@ -251,7 +206,9 @@
         document.getElementById('lbl-sched').innerText = t.lbl_sched;
         document.getElementById('save-btn').innerText = t.btn_upload;
         document.getElementById('head-view').innerText = t.head_view;
-        
+        document.getElementById('head-voice').innerText = t.head_voice;
+        document.getElementById('btn-ai-analyze').innerText = t.btn_ai_analyze;
+        document.getElementById('btn-clear-com').innerText = t.btn_clear_com;
         document.querySelectorAll('.btn-expand').forEach(b => b.innerText = t.expand);
         document.querySelectorAll('.btn-execute').forEach(b => b.innerText = t.execute);
         document.querySelectorAll('.btn-edit').forEach(b => b.innerText = t.edit);
@@ -260,12 +217,31 @@
         document.querySelectorAll('.btn-unlink').forEach(b => b.innerText = t.btn_unlink);
     }
 
-    window.onload = () => applyTranslations(currentLang);
+    window.onload = () => { applyTranslations(currentLang); loadComments(); };
+
+    function loadComments() {
+        fetch('/api/comments').then(r => r.json()).then(data => {
+            const list = document.getElementById('comments-list');
+            list.innerHTML = data.map(c => `<div class="comment-item"><strong>${c.user}:</strong><br>${c.text}</div>`).join('') || '<p class="text-muted">No comments yet</p>';
+        });
+    }
+
+    function analyzeComments() {
+        const btn = document.getElementById('btn-ai-analyze');
+        const summary = document.getElementById('ai-summary-container');
+        btn.disabled = true; btn.innerText = '⌛ Analyzing...';
+        fetch('/api/comments/analyze', {method:'POST'}).then(r => r.json()).then(data => {
+            summary.innerText = data.summary; summary.style.display = 'block';
+            btn.disabled = false; btn.innerText = translations[currentLang].btn_ai_analyze;
+        });
+    }
+
+    function clearComments() { if(confirm('Clear all?')) fetch('/api/comments/clear', {method:'POST'}).then(() => loadComments()); }
 
     new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination", clickable: true } });
     Sortable.create(document.getElementById('sortable-queue'), { animation: 150, handle: '.handle', onEnd: function() { 
         const order = Array.from(document.querySelectorAll('.col-md-4')).map(i => i.dataset.id);
-        if(order.some(id => id)) fetch('/api/reorder', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({order}) }).then(() => location.reload());
+        fetch('/api/reorder', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({order}) });
     }});
 
     fetch('/api/stats').then(r => r.json()).then(data => {
