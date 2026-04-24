@@ -56,9 +56,8 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- Функции для работы с глобальными настройками ---
+# --- Глобальные настройки ---
 def set_global_setting(key, value):
-    """Сохраняет глобальную настройку (например, текст рекламы)."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT OR REPLACE INTO global_settings (key, value) VALUES (?, ?)", (key, str(value)))
@@ -66,7 +65,6 @@ def set_global_setting(key, value):
     conn.close()
 
 def get_global_setting(key, default=""):
-    """Получает значение глобальной настройки."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT value FROM global_settings WHERE key = ?", (key,))
@@ -74,9 +72,8 @@ def get_global_setting(key, default=""):
     conn.close()
     return result[0] if result else default
 
-# --- Функции управления каналами ---
+# --- Управление каналами ---
 def add_channel(username):
-    """Добавляет канал в список управляемых."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
@@ -85,7 +82,6 @@ def add_channel(username):
     finally: conn.close()
 
 def remove_channel(username):
-    """Удаляет канал из списка."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("DELETE FROM managed_channels WHERE username = ?", (username,))
@@ -93,7 +89,6 @@ def remove_channel(username):
     conn.close()
 
 def get_all_managed_channels():
-    """Возвращает список всех usernames каналов."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT username FROM managed_channels")
@@ -101,9 +96,8 @@ def get_all_managed_channels():
     conn.close()
     return [r[0] for r in rows]
 
-# --- Функции сбора статистики ---
+# --- Статистика ---
 def save_sub_count(channel_id, count):
-    """Сохраняет количество подписчиков на текущую дату."""
     date = datetime.now().strftime('%Y-%m-%d')
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -111,8 +105,15 @@ def save_sub_count(channel_id, count):
     conn.commit()
     conn.close()
 
+def get_sub_history(channel_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT date, count FROM stats_subscribers WHERE channel_id = ? ORDER BY date ASC LIMIT 30", (channel_id,))
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
 def save_post_views(post_id, views):
-    """Сохраняет количество просмотров конкретного поста."""
     date = datetime.now().strftime('%Y-%m-%d')
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -120,7 +121,7 @@ def save_post_views(post_id, views):
     conn.commit()
     conn.close()
 
-# --- Настройки пользователя (язык, персона ИИ и т.д.) ---
+# --- Настройки пользователя ---
 def update_user_setting(user_id, key, value):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -136,9 +137,8 @@ def get_user_setting(user_id, key, default=None):
     conn.close()
     return result[0] if result else default
 
-# --- Работа с очередью постов ---
+# --- Очередь ---
 def add_to_queue(photo_id, text, document_id=None, channel_id=None, scheduled_time=None):
-    """Добавляет новый пост в очередь на публикацию."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT INTO queue (photo_id, text, document_id, channel_id, scheduled_time) VALUES (?, ?, ?, ?, ?)", 
@@ -147,7 +147,6 @@ def add_to_queue(photo_id, text, document_id=None, channel_id=None, scheduled_ti
     conn.close()
 
 def get_ready_posts():
-    """Выбирает все посты, время публикации которых наступило."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     current_time = int(time.time())
@@ -159,20 +158,104 @@ def get_ready_posts():
     return rows
 
 def mark_as_posted(post_id):
-    """Помечает пост как опубликованный."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("UPDATE queue SET status='posted' WHERE id=?", (post_id,))
     conn.commit()
     conn.close()
 
+def get_stats():
+    import pytz
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM queue")
+    total = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM queue WHERE status='posted'")
+    published = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM queue WHERE status='pending'")
+    queue_count = c.fetchone()[0]
+    tashkent_tz = pytz.timezone('Asia/Tashkent')
+    today_start = int(datetime.now(tashkent_tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+    c.execute("SELECT COUNT(*) FROM queue WHERE scheduled_time >= ?", (today_start,))
+    today = c.fetchone()[0]
+    conn.close()
+    return {'total': total, 'published': published, 'queue': queue_count, 'today': today}
+
+def get_all_pending():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time FROM queue WHERE status='pending' ORDER BY scheduled_time ASC")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def get_all_posts():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT * FROM queue")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def get_post_by_id(post_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time, status FROM queue WHERE id = ?", (post_id,))
+    row = c.fetchone()
+    conn.close()
+    return row
+
+def update_post_content(post_id, text, scheduled_time):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE queue SET text = ?, scheduled_time = ? WHERE id = ?", (text, scheduled_time, post_id))
+    conn.commit()
+    conn.close()
+
 def delete_from_queue(post_id):
-    """Удаляет пост из очереди."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("DELETE FROM queue WHERE id=?", (post_id,))
     conn.commit()
     conn.close()
 
-# Инициализируем БД при импорте модуля
+def get_last_scheduled_time():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT scheduled_time FROM queue WHERE status='pending' AND scheduled_time IS NOT NULL ORDER BY scheduled_time DESC LIMIT 1")
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+def record_published_post(photo_id, text, document_id, channel_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    current_time = int(time.time())
+    c.execute("INSERT INTO queue (photo_id, text, document_id, channel_id, scheduled_time, status) VALUES (?, ?, ?, ?, ?, 'posted')", 
+              (photo_id, text, document_id, channel_id, current_time))
+    conn.commit()
+    conn.close()
+
+def save_comment(user_name, text, timestamp):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT INTO comments (user_name, text, timestamp) VALUES (?, ?, ?)", (user_name, text, timestamp))
+    conn.commit()
+    conn.close()
+
+def get_all_comments():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT user_name, text FROM comments ORDER BY timestamp ASC")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def clear_comments():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM comments")
+    conn.commit()
+    conn.close()
+
 init_db()

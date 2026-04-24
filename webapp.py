@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 import pytz
 import telebot
 import publisher
+from bot_instance import bot
 
 app = Flask(__name__)
-bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
 
 file_path_cache = {}
 

@@ -7,10 +7,10 @@ import database
 import publisher
 import handlers
 import webapp
+from bot_instance import bot
 
 # Инициализация бота
 database.init_db()
-bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
 
 # Глобальные кеши
 user_drafts = {}
