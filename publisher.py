@@ -58,6 +58,23 @@ def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_
         print(f"❌ Ошибка публикации в {channel_id}: {e}")
         return False
 
+import ai_generator
+
+def auto_ask_suggestions(bot):
+    """Автоматически генерирует и публикует пост с запросом предложений."""
+    try:
+        # Берем язык по умолчанию (админа)
+        admin_lang = database.get_user_setting(config.ADMIN_IDS[0], 'persona', 'uz')
+        text = ai_generator.generate_suggestion_request(admin_lang)
+        
+        if text:
+            bot.send_message(config.DEFAULT_CHANNEL, text, parse_mode='HTML')
+            # Также записываем это событие в БД как опубликованный пост
+            database.record_published_post(None, text, None, config.DEFAULT_CHANNEL)
+            print("📢 Авто-опрос опубликован!")
+    except Exception as e:
+        print(f"❌ Ошибка авто-опроса: {e}")
+
 def process_queue(bot):
     """Функция для планировщика (APScheduler). Проверяет очередь и публикует готовые посты."""
     posts = database.get_ready_posts()

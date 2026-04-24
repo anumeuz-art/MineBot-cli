@@ -34,7 +34,7 @@ Struktura:
 🔥 — Albatta!
 🌚 — Shunchaki...</blockquote>
 
-#Minecraft #[Xeshteg1] #[Xeshteg2] #[Xeshteg3] #[Xeshteg4]
+#Minecraft #[Xeshteg1] #[Xeshteg2] #[Xeshteg3]
 
 💎 Obuna bo'ling: @Lazikomods
 """
@@ -154,7 +154,7 @@ def translate_post(text, target_persona="uz"):
         return f"Translation error: {e}"
 
 def generate_reply(comment_text, persona="uz"):
-    """Генерирует умный ответ на комментарий пользователя."""
+    # ... (код функции остается прежним)
     try:
         lang_map = {'uz': "O'zbek tilida", 'ru': "на русском языке", 'en': "in English"}
         target_lang = lang_map.get(persona, "O'zbek tilida")
@@ -168,7 +168,30 @@ def generate_reply(comment_text, persona="uz"):
         Agar u savol so'rasa - javob berishga harakat qil. Agar shunchaki rahmat aytsa - xursandligingni bildir.
         Hech qanday xeshteg ishlatma. Faqat matn.
         """
-        
+
+        res = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}], 
+            model=MODEL_ID
+        )
+        return res.choices[0].message.content.strip()
+    except Exception as e:
+        return None
+
+def generate_suggestion_request(persona="uz"):
+    """Генерирует пост с запросом предложений от подписчиков."""
+    try:
+        lang_map = {'uz': "O'zbek tilida", 'ru': "на русском языке", 'en': "in English"}
+        target_lang = lang_map.get(persona, "O'zbek tilida")
+
+        prompt = f"""
+        Minecraft kanali uchun qisqa va qiziqarli post yoz. 
+        Maqsad: Obunachilardan qanday modlar, karta yoki teksturalar ko'rishni xohlashlarini so'rash.
+        Stil: Do'stona, emojilarga boy.
+        Til: {target_lang}.
+        Post oxirida obunachilarni kommentariyada yozishga unda.
+        HTML teglaridan foydalan (<b>, <i>).
+        """
+
         res = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}], 
             model=MODEL_ID
