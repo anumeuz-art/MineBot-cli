@@ -1,43 +1,64 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 import config
 import database
-import utils
+import strings
 
-def get_main_menu():
+def get_main_menu(lang='uz'):
+    btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    markup.add(KeyboardButton("📝 Создать пост"))
-    # Кнопка открытия Web App (теперь единственная точка управления всеми настройками)
-    markup.add(KeyboardButton("🌐 Открыть панель", web_app=WebAppInfo(url="https://hospitable-clarity-production-3350.up.railway.app")))
+    markup.add(KeyboardButton(btns['create']))
+    # Кнопка открытия Web App
+    markup.add(KeyboardButton(btns['open_panel'], web_app=WebAppInfo(url="https://hospitable-clarity-production-3350.up.railway.app")))
     return markup
 
-def get_cancel_markup():
+def get_cancel_markup(lang='uz'):
+    btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    markup.add(KeyboardButton("❌ Отмена"))
+    markup.add(KeyboardButton(btns['cancel']))
     return markup
 
-def get_draft_markup(draft_id):
+def get_draft_markup(draft_id, lang='uz'):
+    btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
+    markup = InlineKeyboardMarkup(row_width=2)
+    
+    smart_label = btns['smart_queue']
+    interval = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6)
+    
+    markup.add(
+        InlineKeyboardButton(f"{smart_label} (+{interval} h)", callback_data="add_to_smart_q")
+    )
+    markup.add(
+        InlineKeyboardButton(btns['now'], callback_data="pub_now"),
+        InlineKeyboardButton(btns['later'], callback_data="pub_queue_menu")
+    )
+    markup.add(
+        InlineKeyboardButton(btns['edit'], callback_data="edit_text"),
+        InlineKeyboardButton(btns['rewrite'], callback_data="rewrite_menu")
+    )
+    markup.add(
+        InlineKeyboardButton(btns['delete'], callback_data="cancel_action")
+    )
+    return markup
+
+def get_queue_menu(target_id, lang='uz'):
+    btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton(f"🧠 Умная очередь (+{getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6)} ч)", callback_data="add_to_smart_q")
+        InlineKeyboardButton("2ч", callback_data=f"sched_interval_2_{target_id}"), 
+        InlineKeyboardButton("6ч", callback_data=f"sched_interval_6_{target_id}")
     )
     markup.add(
-        InlineKeyboardButton("🚀 Сейчас", callback_data="pub_now"),
-        InlineKeyboardButton("📅 Позже", callback_data="pub_queue_menu")
-    )
-    markup.add(
-        InlineKeyboardButton("✏️ Правка", callback_data="edit_text"),
-        InlineKeyboardButton("✨ Переписать", callback_data="rewrite_menu")
-    )
-    markup.add(
-        InlineKeyboardButton("❌ Удалить", callback_data="cancel_action")
+        InlineKeyboardButton(btns['exact'], callback_data=f"sched_exact_{target_id}"), 
+        InlineKeyboardButton(btns['back'], callback_data="back_to_draft")
     )
     return markup
 
-def show_queue_page(bot, chat_id, page, message_id=None):
-    posts = database.get_all_pending()
-    if not posts:
-        text = "📭 Очередь пуста. Управляйте постами в панели управления."
-        if message_id: bot.edit_message_text(text, chat_id, message_id)
-        else: bot.send_message(chat_id, text)
-        return
-    # Оставляем логику для совместимости, но кнопка в боте больше не ведет сюда
+def get_rewrite_menu(target_id, lang='uz'):
+    btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton(btns['short'], callback_data=f"rewrite_short_{target_id}"), 
+        InlineKeyboardButton(btns['long'], callback_data=f"rewrite_long_{target_id}")
+    )
+    markup.add(InlineKeyboardButton(btns['back'], callback_data="back_to_draft"))
+    return markup
