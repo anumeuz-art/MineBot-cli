@@ -35,7 +35,16 @@
         .lang-btn { flex: 1; border: 2px solid #333; color: #555; background: transparent; padding: 10px; cursor: pointer; }
         .lang-btn.active { border-color: var(--neon-g); color: var(--neon-g); text-shadow: 0 0 5px var(--neon-g); }
         .modal-content { background: #000; border: 3px solid var(--neon-p); border-radius: 0; }
-        .form-control { background: #111; color: #fff !important; border-radius: 0; border: 1px solid #444; font-family: monospace; }
+        .form-control { background: #111 !important; color: #fff !important; border-radius: 0; border: 1px solid #444; font-family: monospace; }
+        .form-control:focus { background: #1a1a1a !important; color: #fff !important; border-color: var(--neon-p); box-shadow: 0 0 10px rgba(188, 19, 254, 0.5); outline: none; }
+        /* Исправление для Chrome/Safari: принудительно темный фон при автозаполнении */
+        .form-control:-webkit-autofill,
+        .form-control:-webkit-autofill:hover, 
+        .form-control:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff !important;
+            -webkit-box-shadow: 0 0 0px 1000px #111 inset !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
     </style>
 </head>
 <body>
