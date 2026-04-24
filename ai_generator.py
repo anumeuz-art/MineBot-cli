@@ -31,7 +31,8 @@ Struktura:
 • [Fact 3 🚀]</blockquote>
 
 <blockquote>Sizga yoqdimi? 😎
-🔥 — Albatta! / 🌚 — Shunchaki...</blockquote>
+🔥 — Albatta!
+🌚 — Shunchaki...</blockquote>
 
 #Minecraft #[Xeshteg1] #[Xeshteg2] #[Xeshteg3] #[Xeshteg4]
 
@@ -152,38 +153,21 @@ def translate_post(text, target_persona="uz"):
     except Exception as e:
         return f"Translation error: {e}"
 
-def rewrite_post(text, style="short", persona="uz"):
-    """Переписывает уже готовый текст в заданном стиле (персоне)."""
+def generate_reply(comment_text, persona="uz"):
+    """Генерирует умный ответ на комментарий пользователя."""
     try:
-        styles = {
-            "short": {
-                "uz": "juda qisqa va lo'nda qilib yoz",
-                "ru": "очень коротко и лаконично",
-                "en": "very short and concise"
-            },
-            "long": {
-                "uz": "batafsil va barcha imkoniyatlarni yoritib yoz",
-                "ru": "подробно, расписывая все возможности",
-                "en": "detailed, explaining all features"
-            },
-            "funny": {
-                "uz": "hazilomuz va qiziqarli stilda yoz",
-                "ru": "в юмористическом и веселом стиле",
-                "en": "in a humorous and funny style"
-            },
-            "pro": {
-                "uz": "professional va texnik tilda yoz",
-                "ru": "в профессиональном и техническом стиле",
-                "en": "in a professional and technical style"
-            }
-        }
-        
-        selected_style = styles.get(style, styles["short"]).get(persona, styles["short"]["en"])
-        
         lang_map = {'uz': "O'zbek tilida", 'ru': "на русском языке", 'en': "in English"}
         target_lang = lang_map.get(persona, "O'zbek tilida")
 
-        prompt = f"Rewrite this Minecraft mod post {target_lang}. Style: {selected_style}. Keep the emojis and structure. Text:\n\n{text}"
+        prompt = f"""
+        Sen @Lazikomods Telegram kanali yordamchisisan (Minecraft modlari kanali).
+        Foydalanuvchi quyidagi kommentariyani qoldirdi:
+        "{comment_text}"
+
+        Vazifang: Ushbu foydalanuvchiga {target_lang} juda qisqa, do'stona va foydali javob qaytarish.
+        Agar u savol so'rasa - javob berishga harakat qil. Agar shunchaki rahmat aytsa - xursandligingni bildir.
+        Hech qanday xeshteg ishlatma. Faqat matn.
+        """
         
         res = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}], 
@@ -191,4 +175,4 @@ def rewrite_post(text, style="short", persona="uz"):
         )
         return res.choices[0].message.content.strip()
     except Exception as e:
-        return f"Error rewriting: {e}"
+        return None
