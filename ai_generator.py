@@ -101,8 +101,8 @@ def generate_post(user_input, persona="uz"):
     """Основная функция генерации поста через Groq API."""
     url = extract_url(user_input)
     site_content = fetch_page_content(url) if url else ""
-    
-    # Определяем язык вывода
+
+    # Определение языка вывода
     lang_map = {
         'uz': "O'zbek tilida (Uzbek)",
         'ru': "на русском языке (Russian)",
@@ -110,28 +110,32 @@ def generate_post(user_input, persona="uz"):
     }
     target_lang = lang_map.get(persona, "O'zbek tilida")
 
+    # Получаем активный промпт
+    active_prompt_id = database.get_user_setting(config.ADMIN_IDS[0], 'active_prompt_id', '1')
+    active_prompt = database.get_prompt_by_id(active_prompt_id) or PROMPT_TEMPLATE
+
     # Формируем полный промпт
-    # Вставляем язык в начало и конец, чтобы модель не игнорировала его из-за шаблона
-    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{PROMPT_TEMPLATE}\n\nDATA TO PROCESS:\n{user_input}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
-    
+    prompt = f"TASK: Write a post strictly {target_lang}.\n\n{active_prompt}\n\nDATA TO PROCESS:\n{user_input}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
+
     try:
         res = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}], 
             model=MODEL_ID
         )
         gen = res.choices[0].message.content.strip()
-        
-        # Пост-обработка для контроля количества хэштегов
+
+        # Пост-обработка для контроля количества хештегов
         gen = limit_hashtags(gen)
-        
+
         # Добавляем рекламную подпись, если она настроена в БД
         ad_text = database.get_global_setting('ad_text', '')
         if ad_text and ad_text not in gen:
             gen += f"\n\n{ad_text}"
-            
+
         return gen
     except Exception as e:
         return f"Error: {e}"
+
 
 def translate_post(text, target_persona="uz"):
     """Переводит готовый пост на другой язык, сохраняя всю HTML разметку и эмодзи."""

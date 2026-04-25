@@ -21,7 +21,7 @@ def get_draft_markup(draft_id, lang='uz'):
     markup = InlineKeyboardMarkup(row_width=2)
     
     smart_label = btns['smart_queue']
-    interval = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6)
+    interval = database.get_global_setting('smart_queue_interval', '6')
     
     markup.add(
         InlineKeyboardButton(f"{smart_label} (+{interval} h)", callback_data="add_to_smart_q")

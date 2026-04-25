@@ -39,7 +39,6 @@ def collect_stats():
 @app.route('/')
 def index():
     collect_stats()
-    stats = database.get_stats()
     pending = database.get_all_pending()
     queue = []
     for p in pending:
@@ -54,29 +53,75 @@ def index():
             'iso_time': datetime.fromtimestamp(p[5]).strftime('%Y-%m-%dT%H:%M') if p[5] else "",
             'files_count': len(doc_ids)
         })
-    
+
+    post_stats = database.get_detailed_stats()
     managed_channels = database.get_all_managed_channels()
-    total_subs = 0
-    growth_24h = 0
-    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    channel_data = []
     for ch in managed_channels:
-        current_history = database.get_sub_history(ch)
-        if current_history:
-            current_count = current_history[-1][1]
-            total_subs += current_count
-            prev_count = next((h[1] for h in current_history if h[0] == yesterday), current_count)
-            growth_24h += (current_count - prev_count)
+        growth = database.get_channel_growth(ch)
+        channel_data.append({
+            'username': ch,
+            'stats': growth
+        })
 
     current_lang = database.get_user_setting(config.ADMIN_IDS[0], 'persona', 'uz')
     ad_text = database.get_global_setting('ad_text', '')
-    
-    return render_template('dashboard.html', stats=stats, queue=queue, 
-                           channels=managed_channels, total_subs=total_subs, 
-                           growth_24h=growth_24h, current_lang=current_lang, 
-                           ad_text=ad_text, config=config)
+    smart_interval = database.get_global_setting('smart_queue_interval', '6')
+    prompts = database.get_all_prompts()
+    active_prompt_id = database.get_user_setting(config.ADMIN_IDS[0], 'active_prompt_id', '1')
 
-@app.route('/api/comments', methods=['GET'])
-def get_comments():
+    return render_template('dashboard.html', 
+                           post_stats=post_stats,
+                           channel_data=channel_data,
+                           queue=queue, 
+                           all_channels=managed_channels,
+                           current_lang=current_lang, 
+                           ad_text=ad_text, smart_interval=smart_interval,
+                           prompts=prompts, active_prompt_id=active_prompt_id,
+                           config=config)
+
+@app.route('/api/system/clear-memory', methods=['POST'])
+def clear_memory():
+    # Очистка комментариев и логов
+    database.clear_comments()
+    if os.path.exists('logs.txt'):
+        with open('logs.txt', 'w') as f: f.write("")
+    return jsonify({'status': 'success'})
+
+@app.route('/api/upload/logo', methods=['POST'])
+def upload_logo():
+    file = request.files.get('file')
+    if file:
+        file.save(os.path.join('templates', 'logo.png'))
+        return jsonify({'status': 'success'})
+    return jsonify({'status': 'error'}), 400
+
+@app.route('/api/settings/interval', methods=['POST'])
+def set_interval():
+    interval = request.json.get('interval', '6')
+    database.set_global_setting('smart_queue_interval', interval)
+    return jsonify({'status': 'success'})
+
+@app.route('/api/prompts/add', methods=['POST'])
+def add_prompt():
+    data = request.json
+    database.add_custom_prompt(data['name'], data['prompt'])
+    return jsonify({'status': 'success'})
+
+@app.route('/api/prompts/delete/<int:pid>', methods=['POST'])
+def delete_prompt(pid):
+    database.delete_prompt(pid)
+    return jsonify({'status': 'success'})
+
+@app.route('/api/prompts/select', methods=['POST'])
+def select_prompt():
+    pid = request.json.get('id')
+    for admin_id in config.ADMIN_IDS:
+        database.update_user_setting(admin_id, 'active_prompt_id', pid)
+    return jsonify({'status': 'success'})
+
+@app.route('/api/comments', methods=['GET'])def get_comments():
     comments = database.get_all_comments()
     return jsonify([{'user': c[0], 'text': c[1]} for c in comments])
 
