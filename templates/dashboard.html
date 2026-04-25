@@ -57,10 +57,9 @@
 
 <div class="container">
     <div class="row mb-2">
-        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ total_subs }}</div><div class="stats-label" id="lbl-followers">OBUNACHILAR</div></div></div>
-        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{% if growth_24h >= 0 %}+{% endif %}{{ growth_24h }}</div><div class="stats-label" id="lbl-growth">24SOAT_O'SISH</div></div></div>
-        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.queue }}</div><div class="stats-label" id="lbl-in-queue">NAVBTDA</div></div></div>
-        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.published }}</div><div class="stats-label" id="lbl-posted">CHOP_ETILGAN</div></div></div>
+        <div class="col-md-4 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ total_subs }}</div><div class="stats-label" id="lbl-followers">OBUNACHILAR</div></div></div>
+        <div class="col-md-4 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.queue }}</div><div class="stats-label" id="lbl-in-queue">NAVBTDA</div></div></div>
+        <div class="col-md-4 col-12"><div class="card stats-card p-3"><div class="stats-num">{{ stats.published }}</div><div class="stats-label" id="lbl-posted">CHOP_ETILGAN</div></div></div>
     </div>
 
     <ul class="nav nav-tabs mb-4">
