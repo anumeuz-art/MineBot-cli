@@ -121,7 +121,8 @@ def select_prompt():
         database.update_user_setting(admin_id, 'active_prompt_id', pid)
     return jsonify({'status': 'success'})
 
-@app.route('/api/comments', methods=['GET'])def get_comments():
+@app.route('/api/comments', methods=['GET'])
+def get_comments():
     comments = database.get_all_comments()
     return jsonify([{'user': c[0], 'text': c[1]} for c in comments])
 
