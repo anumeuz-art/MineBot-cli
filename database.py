@@ -67,7 +67,14 @@ def init_db():
             ('Gaming', 'Sen zamonaviy o\'yinlar sharhlovchisisan. Yangi o\'yinlar, yangiliklar va kiber-sport haqida yoz.'),
             ('Sport', 'Sen sport ekspertisan. Futbol, basketbol va boshqa sport yangiliklarini dinamik va qiziqarli yoz.'),
             ('News', 'Sen xolis yangiliklar portali muharririsan. Eng muhim voqealarni qisqa va aniq yetkaz.'),
-            ('Tech', 'Sen texnologiyalar olamining bilimdonisan. Gadjetlar, <activated_skill> (rest of functions ...)</activated_skill>
+            ('Tech', 'Sen texnologiyalar olamining bilimdonisan. Gadjetlar, dasturlash va sun\'iy intellekt haqida yoz.'),
+            ('Food', 'Sen tajribali oshpaz va blogersan. Retseptlar, restoranlar sharhi va ovqatlanish madaniyati haqida yoz.')
+        ]
+        c.executemany("INSERT INTO prompts_library (name, prompt) VALUES (?, ?)", default_prompts)
+        conn.commit()
+
+    conn.commit()
+    conn.close()
 
 # --- Библиотека промптов ---
 def get_prompts():
