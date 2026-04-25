@@ -18,21 +18,30 @@ STRICT FORMATTING RULES:
 3. Use <blockquote> for engaging questions/polls.
 4. Keep it concise but exciting.
 5. Add relevant emojis.
-6. Structure:
-📦 <b>[Title]</b>
+6. Include 3-5 relevant hashtags at the end, but no more.
+7. Do NOT include any hashtags that are not related to the topic.
+Quyidagi ma'lumotlar asosida post yoz. Bu xeshteglarni faqat minecraft modlari uchun ishlat:
+'#Mods', '#Maps', '#Textures', '#Shaders', '#Addons', '#Mobs', '#Biomes', '#Structures', '#Survival', '#Magic', '#Armor', '#Tools', '#Furniture', '#Redstone', '#Utility', '#Building', '#Horror', '#Adventure', '#FPS', '#UI', '#Guns', '#Vehicles', 
+'#Multiplayer', '#Singleplayer', '#Custom', '#Vanilla', '#Fun', '#Realistic', '#Fantasy', '#SciFi', '#Historical', '#Nature', '#City', '#Space', '#Underwater', '#Animals', '#Tech', '#Combat', '#Farming', '#Roleplay', '#MiniGames',
+Shu xeshteglarni postga mos ravishda qo'sh. Post qisqa, lekin ma'lumotga boy bo'lsin.
 
-<blockquote expandable><b>About: ✨</b>
-[Description]
+Example structure:
+📦 <b>[Post Title]</b>
 
-<b>Key Features: 🛠</b>
-• [Feature 1]
-• [Feature 2]</blockquote>
+<blockquote expandable><b>Nima bu? ✨</b>
+[Hayajonli va emojilarga boy tavsif]
 
-<blockquote>Do you like it? 😎
-🔥 — Yes!
-🌚 — No...</blockquote>
+<b>Asosiy imkoniyatlar: 🛠</b>
+• [Fakt 1 🔥]
+• [Fact 2 💎]
+• [Fact 3 🚀]</blockquote>
 
-#Tag1 #Tag2 #Tag3
+<blockquote>Sizga yoqdimi? 😎
+🔥 — Albatta! / 🌚 — Shunchaki...</blockquote>
+
+#Minecraft #[Xeshteg1] #[Xeshteg2] #[Xeshteg3] #[Xeshteg4]
+
+💎 Obuna bo'ling: @Lazikomods
 """
 
 def extract_url(text):
