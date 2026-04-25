@@ -1,11 +1,16 @@
 from PIL import Image
 import os
 
-def add_watermark(input_image_path, output_image_path, watermark_image_path='templates/logo.png'):
+import database
+
+def add_watermark(input_image_path, output_image_path, watermark_image_path=None):
     """
     Накладывает водяной знак (логотип) на изображение.
     Логотип автоматически масштабируется под размер основного фото и размещается в углу.
     """
+    if watermark_image_path is None:
+        watermark_image_path = database.get_active_watermark()
+    
     try:
         # Открываем основное изображение и логотип
         base_image = Image.open(input_image_path).convert("RGBA")

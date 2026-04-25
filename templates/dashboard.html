@@ -1,11 +1,388 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINE_BOT_OS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #0a0a0a; --card: #141414; --mc: #388e3c; --neon-p: #bc13fe; --neon-g: #39ff14; --white: #fff; }
+        body { background: var(--bg); color: #f0f0f0; font-family: 'Minecraftia', sans-serif; letter-spacing: 1px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--mc); }
+        .navbar { background: #000 !important; border-bottom: 3px solid var(--neon-p); box-shadow: 0 0 20px rgba(188, 19, 254, 0.3); }
+        .navbar-brand { color: var(--neon-g) !important; text-shadow: 0 0 5px var(--neon-g); font-size: 1.2rem; }
+        .nav-logo { height: 35px; margin-right: 12px; image-rendering: pixelated; }
+        .card { background: var(--card); border: 2px solid #2a2a2a; border-radius: 0; transition: 0.3s; margin-bottom: 20px; }
+        .stats-card { border-color: var(--neon-p); text-align: center; }
+        .stats-label { color: var(--white) !important; font-size: 0.6rem; text-shadow: 0 0 5px #fff; margin-top: 4px; }
+        .stats-num { font-size: 2rem; font-weight: bold; color: var(--neon-g); text-shadow: 0 0 10px var(--neon-g); }
+        .btn-mc { border-radius: 0; text-transform: uppercase; font-size: 0.65rem; border-width: 2px; }
+        .btn-primary-mc { border-color: var(--neon-g); color: var(--neon-g); background: transparent; }
+        .btn-primary-mc:hover { background: var(--neon-g); color: #000; }
+        .btn-purple-mc { border-color: var(--neon-p); color: var(--neon-p); background: transparent; }
+        .btn-purple-mc:hover { background: var(--neon-p); color: #fff; }
+        .btn-danger-mc { border-color: #ff0033; color: #ff0033; background: transparent; }
+        .nav-tabs .nav-link { color: #444; border: none; font-size: 0.7rem; }
+        .nav-tabs .nav-link.active { background: transparent; color: var(--neon-p); border-bottom: 3px solid var(--neon-p); }
+        .post-media { height: 180px; position: relative; background: #000; overflow: hidden; }
+        .post-media img { width: 100%; height: 100%; object-fit: cover; }
+        .badge-files { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); border: 1px solid var(--neon-g); color: var(--neon-g); padding: 2px 6px; font-size: 0.55rem; z-index: 5; }
+        .handle { cursor: grab; background: #1a1a1a; color: var(--mc); font-size: 0.55rem; text-align: center; padding: 4px; border-bottom: 1px solid #333; }
+        .lang-btn { flex: 1; border: 2px solid #333; color: #555; background: transparent; padding: 10px; cursor: pointer; }
+        .lang-btn.active { border-color: var(--neon-g); color: var(--neon-g); text-shadow: 0 0 5px var(--neon-g); }
+        .modal-content { background: #000; border: 3px solid var(--neon-p); border-radius: 0; }
+        .form-control { background: #111 !important; color: #fff !important; border-radius: 0; border: 1px solid #444; font-family: monospace; }
+        .form-control:focus { background: #1a1a1a !important; color: #fff !important; border-color: var(--neon-p); box-shadow: 0 0 10px rgba(188, 19, 254, 0.5); outline: none; }
+        #ad-text-area { background: #111 !important; color: #fff !important; }
+        .tab-pane { background: var(--bg); color: #fff; }
+        .form-control:-webkit-autofill, .form-control:-webkit-autofill:hover, .form-control:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff !important; -webkit-box-shadow: 0 0 0px 1000px #111 inset !important; transition: background-color 5000s ease-in-out 0s;
+        }
+        .ai-summary { background: #111; border: 1px dashed var(--neon-p); padding: 15px; font-size: 0.75rem; white-space: pre-wrap; line-height: 1.6; }
+        .comment-item { border-left: 3px solid var(--neon-g); padding-left: 12px; margin-bottom: 10px; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
 
-{% block content %}
+<nav class="navbar navbar-dark mb-4">
+    <div class="container d-flex justify-content-between">
+        <a class="navbar-brand" href="/"><img src="/logo.png" class="nav-logo">MINE_OS v2.7</a>
+        <button class="btn btn-purple-mc btn-mc px-3" onclick="location.reload()" id="btn-refresh">🔄 YANGILASH</button>
+    </div>
+</nav>
 
-    {% include 'parts/analytics.html' %}
-    {% include 'parts/queue.html' %}
-    {% include 'parts/channels.html' %}
-    {% include 'parts/themes.html' %}
-    {% include 'parts/settings.html' %}
+<div class="container">
+    <div class="row mb-2">
+        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ total_subs }}</div><div class="stats-label" id="lbl-followers">OBUNACHILAR</div></div></div>
+        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{% if growth_24h >= 0 %}+{% endif %}{{ growth_24h }}</div><div class="stats-label" id="lbl-growth">24SOAT_O'SISH</div></div></div>
+        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.queue }}</div><div class="stats-label" id="lbl-in-queue">NAVBTDA</div></div></div>
+        <div class="col-md-3 col-6"><div class="card stats-card p-3"><div class="stats-num">{{ stats.published }}</div><div class="stats-label" id="lbl-posted">CHOP_ETILGAN</div></div></div>
+    </div>
 
-{% endblock %}
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue" id="tab-queue">Navbat</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#audience" id="tab-audience" onclick="loadComments()">Auditoriya</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics" id="tab-analytics">Analitika</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#channels" id="tab-channels">Kanallar</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ad-config" id="tab-ad">Reklama</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#settings" id="tab-settings">Sozlamalar</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="queue">
+            <div id="sortable-queue" class="row">
+                {% for post in queue %}
+                <div class="col-md-4 mb-4" data-id="{{ post.id }}">
+                    <div class="card p-0 h-100" style="min-height: 520px; display: flex; flex-direction: column;">
+                        <div class="handle">::: SORT_BLOCK :::</div>
+                        <div class="post-media">
+                            {% if post.files_count > 0 %}<div class="badge-files">📎 {{ post.files_count }} FILES</div>{% endif %}
+                            {% if post.photos|length > 1 %}
+                                <div class="swiper mySwiper"><div class="swiper-wrapper">{% for ph in post.photos %}<div class="swiper-slide"><img src="/file/{{ ph }}"></div>{% endfor %}</div><div class="swiper-pagination"></div></div>
+                            {% elif post.photos|length == 1 %}<img src="/file/{{ post.photos[0] }}">
+                            {% else %}<div class="d-flex align-items-center justify-content-center h-100 text-muted" style="font-size: 0.5rem;">EMPTY_MEDIA</div>{% endif %}
+                        </div>
+                        <div class="p-3 d-flex flex-column flex-grow-1">
+                            <small class="text-success" style="font-size: 0.6rem;">{{ post.time_str }} | {{ post.channel }}</small>
+                            <p class="mt-2" style="font-size: 0.65rem; color: #fff; height: 75px; overflow: hidden;">{{ post.text|striptags }}</p>
+                            <button class="btn btn-link p-0 text-info text-start mb-3 btn-expand" style="font-size: 0.55rem; text-decoration: none;" onclick='viewFullText({{ post|tojson }})'>[EXPAND_LOG]</button>
+                            <div class="mt-auto">
+                                <button class="btn btn-primary-mc btn-mc w-100 mb-2 btn-execute" onclick="publishNow({{ post.id }})">🚀 EXECUTE_POST</button>
+                                <div class="d-flex gap-2"><button class="btn btn-purple-mc btn-mc flex-grow-1 btn-edit" onclick='editPost({{ post|tojson }})'>EDIT</button><button class="btn btn-danger-mc btn-mc flex-grow-1 btn-drop" onclick="deletePost({{ post.id }})">DROP</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="audience">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card p-4">
+                        <div class="d-flex justify-content-between mb-4">
+                            <h6 id="head-voice">AUDIENCE_VOICE_FEED</h6>
+                            <button class="btn btn-primary-mc btn-mc px-3" onclick="analyzeComments()" id="btn-ai-analyze">🧠 ANALYZE_WITH_AI</button>
+                        </div>
+                        <div id="ai-summary-container" class="ai-summary mb-4" style="display:none;"></div>
+                        <div id="comments-list" style="max-height: 500px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 text-center">
+                        <h6>ACTIONS</h6>
+                        <button class="btn btn-danger-mc btn-mc w-100 mt-3" onclick="clearComments()" id="btn-clear-com">CLEAR_HISTORY</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="analytics">
+            <div class="row">
+                {% for ch in channels %}
+                <div class="col-md-4 mb-3">
+                    <div class="card p-3" style="border-color: var(--neon-g);">
+                        <div class="text-center mb-2">
+                            <span style="color: var(--neon-g); font-size: 0.8rem;">{{ ch.username }}</span>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col-6 mb-2">
+                                <div style="font-size: 1.2rem; color: #fff;">{{ ch.subs }}</div>
+                                <div style="font-size: 0.5rem; color: #aaa;">TOTAL SUBS</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div style="font-size: 1.2rem; color: {% if ch.g24h >= 0 %}#39ff14{% else %}#ff0033{% endif %};">
+                                    {% if ch.g24h >= 0 %}+{% endif %}{{ ch.g24h }}
+                                </div>
+                                <div style="font-size: 0.5rem; color: #aaa;">GROWTH 24H</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size: 1rem; color: #fff;">{% if ch.g7d >= 0 %}+{% endif %}{{ ch.g7d }}</div>
+                                <div style="font-size: 0.5rem; color: #aaa;">WEEKLY</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size: 1rem; color: #fff;">{% if ch.g30d >= 0 %}+{% endif %}{{ ch.g30d }}</div>
+                                <div style="font-size: 0.5rem; color: #aaa;">MONTHLY</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card p-4 mt-2">
+                <h6 id="head-growth" style="color: #ccc;">GROWTH_CURVE.DATA</h6>
+                <canvas id="subsChart" height="100"></canvas>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="channels">
+            <div class="row">
+                <div class="col-md-6"><div class="card p-3"><h6 id="head-link">LINK_NEW_CHANNEL</h6><div class="input-group"><input type="text" id="new-ch" class="form-control" placeholder="@user"><button class="btn btn-primary-mc btn-mc px-3 btn-link-sys" onclick="addChannel()">LINK</button></div></div></div>
+                <div class="col-md-6"><div class="card p-3"><h6 id="head-linked">LINKED_SYSTEMS</h6><ul class="list-group list-group-flush">{% for ch in channels %}<li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between px-0 align-items-center" style="font-size: 0.7rem;">{{ ch }}<button class="btn btn-sm btn-danger-mc btn-mc px-2 btn-unlink" onclick="removeChannel('{{ ch }}')">UNLINK</button></li>{% endfor %}</ul></div></div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="ad-config">
+            <div class="card p-4">
+                <h6 class="mb-4" style="color: var(--neon-g)" id="head-ad">ADVERTISING_BLOCK_CONFIG</h6>
+                <textarea id="ad-text-area" class="form-control mb-3" rows="5" placeholder="..."></textarea>
+                <button class="btn btn-primary-mc btn-mc px-4" onclick="saveAd()" id="btn-save-ad">SAVE_AD_TEXT</button>
+                <p class="mt-3 text-muted" style="font-size: 0.6rem;" id="hint-ad">* This text will be automatically appended to all new AI-generated posts.</p>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="settings">
+            <div class="row">
+                <!-- AI Lang -->
+                <div class="col-md-6 mb-4">
+                    <div class="card p-4 h-100">
+                        <h6 id="head-lang" style="color: var(--neon-g);">AI_OUTPUT_LANGUAGE</h6>
+                        <div class="d-flex gap-2 mt-3">
+                            {% for l in [('uz','UZB'),('ru','RUS'),('en','ENG')] %}
+                            <button class="lang-btn {% if current_lang == l[0] %}active{% endif %}" onclick="setLang('{{ l[0] }}')">{{ l[1] }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Smart Queue -->
+                <div class="col-md-6 mb-4">
+                    <div class="card p-4 h-100">
+                        <h6 style="color: var(--neon-g);">SMART_QUEUE_CONFIG</h6>
+                        <label class="stats-label d-block mt-3">INTERVAL (HOURS)</label>
+                        <input type="number" id="sq-interval" class="form-control mb-3" value="{{ sq_interval }}">
+                        <label class="stats-label d-block">APPEND TEXT</label>
+                        <input type="text" id="sq-text" class="form-control mb-3" value="{{ sq_text }}" placeholder="e.g. #SmartQueue">
+                        <button class="btn btn-primary-mc btn-mc w-100" onclick="saveSQ()">SAVE_SQ_SETTINGS</button>
+                    </div>
+                </div>
+                <!-- Watermarks -->
+                <div class="col-md-12 mb-4">
+                    <div class="card p-4">
+                        <h6 style="color: var(--neon-g);">WATERMARK_MANAGER (MAX 5)</h6>
+                        <div class="row mt-3">
+                            {% for wm in watermarks %}
+                            <div class="col-md-2 mb-3 text-center">
+                                <div style="border: 1px solid {% if wm[3] %}var(--neon-g){% else %}#333{% endif %}; padding: 5px; background: #000;">
+                                    <img src="/file/{{ wm[1] }}" style="width: 100%; height: 60px; object-fit: contain;">
+                                </div>
+                                <div class="mt-2 d-flex gap-1 justify-content-center">
+                                    <button class="btn btn-sm btn-mc {% if wm[3] %}btn-primary-mc{% else %}btn-purple-mc{% endif %}" onclick="activateWM({{ wm[0] }})" {% if wm[3] %}disabled{% endif %}>SEL</button>
+                                    <button class="btn btn-sm btn-danger-mc btn-mc" onclick="deleteWM({{ wm[0] }})">X</button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% if watermarks|length < 5 %}
+                            <div class="col-md-2 mb-3">
+                                <label class="w-100 h-100 d-flex align-items-center justify-content-center" style="border: 2px dashed #444; cursor: pointer; min-height: 100px;">
+                                    <input type="file" id="wm-file" hidden onchange="uploadWM()">
+                                    <span style="font-size: 1.5rem;">+</span>
+                                </label>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Prompts -->
+                <div class="col-md-12">
+                    <div class="card p-4">
+                        <h6 style="color: var(--neon-g);">AI_SYSTEM_PROMPT_ENGINE</h6>
+                        <textarea id="prompt-area" class="form-control mt-3" rows="10" style="font-size: 0.7rem;">{{ active_prompt }}</textarea>
+                        <button class="btn btn-primary-mc btn-mc mt-3 px-5" onclick="savePrompt()">UPDATE_PROMPT_TEMPLATE</button>
+                        <p class="mt-2 text-muted" style="font-size: 0.55rem;">* Use tags like &lt;b&gt;, &lt;blockquote&gt; etc. AI will follow this structure.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-update">UPDATE_PAYLOAD</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea id="edit-text" class="form-control mb-3" rows="12"></textarea><label style="font-size: 0.5rem;" id="lbl-sched">SCHED_TIME</label><input type="datetime-local" id="edit-time" class="form-control"></div><div class="modal-footer border-secondary"><button class="btn btn-primary-mc btn-mc px-4" id="save-btn">UPLOAD_CHANGES</button></div></div></div></div>
+<div class="modal fade" id="textModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-view">RAW_DATA_VIEW</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="full-text-content" style="font-size: 0.75rem; white-space: pre-wrap; color: #fff !important;"></div></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<script>
+    const currentLang = "{{ current_lang }}";
+    const translations = {
+        'uz': {
+            'refresh': '🔄 YANGILASH', 'followers': 'OBUNACHILAR', 'growth': '24SOAT_O\'SISH', 'queue': 'NAVBTDA', 'posted': 'CHOP_ETILGAN',
+            'tab_queue': 'Navbat', 'tab_audience': 'Auditoriya', 'tab_analytics': 'Analitika', 'tab_channels': 'Kanallar', 'tab_ad': 'Reklama', 'tab_settings': 'Sozlamalar',
+            'expand': '[TO\'LIQ_KO\'RISH]', 'execute': '🚀 CHOP_ETISH', 'edit': 'TAHRIR', 'drop': 'O\'CHIRISH', 'head_growth': 'O\'SISH_GRAFIKI',
+            'head_link': 'YANGI_KANAL_ULASH', 'head_linked': 'ULANGAN_TIZIMLAR', 'head_ad': 'REKLAMA_SOZLAMALARI', 'head_lang': 'AI_TILINI_TANLASH',
+            'btn_save_ad': 'SAQLASH', 'hint_ad': '* Ushbu matn barcha yangi postlarga qo\'shiladi.', 'head_update': 'MA\'LUMOTNI_YANGILASH',
+            'lbl_sched': 'REJALASHTIRILGAN_VAQT', 'btn_upload': 'YANGILASHNI_YUBORISH', 'head_view': 'POST_MATNI', 'btn_link': 'ULASH', 'btn_unlink': 'UZISH',
+            'head_voice': 'AUDITORIYA_TAKLIFLARI', 'btn_ai_analyze': '🧠 AI TAHLILI', 'btn_clear_com': 'TOZALASH'
+        },
+        'ru': {
+            'refresh': '🔄 ОБНОВИТЬ', 'followers': 'ПОДПИСЧИКОВ', 'growth': 'РОСТ_24Ч', 'queue': 'В_ОЧЕРЕДИ', 'posted': 'ОПУБЛИКОВАНО',
+            'tab_queue': 'Очередь', 'tab_audience': 'Аудитория', 'tab_analytics': 'Аналитика', 'tab_channels': 'Каналы', 'tab_ad': 'Реклама', 'tab_settings': 'Настройки',
+            'expand': '[РАЗВЕРНУТЬ]', 'execute': '🚀 ОПУБЛИКОВАТЬ', 'edit': 'ПРАВКА', 'drop': 'УДАЛИТЬ', 'head_growth': 'ГРАФИК_РОСТА',
+            'head_link': 'ПРИВЯЗКА_КАНАЛА', 'head_linked': 'ПОДКЛЮЧЕННЫЕ_СИСТЕМЫ', 'head_ad': 'НАСТРОЙКА_РЕКЛАМЫ', 'head_lang': 'ЯЗЫК_ГЕНЕРАЦИИ_ИИ',
+            'btn_save_ad': 'СОХРАНИТЬ_ТЕКСТ', 'hint_ad': '* Этот текст будет автоматически добавлен ко всем новым постам.', 'head_update': 'ОБНОВЛЕНИЕ_ДАННЫХ',
+            'lbl_sched': 'ВРЕМЯ_ПУБЛИКАЦИИ', 'btn_upload': 'ЗАГРУЗИТЬ_ИЗМЕНЕНИЯ', 'head_view': 'ПРОСМОТР_ТЕКСТА', 'btn_link': 'СВЯЗАТЬ', 'btn_unlink': 'ОТКЛЮЧИТЬ',
+            'head_voice': 'ПРЕДЛОЖЕНИЯ АУДИТОРИИ', 'btn_ai_analyze': '🧠 АНАЛИЗ ИИ', 'btn_clear_com': 'ОЧИСТИТЬ'
+        },
+        'en': {
+            'refresh': '🔄 REFRESH', 'followers': 'FOLLOWERS', 'growth': '24H_GROWTH', 'queue': 'IN_QUEUE', 'posted': 'POSTED',
+            'tab_queue': 'Queue', 'tab_audience': 'Audience', 'tab_analytics': 'Analytics', 'tab_channels': 'Channels', 'tab_ad': 'Ad_Config', 'tab_settings': 'Settings',
+            'expand': '[EXPAND_LOG]', 'execute': '🚀 EXECUTE_POST', 'edit': 'EDIT', 'drop': 'DROP', 'head_growth': 'GROWTH_CURVE.DATA',
+            'head_link': 'LINK_NEW_CHANNEL', 'head_linked': 'LINKED_SYSTEMS', 'head_ad': 'ADVERTISING_BLOCK_CONFIG', 'head_lang': 'AI_OUTPUT_LANGUAGE',
+            'btn_save_ad': 'SAVE_AD_TEXT', 'hint_ad': '* This text will be automatically appended to all new AI-generated posts.', 'head_update': 'UPDATE_PAYLOAD',
+            'lbl_sched': 'SCHED_TIME', 'btn_upload': 'UPLOAD_CHANGES', 'head_view': 'RAW_DATA_VIEW', 'btn_link': 'LINK', 'btn_unlink': 'UNLINK',
+            'head_voice': 'AUDIENCE_VOICE_FEED', 'btn_ai_analyze': '🧠 AI ANALYZE', 'btn_clear_com': 'CLEAR'
+        }
+    };
+
+    function applyTranslations(lang) {
+        const t = translations[lang] || translations['uz'];
+        document.getElementById('btn-refresh').innerText = t.refresh;
+        document.getElementById('lbl-followers').innerText = t.followers;
+        document.getElementById('lbl-growth').innerText = t.growth;
+        document.getElementById('lbl-in-queue').innerText = t.queue;
+        document.getElementById('lbl-posted').innerText = t.posted;
+        document.getElementById('tab-queue').innerText = t.tab_queue;
+        document.getElementById('tab-audience').innerText = t.tab_audience;
+        document.getElementById('tab-analytics').innerText = t.tab_analytics;
+        document.getElementById('tab-channels').innerText = t.tab_channels;
+        document.getElementById('tab-ad').innerText = t.tab_ad;
+        document.getElementById('tab-settings').innerText = t.tab_settings;
+        document.getElementById('head-growth').innerText = t.head_growth;
+        document.getElementById('head-link').innerText = t.head_link;
+        document.getElementById('head-linked').innerText = t.head_linked;
+        document.getElementById('head-ad').innerText = t.head_ad;
+        document.getElementById('head-lang').innerText = t.head_lang;
+        document.getElementById('btn-save-ad').innerText = t.btn_save_ad;
+        document.getElementById('hint-ad').innerText = t.hint_ad;
+        document.getElementById('head-update').innerText = t.head_update;
+        document.getElementById('lbl-sched').innerText = t.lbl_sched;
+        document.getElementById('save-btn').innerText = t.btn_upload;
+        document.getElementById('head-view').innerText = t.head_view;
+        document.getElementById('head-voice').innerText = t.head_voice;
+        document.getElementById('btn-ai-analyze').innerText = t.btn_ai_analyze;
+        document.getElementById('btn-clear-com').innerText = t.btn_clear_com;
+        document.querySelectorAll('.btn-expand').forEach(b => b.innerText = t.expand);
+        document.querySelectorAll('.btn-execute').forEach(b => b.innerText = t.execute);
+        document.querySelectorAll('.btn-edit').forEach(b => b.innerText = t.edit);
+        document.querySelectorAll('.btn-drop').forEach(b => b.innerText = t.drop);
+        document.querySelectorAll('.btn-link-sys').forEach(b => b.innerText = t.btn_link);
+        document.querySelectorAll('.btn-unlink').forEach(b => b.innerText = t.btn_unlink);
+    }
+
+    window.onload = () => { applyTranslations(currentLang); loadComments(); };
+
+    function loadComments() {
+        fetch('/api/comments').then(r => r.json()).then(data => {
+            const list = document.getElementById('comments-list');
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="text-white-50" style="font-size: 0.7rem; text-align: center; padding: 20px;">[NO_NEW_DATA_LOGGED]</p>';
+            } else {
+                list.innerHTML = data.map(c => `<div class="comment-item"><strong>${c.user}:</strong><br>${c.text}</div>`).join('');
+            }
+        });
+    }
+
+    function analyzeComments() {
+        const btn = document.getElementById('btn-ai-analyze');
+        const summary = document.getElementById('ai-summary-container');
+        btn.disabled = true; btn.innerText = '⌛ Analyzing...';
+        fetch('/api/comments/analyze', {method:'POST'}).then(r => r.json()).then(data => {
+            summary.innerText = data.summary; summary.style.display = 'block';
+            btn.disabled = false; btn.innerText = translations[currentLang].btn_ai_analyze;
+        });
+    }
+
+    function clearComments() { if(confirm('Clear all?')) fetch('/api/comments/clear', {method:'POST'}).then(() => loadComments()); }
+
+    new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination", clickable: true } });
+    Sortable.create(document.getElementById('sortable-queue'), { animation: 150, handle: '.handle', onEnd: function() { 
+        const order = Array.from(document.querySelectorAll('.col-md-4')).map(i => i.dataset.id);
+        fetch('/api/reorder', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({order}) });
+    }});
+
+    fetch('/api/stats').then(r => r.json()).then(data => {
+        const ctx = document.getElementById('subsChart').getContext('2d');
+        const first = Object.keys(data)[0]; if(!first) return;
+        new Chart(ctx, { type: 'line', data: { labels: data[first].labels, datasets: [{ label: first, data: data[first].data, borderColor: '#39ff14', tension: 0.3, fill: true, backgroundColor: 'rgba(57, 255, 20, 0.05)' }] }, options: { plugins: { legend: { labels: { color: '#fff', font: { family: 'Minecraftia', size: 8 } } } }, scales: { y: { ticks: { color: '#555' } }, x: { ticks: { color: '#555' } } } } });
+    });
+
+    function saveAd() { fetch('/api/settings/ad', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('ad-text-area').value}) }).then(() => alert('AD_SAVED')); }
+    function setLang(l) { fetch('/api/settings/language', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) }).then(() => location.reload()); }
+    function viewFullText(p) { document.getElementById('full-text-content').innerText = p.text; new bootstrap.Modal(document.getElementById('textModal')).show(); }
+    let curId = null;
+    function editPost(p) { curId = p.id; document.getElementById('edit-text').value = p.text; document.getElementById('edit-time').value = p.iso_time ? p.iso_time.slice(0,16) : ""; new bootstrap.Modal(document.getElementById('editModal')).show(); }
+    document.getElementById('save-btn').onclick = function() { fetch('/api/edit/'+curId, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text:document.getElementById('edit-text').value, time:document.getElementById('edit-time').value}) }).then(() => location.reload()); };
+    function publishNow(id) { if(confirm('UPLOAD NOW?')) fetch('/api/publish/'+id, {method:'POST'}).then(r => r.ok ? location.reload() : alert('FAIL')); }
+    function deletePost(id) { if(confirm('DROP?')) fetch('/api/delete/'+id, {method:'POST'}).then(() => location.reload()); }
+    function addChannel() { fetch('/api/channels', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:document.getElementById('new-ch').value}) }).then(() => location.reload()); }
+    function removeChannel(u) { if(confirm('UNLINK '+u+'?')) fetch('/api/channels/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u}) }).then(() => location.reload()); }
+
+    function saveSQ() {
+        fetch('/api/settings/sq', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({
+            interval: document.getElementById('sq-interval').value,
+            text: document.getElementById('sq-text').value
+        }) }).then(() => alert('SQ_SAVED'));
+    }
+
+    function uploadWM() {
+        const file = document.getElementById('wm-file').files[0];
+        if(!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        fetch('/api/watermarks/upload', { method: 'POST', body: formData }).then(r => r.ok ? location.reload() : r.json().then(d => alert(d.error)));
+    }
+
+    function activateWM(id) { fetch('/api/watermarks/activate/'+id, { method: 'POST' }).then(() => location.reload()); }
+    function deleteWM(id) { if(confirm('Delete watermark?')) fetch('/api/watermarks/delete/'+id, { method: 'POST' }).then(() => location.reload()); }
+
+    function savePrompt() {
+        fetch('/api/settings/prompt', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({
+            prompt: document.getElementById('prompt-area').value
+        }) }).then(() => alert('PROMPT_UPDATED'));
+    }
+</script>
+</body>
+</html>

@@ -8,6 +8,12 @@ def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_
     Поддерживает одиночные фото, альбомы, текстовые сообщения и документы.
     """
     try:
+        # Добавляем текст умной очереди, если это автопостинг
+        if is_auto:
+            sq_text = database.get_global_setting('smart_queue_text', '')
+            if sq_text and sq_text not in text:
+                text += f"\n\n{sq_text}"
+
         # 1. Отправка фото или альбома
         if photo_id:
             if ',' in photo_id: # Если в строке несколько ID через запятую — это альбом

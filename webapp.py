@@ -36,9 +36,29 @@ def collect_stats():
             database.save_sub_count(ch, count)
         except: pass
 
+def get_channel_growth(channel_id):
+    history = database.get_sub_history(channel_id)
+    if not history or len(history) < 2:
+        return {'24h': 0, '7d': 0, '30d': 0, 'current': 0}
+    
+    current = history[-1][1]
+    
+    def get_diff(days):
+        target_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+        prev = next((h[1] for h in reversed(history) if h[0] <= target_date), history[0][1])
+        return current - prev
+
+    return {
+        '24h': get_diff(1),
+        '7d': get_diff(7),
+        '30d': get_diff(30),
+        'current': current
+    }
+
 @app.route('/')
 def index():
     collect_stats()
+    stats = database.get_stats()
     pending = database.get_all_pending()
     queue = []
     for p in pending:
@@ -53,79 +73,72 @@ def index():
             'iso_time': datetime.fromtimestamp(p[5]).strftime('%Y-%m-%dT%H:%M') if p[5] else "",
             'files_count': len(doc_ids)
         })
-
-    post_stats = database.get_detailed_stats()
-    managed_channels = database.get_all_managed_channels()
     
-    channel_data = []
+    managed_channels = database.get_all_managed_channels()
+    channel_stats = []
+    total_subs = 0
     for ch in managed_channels:
-        growth = database.get_channel_growth(ch)
-        channel_data.append({
+        growth = get_channel_growth(ch)
+        total_subs += growth['current']
+        channel_stats.append({
             'username': ch,
-            'stats': growth
+            'subs': growth['current'],
+            'g24h': growth['24h'],
+            'g7d': growth['7d'],
+            'g30d': growth['30d']
         })
 
     current_lang = database.get_user_setting(config.ADMIN_IDS[0], 'persona', 'uz')
     ad_text = database.get_global_setting('ad_text', '')
-    smart_interval = database.get_global_setting('smart_queue_interval', '6')
-    prompts = database.get_all_prompts()
-    active_prompt_id = database.get_user_setting(config.ADMIN_IDS[0], 'active_prompt_id', '1')
-
-    return render_template('dashboard.html', 
-                           post_stats=post_stats,
-                           channel_data=channel_data,
-                           queue=queue, 
-                           all_channels=managed_channels,
-                           current_lang=current_lang, 
-                           ad_text=ad_text, smart_interval=smart_interval,
-                           prompts=prompts, active_prompt_id=active_prompt_id,
+    sq_interval = database.get_global_setting('smart_queue_interval', '6')
+    sq_text = database.get_global_setting('smart_queue_text', '')
+    
+    watermarks = database.get_all_watermarks()
+    active_prompt = database.get_active_prompt()
+    
+    return render_template('dashboard.html', stats=stats, queue=queue, 
+                           channels=channel_stats, total_subs=total_subs, 
+                           current_lang=current_lang, ad_text=ad_text, 
+                           sq_interval=sq_interval, sq_text=sq_text,
+                           watermarks=watermarks, active_prompt=active_prompt,
                            config=config)
 
-@app.route('/api/system/clear-memory', methods=['POST'])
-def clear_memory():
-    # Очистка комментариев и логов
-    database.clear_comments()
-    if os.path.exists('logs.txt'):
-        with open('logs.txt', 'w') as f: f.write("")
-    return jsonify({'status': 'success'})
-
-@app.route('/api/upload/logo', methods=['POST'])
-def upload_logo():
-    file = request.files.get('file')
-    if file:
-        file.save(os.path.join('templates', 'logo.png'))
+@app.route('/api/watermarks/upload', methods=['POST'])
+def upload_watermark():
+    if 'file' not in request.files: return jsonify({'error': 'No file'}), 400
+    file = request.files['file']
+    if file.filename == '': return jsonify({'error': 'No file'}), 400
+    
+    filename = f"wm_{int(time.time())}.png"
+    path = os.path.join('data', filename)
+    file.save(path)
+    
+    if database.add_watermark_db(path, file.filename):
         return jsonify({'status': 'success'})
-    return jsonify({'status': 'error'}), 400
+    else:
+        os.remove(path)
+        return jsonify({'error': 'Limit reached (max 5)'}), 400
 
-@app.route('/api/settings/interval', methods=['POST'])
-def set_interval():
-    interval = request.json.get('interval', '6')
-    database.set_global_setting('smart_queue_interval', interval)
+@app.route('/api/watermarks/activate/<int:wm_id>', methods=['POST'])
+def activate_watermark(wm_id):
+    database.set_active_watermark(wm_id)
     return jsonify({'status': 'success'})
 
-@app.route('/api/prompts/improve', methods=['POST'])
-def improve_prompt_api():
+@app.route('/api/watermarks/delete/<int:wm_id>', methods=['POST'])
+def delete_watermark(wm_id):
+    database.delete_watermark(wm_id)
+    return jsonify({'status': 'success'})
+
+@app.route('/api/settings/sq', methods=['POST'])
+def set_sq_settings():
     data = request.json
-    idea = data.get('desc', '')
-    improved = ai_generator.improve_prompt(idea)
-    return jsonify({'improved': improved})
-
-@app.route('/api/prompts/add', methods=['POST'])
-def add_prompt():
-    data = request.json
-    database.add_custom_prompt(data['name'], data['prompt'])
+    database.set_global_setting('smart_queue_interval', data.get('interval', '6'))
+    database.set_global_setting('smart_queue_text', data.get('text', ''))
     return jsonify({'status': 'success'})
 
-@app.route('/api/prompts/delete/<int:pid>', methods=['POST'])
-def delete_prompt(pid):
-    database.delete_prompt(pid)
-    return jsonify({'status': 'success'})
-
-@app.route('/api/prompts/select', methods=['POST'])
-def select_prompt():
-    pid = request.json.get('id')
-    for admin_id in config.ADMIN_IDS:
-        database.update_user_setting(admin_id, 'active_prompt_id', pid)
+@app.route('/api/settings/prompt', methods=['POST'])
+def set_prompt():
+    database.update_active_prompt(request.json.get('prompt', ''))
     return jsonify({'status': 'success'})
 
 @app.route('/api/comments', methods=['GET'])

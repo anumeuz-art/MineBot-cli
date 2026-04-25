@@ -16,7 +16,19 @@ def get_cancel_markup(lang='uz'):
     markup.add(KeyboardButton(btns['cancel']))
     return markup
 
-def get_draft_markup(draft_id, lang='uz'):
+def get_channel_select_menu(target_id, channels, action_type="pub"):
+    """
+    Клавиатура для выбора канала.
+    action_type может быть 'pub' (опубликовать сейчас) или 'sq' (смарт-очередь), 'sched' (интервал).
+    """
+    markup = InlineKeyboardMarkup()
+    for ch in channels:
+        markup.add(InlineKeyboardButton(ch, callback_data=f"sel_{action_type}_{ch}"))
+    
+    markup.add(InlineKeyboardButton("⬅️ Back", callback_data="back_to_draft"))
+    return markup
+
+def get_draft_markup(target_id, lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = InlineKeyboardMarkup(row_width=2)
     
@@ -43,9 +55,9 @@ def get_draft_markup(draft_id, lang='uz'):
 def get_translate_menu(target_id):
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
-        InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data=f"tr_uz_{target_id}"),
-        InlineKeyboardButton("🇷🇺 Русский", callback_data=f"tr_ru_{target_id}"),
-        InlineKeyboardButton("🇺🇸 English", callback_data=f"tr_en_{target_id}"),
+        InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data=f"tr_uz"),
+        InlineKeyboardButton("🇷🇺 Русский", callback_data=f"tr_ru"),
+        InlineKeyboardButton("🇺🇸 English", callback_data=f"tr_en"),
         InlineKeyboardButton("⬅️ Назад", callback_data="back_to_draft")
     )
     return markup
@@ -63,11 +75,11 @@ def get_queue_menu(target_id, lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("2h", callback_data=f"sched_interval_2_{target_id}"), 
-        InlineKeyboardButton("6h", callback_data=f"sched_interval_6_{target_id}")
+        InlineKeyboardButton("2h", callback_data=f"sched_i_2"), 
+        InlineKeyboardButton("6h", callback_data=f"sched_i_6")
     )
     markup.add(
-        InlineKeyboardButton(btns['exact'], callback_data=f"sched_exact_{target_id}"), 
+        InlineKeyboardButton(btns['exact'], callback_data=f"sched_exact"), 
         InlineKeyboardButton(btns['back'], callback_data="back_to_draft")
     )
     return markup
@@ -76,12 +88,12 @@ def get_rewrite_menu(target_id, lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton(btns['short'], callback_data=f"rewrite_short_{target_id}"), 
-        InlineKeyboardButton(btns['long'], callback_data=f"rewrite_long_{target_id}")
+        InlineKeyboardButton(btns['short'], callback_data=f"rewrite_short"), 
+        InlineKeyboardButton(btns['long'], callback_data=f"rewrite_long"),
     )
     markup.add(
-        InlineKeyboardButton(btns['funny'], callback_data=f"rewrite_funny_{target_id}"), 
-        InlineKeyboardButton(btns['pro'], callback_data=f"rewrite_pro_{target_id}")
+        InlineKeyboardButton(btns['funny'], callback_data=f"rewrite_funny"), 
+        InlineKeyboardButton(btns['pro'], callback_data=f"rewrite_pro"),
     )
     markup.add(InlineKeyboardButton(btns['back'], callback_data="back_to_draft"))
     return markup

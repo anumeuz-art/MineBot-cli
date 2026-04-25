@@ -218,30 +218,73 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             bot.delete_message(chat_id, target_id)
             bot.send_message(chat_id, get_txt(user_id, 'lang_selected'), parse_mode='HTML', reply_markup=keyboards.get_main_menu(new_lang))
             return
+
         if call.data == "cancel_action":
             bot.delete_message(chat_id, target_id)
-            if target_id in user_drafts: del user_drafts[target_id]
+            return
+
+        # Навигация
+        if call.data == "back_to_draft":
+            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_draft_markup(target_id, lang))
+            return
+
+        # Меню выбора каналов
+        if call.data == "pub_now":
+            channels = database.get_all_managed_channels()
+            if not channels: channels = [config.DEFAULT_CHANNEL]
+            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_channel_select_menu(target_id, channels, "pub"))
             return
         
+        if call.data == "add_to_smart_q":
+            channels = database.get_all_managed_channels()
+            if not channels: channels = [config.DEFAULT_CHANNEL]
+            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_channel_select_menu(target_id, channels, "sq"))
+            return
+
+        if call.data == "pub_queue_menu":
+            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_queue_menu(target_id, lang))
+            return
+
+        if call.data.startswith("sched_i_"):
+            h = int(call.data.split('_')[2])
+            channels = database.get_all_managed_channels()
+            if not channels: channels = [config.DEFAULT_CHANNEL]
+            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_channel_select_menu(target_id, channels, f"sched{h}"))
+            return
+
+        # Финальные действия после выбора канала
         draft = user_drafts.get(target_id)
-        if not draft and not call.data.startswith(("sched_", "tr_")): 
+        if not draft:
             bot.answer_callback_query(call.id, get_txt(user_id, 'err_draft'))
             return
 
-        if call.data == "pub_now":
-            publisher.publish_post_data(bot, -1, draft['photo'], draft['text'], draft['document'], draft.get('channel', config.DEFAULT_CHANNEL))
-            bot.delete_message(chat_id, target_id)
-            bot.send_message(chat_id, get_txt(user_id, 'published'), reply_markup=keyboards.get_main_menu(lang))
-        elif call.data == "add_to_smart_q":
-            database.add_to_queue(draft['photo'], draft['text'], draft['document'], draft.get('channel', config.DEFAULT_CHANNEL), int(time.time()) + 21600)
-            bot.delete_message(chat_id, target_id)
-            bot.send_message(chat_id, get_txt(user_id, 'smart_queue_added'), reply_markup=keyboards.get_main_menu(lang))
-        elif call.data.startswith("sched_interval_"):
-            h = int(call.data.split('_')[2])
-            database.add_to_queue(draft['photo'], draft['text'], draft['document'], draft.get('channel', config.DEFAULT_CHANNEL), int(time.time()) + h*3600)
-            bot.delete_message(chat_id, target_id)
-            bot.send_message(chat_id, get_txt(user_id, 'scheduled', time=f"+{h}h"), reply_markup=keyboards.get_main_menu(lang))
-        elif call.data == "translate_menu":
+        if call.data.startswith("sel_"):
+            parts = call.data.split('_')
+            action = parts[1]
+            channel = parts[2]
+            
+            if action == "pub":
+                publisher.publish_post_data(bot, -1, draft['photo'], draft['text'], draft['document'], channel)
+                bot.delete_message(chat_id, target_id)
+                bot.send_message(chat_id, get_txt(user_id, 'published'), reply_markup=keyboards.get_main_menu(lang))
+            
+            elif action == "sq":
+                interval = int(database.get_global_setting('smart_queue_interval', 6))
+                last_time = database.get_last_scheduled_time() or int(time.time())
+                sched_time = max(int(time.time()), last_time) + interval * 3600
+                database.add_to_queue(draft['photo'], draft['text'], draft['document'], channel, sched_time)
+                bot.delete_message(chat_id, target_id)
+                bot.send_message(chat_id, get_txt(user_id, 'smart_queue_added'), reply_markup=keyboards.get_main_menu(lang))
+
+            elif action.startswith("sched"):
+                h = int(action.replace("sched", ""))
+                database.add_to_queue(draft['photo'], draft['text'], draft['document'], channel, int(time.time()) + h*3600)
+                bot.delete_message(chat_id, target_id)
+                bot.send_message(chat_id, get_txt(user_id, 'scheduled', time=f"+{h}h"), reply_markup=keyboards.get_main_menu(lang))
+            return
+
+        # Остальные меню
+        if call.data == "translate_menu":
             bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_translate_menu(target_id))
         elif call.data.startswith("tr_"):
             t_lang = call.data.split('_')[1]
@@ -249,10 +292,6 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             draft['text'] = ai_generator.translate_post(draft['text'], t_lang)
             send_draft_preview(chat_id, user_id, draft)
             bot.delete_message(chat_id, target_id)
-        elif call.data == "pub_queue_menu":
-            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_queue_menu(target_id, lang))
-        elif call.data == "back_to_draft":
-            bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_draft_markup(target_id, lang))
         elif call.data == "edit_text":
             user_states[user_id] = "EDITING"
             bot.send_message(chat_id, get_txt(user_id, 'enter_text'))

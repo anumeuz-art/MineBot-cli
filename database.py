@@ -1,10 +1,10 @@
 import sqlite3
 import time
 import os
-from datetime import datetime, timedelta
-import config
+from datetime import datetime
 
 # Путь к файлу базы данных SQLite. 
+# Используется папка 'data/', которая обычно мапится на Railway Volume для сохранения данных при перезагрузках.
 DB_PATH = 'data/bot_data.db'
 
 def init_db():
@@ -15,7 +15,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     
-    # Таблица очереди постов
+    # Таблица очереди постов: хранит медиа, текст, статус и время публикации
     c.execute('''CREATE TABLE IF NOT EXISTS queue
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   photo_id TEXT,
@@ -23,105 +23,135 @@ def init_db():
                   document_id TEXT,
                   status TEXT DEFAULT 'pending')''')
     
-    # Миграции
+    # Динамическое добавление колонок (для миграции старых БД без удаления данных)
     try: c.execute("ALTER TABLE queue ADD COLUMN channel_id TEXT")
     except: pass
     try: c.execute("ALTER TABLE queue ADD COLUMN scheduled_time INTEGER")
     except: pass
-    try: c.execute("ALTER TABLE queue ADD COLUMN user_id INTEGER")
-    except: pass
         
-    # Таблица авторизованных пользователей
-    c.execute('''CREATE TABLE IF NOT EXISTS authorized_users
-                 (user_id INTEGER PRIMARY KEY, username TEXT, joined_at INTEGER)''')
-
+    # Таблица индивидуальных настроек пользователей (язык, активный канал)
     c.execute('''CREATE TABLE IF NOT EXISTS user_settings
                  (user_id INTEGER, key TEXT, value TEXT, PRIMARY KEY (user_id, key))''')
 
+    # Таблица комментариев пользователей (для анализа через Groq)
     c.execute('''CREATE TABLE IF NOT EXISTS comments
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT, text TEXT, timestamp INTEGER)''')
 
+    # Таблица списка каналов, которыми управляет бот
     c.execute('''CREATE TABLE IF NOT EXISTS managed_channels
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE)''')
 
+    # Статистика подписчиков (срез по дням)
     c.execute('''CREATE TABLE IF NOT EXISTS stats_subscribers
                  (channel_id TEXT, count INTEGER, date TEXT, PRIMARY KEY (channel_id, date))''')
 
+    # Статистика просмотров постов
     c.execute('''CREATE TABLE IF NOT EXISTS stats_posts
                  (post_id INTEGER PRIMARY KEY, views INTEGER, date TEXT)''')
 
+    # Глобальные настройки (рекламный текст и прочее)
     c.execute('''CREATE TABLE IF NOT EXISTS global_settings
                  (key TEXT PRIMARY KEY, value TEXT)''')
 
-    # Библиотека промптов
-    c.execute('''CREATE TABLE IF NOT EXISTS prompts_library
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  name TEXT,
-                  prompt TEXT)''')
-    
-    # Инициализация библиотеки промптов
-    c.execute("SELECT count(*) FROM prompts_library")
-    if c.fetchone()[0] == 0:
-        default_prompts = [
-            ('Minecraft', 'Sen Minecraft modlari bo\'yicha Telegram kanali muharririsan. Quyidagi ma\'lumotlar asosida post yoz...'),
-            ('Gaming', 'Sen zamonaviy o\'yinlar sharhlovchisisan. Yangi o\'yinlar, yangiliklar va kiber-sport haqida yoz.'),
-            ('Sport', 'Sen sport ekspertisan. Futbol, basketbol va boshqa sport yangiliklarini dinamik va qiziqarli yoz.'),
-            ('News', 'Sen xolis yangiliklar portali muharririsan. Eng muhim voqealarni qisqa va aniq yetkaz.'),
-            ('Tech', 'Sen texnologiyalar olamining bilimdonisan. Gadjetlar, dasturlash va sun\'iy intellekt haqida yoz.'),
-            ('Food', 'Sen tajribali oshpaz va blogersan. Retseptlar, restoranlar sharhi va ovqatlanish madaniyati haqida yoz.')
-        ]
-        c.executemany("INSERT INTO prompts_library (name, prompt) VALUES (?, ?)", default_prompts)
-        conn.commit()
+    # Таблица водяных знаков (до 5 штук)
+    c.execute('''CREATE TABLE IF NOT EXISTS watermarks
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT, name TEXT, is_active INTEGER DEFAULT 0)''')
+
+    # Таблица промптов для ИИ
+    c.execute('''CREATE TABLE IF NOT EXISTS ai_prompts
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, prompt TEXT, is_active INTEGER DEFAULT 0)''')
 
     conn.commit()
     conn.close()
+    
+    # Инициализация дефолтных значений
+    init_defaults()
 
-def get_prompts():
+def init_defaults():
+    from ai_generator import PROMPT_TEMPLATE
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, name FROM prompts_library")
+    # Промпт
+    c.execute("SELECT COUNT(*) FROM ai_prompts")
+    if c.fetchone()[0] == 0:
+        c.execute("INSERT INTO ai_prompts (name, prompt, is_active) VALUES (?, ?, ?)", 
+                  ("Minecraft Default", PROMPT_TEMPLATE, 1))
+    
+    # Дефолтный водяной знак
+    c.execute("SELECT COUNT(*) FROM watermarks")
+    if c.fetchone()[0] == 0:
+        c.execute("INSERT INTO watermarks (path, name, is_active) VALUES (?, ?, ?)", 
+                  ("templates/logo.png", "Original Logo", 1))
+    
+    conn.commit()
+    conn.close()
+
+# --- Управление водяными знаками ---
+def add_watermark_db(path, name):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM watermarks")
+    if c.fetchone()[0] >= 5:
+        conn.close()
+        return False
+    c.execute("INSERT INTO watermarks (path, name) VALUES (?, ?)", (path, name))
+    conn.commit()
+    conn.close()
+    return True
+
+def get_all_watermarks():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, path, name, is_active FROM watermarks")
     rows = c.fetchall()
     conn.close()
     return rows
 
-def get_prompt_by_id(prompt_id):
+def set_active_watermark(wm_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT prompt FROM prompts_library WHERE id = ?", (prompt_id,))
+    c.execute("UPDATE watermarks SET is_active = 0")
+    c.execute("UPDATE watermarks SET is_active = 1 WHERE id = ?", (wm_id,))
+    conn.commit()
+    conn.close()
+
+def get_active_watermark():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT path FROM watermarks WHERE is_active = 1")
+    res = c.fetchone()
+    conn.close()
+    return res[0] if res else 'templates/logo.png'
+
+def delete_watermark(wm_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT path FROM watermarks WHERE id = ?", (wm_id,))
+    path = c.fetchone()
+    if path and os.path.exists(path[0]) and 'logo.png' not in path[0]:
+        try: os.remove(path[0])
+        except: pass
+    c.execute("DELETE FROM watermarks WHERE id = ?", (wm_id,))
+    conn.commit()
+    conn.close()
+
+# --- Управление промптами ---
+def get_active_prompt():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT prompt FROM ai_prompts WHERE is_active = 1")
     res = c.fetchone()
     conn.close()
     return res[0] if res else None
 
-def add_custom_prompt(name, prompt):
+def update_active_prompt(new_prompt):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO prompts_library (name, prompt) VALUES (?, ?)", (name, prompt))
+    c.execute("UPDATE ai_prompts SET prompt = ? WHERE is_active = 1", (new_prompt,))
     conn.commit()
     conn.close()
 
-def delete_prompt(prompt_id):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM prompts_library WHERE id = ?", (prompt_id,))
-    conn.commit()
-    conn.close()
-
-def get_all_prompts():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, name, prompt FROM prompts_library")
-    rows = c.fetchall()
-    conn.close()
-    return rows
-
-def register_user(user_id, username):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO authorized_users (user_id, username, joined_at) VALUES (?, ?, ?)", 
-              (user_id, username, int(time.time())))
-    conn.commit()
-    conn.close()
-
+# --- Глобальные настройки ---
 def set_global_setting(key, value):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -137,6 +167,7 @@ def get_global_setting(key, default=""):
     conn.close()
     return result[0] if result else default
 
+# --- Управление каналами ---
 def add_channel(username):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -160,6 +191,7 @@ def get_all_managed_channels():
     conn.close()
     return [r[0] for r in rows]
 
+# --- Статистика ---
 def save_sub_count(channel_id, count):
     date = datetime.now().strftime('%Y-%m-%d')
     conn = sqlite3.connect(DB_PATH)
@@ -176,42 +208,15 @@ def get_sub_history(channel_id):
     conn.close()
     return rows
 
-def get_channel_growth(channel_id):
+def save_post_views(post_id, views):
+    date = datetime.now().strftime('%Y-%m-%d')
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    today_date = datetime.now().strftime('%Y-%m-%d')
-    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-    month_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-    def get_count(date):
-        c.execute("SELECT count FROM stats_subscribers WHERE channel_id = ? AND date <= ? ORDER BY date DESC LIMIT 1", (channel_id, date))
-        res = c.fetchone()
-        return res[0] if res else 0
-    current = get_count(today_date)
-    v24h = current - get_count(yesterday)
-    v7d = current - get_count(week_ago)
-    v30d = current - get_count(month_ago)
+    c.execute("INSERT OR REPLACE INTO stats_posts (post_id, views, date) VALUES (?, ?, ?)", (post_id, views, date))
+    conn.commit()
     conn.close()
-    return {'current': current, 'growth_24h': v24h, 'growth_7d': v7d, 'growth_30d': v30d}
 
-def get_detailed_stats():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    now = int(time.time())
-    day = now - 86400
-    week = now - 86400 * 7
-    month = now - 86400 * 30
-    c.execute("SELECT COUNT(*) FROM queue WHERE status='posted'")
-    total = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM queue WHERE status='posted' AND scheduled_time >= ?", (day,))
-    today = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM queue WHERE status='posted' AND scheduled_time >= ?", (week,))
-    week_count = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM queue WHERE status='posted' AND scheduled_time >= ?", (month,))
-    month_count = c.fetchone()[0]
-    conn.close()
-    return {'total': total, 'today': today, 'week': week_count, 'month': month_count}
-
+# --- Настройки пользователя ---
 def update_user_setting(user_id, key, value):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -227,11 +232,12 @@ def get_user_setting(user_id, key, default=None):
     conn.close()
     return result[0] if result else default
 
-def add_to_queue(photo_id, text, document_id=None, channel_id=None, scheduled_time=None, user_id=None):
+# --- Очередь ---
+def add_to_queue(photo_id, text, document_id=None, channel_id=None, scheduled_time=None):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO queue (photo_id, text, document_id, channel_id, scheduled_time, user_id) VALUES (?, ?, ?, ?, ?, ?)", 
-              (photo_id, text, document_id, channel_id, scheduled_time, user_id))
+    c.execute("INSERT INTO queue (photo_id, text, document_id, channel_id, scheduled_time) VALUES (?, ?, ?, ?, ?)", 
+              (photo_id, text, document_id, channel_id, scheduled_time))
     conn.commit()
     conn.close()
 
@@ -254,6 +260,7 @@ def mark_as_posted(post_id):
     conn.close()
 
 def get_stats():
+    import pytz
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM queue")
@@ -262,13 +269,25 @@ def get_stats():
     published = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM queue WHERE status='pending'")
     queue_count = c.fetchone()[0]
+    tashkent_tz = pytz.timezone('Asia/Tashkent')
+    today_start = int(datetime.now(tashkent_tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+    c.execute("SELECT COUNT(*) FROM queue WHERE scheduled_time >= ?", (today_start,))
+    today = c.fetchone()[0]
     conn.close()
-    return {'total': total, 'published': published, 'queue': queue_count}
+    return {'total': total, 'published': published, 'queue': queue_count, 'today': today}
 
 def get_all_pending():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time FROM queue WHERE status='pending' ORDER BY scheduled_time ASC")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def get_all_posts():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT * FROM queue")
     rows = c.fetchall()
     conn.close()
     return rows
@@ -292,6 +311,23 @@ def delete_from_queue(post_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("DELETE FROM queue WHERE id=?", (post_id,))
+    conn.commit()
+    conn.close()
+
+def get_last_scheduled_time():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT scheduled_time FROM queue WHERE status='pending' AND scheduled_time IS NOT NULL ORDER BY scheduled_time DESC LIMIT 1")
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+def record_published_post(photo_id, text, document_id, channel_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    current_time = int(time.time())
+    c.execute("INSERT INTO queue (photo_id, text, document_id, channel_id, scheduled_time, status) VALUES (?, ?, ?, ?, ?, 'posted')", 
+              (photo_id, text, document_id, channel_id, current_time))
     conn.commit()
     conn.close()
 
