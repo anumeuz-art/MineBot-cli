@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINE BOT | Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        @font-face {
+            font-family: 'Minecraftia';
+            src: url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.eot');
+            src: url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.eot?#iefix') format('embedded-opentype'),
+            url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.woff2') format('woff2'),
+            url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.woff') format('woff'),
+            url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.ttf') format('truetype');
+        }
+
+        :root { --bg: #0d1117; --card: #161b22; --neon-g: #39ff14; --neon-p: #bc13fe; --text-muted: #8b949e; }
+        body { background: var(--bg); color: #c9d1d9; font-family: 'Minecraftia', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .nav-link, .btn-mc, .stat-val { font-family: 'Minecraftia', sans-serif !important; }
+
+        .card { 
+            background: var(--card); border: 1px solid #30363d; border-radius: 12px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .card:hover { border-color: var(--neon-g); box-shadow: 0 0 20px rgba(57, 255, 20, 0.3); transform: translateY(-5px); }
+        .nav-tabs { border-bottom: 2px solid #30363d; }
+        .nav-link { color: #8b949e; border: none !important; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .nav-link:hover { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .nav-link.active { color: var(--neon-g) !important; background: transparent !important; border-bottom: 2px solid var(--neon-g) !important; text-shadow: 0 0 15px var(--neon-g); }
+        .stat-val { font-size: 2rem; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
+        .channel-block { border: 1px solid var(--neon-p); box-shadow: 0 0 15px rgba(188, 19, 254, 0.1); margin-bottom: 2rem; }
+        .channel-block:hover { box-shadow: 0 0 30px rgba(188, 19, 254, 0.4); border-color: var(--neon-p); }
+        .prompt-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 1px solid #30363d; position: relative; height: 100%; }
+        .prompt-card:hover { transform: scale(1.03) translateY(-5px); border-color: var(--neon-p); box-shadow: 0 0 25px rgba(188, 19, 254, 0.5); }
+        .prompt-card.selected { border: 2px solid var(--neon-g); box-shadow: 0 0 25px rgba(57, 255, 20, 0.4); }
+        .prompt-card.selected::after { content: 'SELECTED'; position: absolute; top: -10px; right: 10px; background: var(--neon-g); color: #000; font-size: 0.6rem; padding: 2px 8px; border-radius: 4px; }
+        .btn-mc { border-radius: 4px; font-weight: bold; text-transform: uppercase; font-size: 0.75rem; border: 2px solid transparent; transition: all 0.2s ease; }
+        .btn-primary-mc { background: var(--neon-g); color: #000; }
+        .btn-primary-mc:hover { background: #000; color: var(--neon-g); border-color: var(--neon-g); box-shadow: 0 0 20px var(--neon-g); text-shadow: 0 0 5px var(--neon-g); }
+        .btn-purple-mc { background: var(--neon-p); color: #fff; }
+        .btn-purple-mc:hover { background: #000; color: var(--neon-p); border-color: var(--neon-p); box-shadow: 0 0 20px var(--neon-p); text-shadow: 0 0 5px var(--neon-p); }
+        .btn-danger-mc { background: #ff4d4d; color: #fff; }
+        .btn-danger-mc:hover { background: #000; color: #ff4d4d; border-color: #ff4d4d; box-shadow: 0 0 20px #ff4d4d; text-shadow: 0 0 5px #ff4d4d; }
+        .queue-item { background: #1c2128; border-radius: 8px; margin-bottom: 12px; padding: 15px; border-left: 5px solid var(--neon-g); box-shadow: 5px 5px 15px rgba(0,0,0,0.3); transition: 0.3s; }
+        .queue-item:hover { transform: translateX(10px); box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); border-left-width: 8px; }
+        .growth-pos { color: var(--neon-g); }
+        .growth-neg { color: #ff4d4d; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="fw-bold m-0" style="color: var(--neon-g); text-shadow: 0 0 15px var(--neon-g);">MINE BOT OS</h1>
+            <small class="text-muted">VERSION 2.8 • AI POWERED</small>
+        </div>
+        <div>
+            <button class="btn btn-danger-mc btn-mc px-4" onclick="clearMemory()"><i class="bi bi-cpu me-2"></i>WIPE MEMORY</button>
+        </div>
+    </div>
+
+    <!-- TABS NAVIGATION -->
+    <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" id="dash-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button">ANALYTICS</button></li>
+        <li class="nav-item"><button class="nav-link" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button">QUEUE</button></li>
+        <li class="nav-item"><button class="nav-link" id="channels-tab" data-bs-toggle="tab" data-bs-target="#channels" type="button">CHANNELS</button></li>
+        <li class="nav-item"><button class="nav-link" id="themes-tab" data-bs-toggle="tab" data-bs-target="#prompts" type="button">AI THEMES</button></li>
+        <li class="nav-item"><button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button">CONFIG</button></li>
+    </ul>
+
+    <div class="tab-content">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+{% include 'parts/modals.html' %}
+{% include 'parts/scripts.html' %}
+
+</body>
+</html>

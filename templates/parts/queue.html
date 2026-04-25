@@ -1,0 +1,33 @@
+<div class="tab-pane fade" id="queue">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex gap-3 align-items-center">
+            <h3 class="m-0 fw-bold">POST QUEUE</h3>
+            <select id="queue-filter" class="form-select bg-dark text-white border-secondary btn-mc" style="width: 200px;" onchange="filterQueue()">
+                <option value="all">ALL CHANNELS</option>
+                {% for ch in all_channels %}<option value="{{ ch }}">{{ ch }}</option>{% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-primary-mc btn-mc px-4" onclick="location.reload()"><i class="bi bi-arrow-clockwise me-2"></i>RELOAD</button>
+    </div>
+    <div id="queue-list">
+        {% if not queue %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+            <h4 class="text-muted mt-3">NO PENDING POSTS</h4>
+        </div>
+        {% endif %}
+        {% for item in queue %}
+        <div class="queue-item d-flex justify-content-between align-items-center queue-card" data-channel="{{ item.channel }}">
+            <div class="pe-4">
+                <span class="badge bg-dark border border-secondary mb-2">{{ item.time_str }}</span>
+                <h6 class="m-0 fw-bold">{{ item.channel }}</h6>
+                <div class="text-muted small mt-2">{{ item.text[:150] }}...</div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-mc btn-primary-mc" onclick="publishNow({{ item.id }})">PUB</button>
+                <button class="btn btn-mc btn-danger-mc" onclick="deletePost({{ item.id }})"><i class="bi bi-trash"></i></button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>

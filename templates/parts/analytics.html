@@ -1,0 +1,47 @@
+<div class="tab-pane fade show active" id="dashboard">
+    <div class="row g-4 mb-5">
+        <div class="col-md-3"><div class="card p-4 text-center"><div class="stat-label">Total Published</div><div class="stat-val">{{ post_stats.total }}</div></div></div>
+        <div class="col-md-3"><div class="card p-4 text-center" style="border-color: var(--neon-g);"><div class="stat-label">Today</div><div class="stat-val" style="color: var(--neon-g);">+{{ post_stats.today }}</div></div></div>
+        <div class="col-md-3"><div class="card p-4 text-center"><div class="stat-label">Week</div><div class="stat-val text-info">{{ post_stats.week }}</div></div></div>
+        <div class="col-md-3"><div class="card p-4 text-center"><div class="stat-label">Month</div><div class="stat-val text-warning">{{ post_stats.month }}</div></div></div>
+    </div>
+
+    <h3 class="mb-4 fw-bold" style="color: var(--neon-p);">CHANNEL PERFORMANCE</h3>
+    {% for ch in channel_data %}
+    <div class="card p-4 channel-block">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="m-0 fw-bold"><i class="bi bi-telegram me-3"></i>{{ ch.username }}</h4>
+            <div class="text-end">
+                <div class="stat-label">Subscribers</div>
+                <div class="stat-val" style="font-size: 1.8rem;">{{ ch.stats.current }}</div>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="p-3 rounded bg-dark border border-secondary text-center">
+                    <div class="stat-label">24h Growth</div>
+                    <div class="fw-bold {% if ch.stats.growth_24h >= 0 %}growth-pos{% else %}growth-neg{% endif %}">
+                        {% if ch.stats.growth_24h >= 0 %}+{% endif %}{{ ch.stats.growth_24h }}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 rounded bg-dark border border-secondary text-center">
+                    <div class="stat-label">7d Growth</div>
+                    <div class="fw-bold {% if ch.stats.growth_7d >= 0 %}growth-pos{% else %}growth-neg{% endif %}">
+                        {% if ch.stats.growth_7d >= 0 %}+{% endif %}{{ ch.stats.growth_7d }}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 rounded bg-dark border border-secondary text-center">
+                    <div class="stat-label">30d Growth</div>
+                    <div class="fw-bold {% if ch.stats.growth_30d >= 0 %}growth-pos{% else %}growth-neg{% endif %}">
+                        {% if ch.stats.growth_30d >= 0 %}+{% endif %}{{ ch.stats.growth_30d }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

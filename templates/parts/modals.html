@@ -1,0 +1,25 @@
+<!-- Modal AI Persona -->
+<div class="modal fade" id="promptModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">NEW AI PERSONA</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="stat-label mb-2">PERSONA NAME</label>
+                <input type="text" id="new-prompt-name" class="form-control bg-secondary text-white border-0 mb-4" placeholder="e.g. Cinema Critic">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="stat-label">SYSTEM PROMPT (OR BRIEF IDEA)</label>
+                    <button class="btn btn-sm btn-primary-mc" onclick="improveWithAI()">
+                        <i class="bi bi-robot me-1"></i> IMPROVE WITH AI
+                    </button>
+                </div>
+                <textarea id="new-prompt-text" class="form-control bg-secondary text-white border-0" rows="12" placeholder="Write a short idea or a full prompt..."></textarea>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button class="btn btn-primary-mc w-100 py-2" onclick="saveNewPrompt()">CREATE PERSONA</button>
+            </div>
+        </div>
+    </div>
+</div>
