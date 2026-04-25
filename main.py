@@ -19,7 +19,6 @@ album_cache = {}
 # Регистрация всех обработчиков из модуля handlers
 handlers.register_handlers(bot, user_drafts, album_cache)
 
-# Триггер деплоя: Railway, пересобери контейнер!
 # Настройка планировщика для очереди постов
 scheduler = BackgroundScheduler()
 scheduler.add_job(publisher.process_queue, 'interval', minutes=1, args=[bot])

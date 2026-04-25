@@ -21,9 +21,5 @@ DEFAULT_CHANNEL = AVAILABLE_CHANNELS[0] if AVAILABLE_CHANNELS else ""
 
 WATERMARK_TEXT = "@lazikomods"
 
-# 🔑 Настройки безопасности веб-панели
-WEB_USERNAME = os.getenv("WEB_USERNAME", "admin")
-WEB_PASSWORD = os.getenv("WEB_PASSWORD", "minebot2024")
-
 # 🧠 НОВАЯ НАСТРОЙКА: Интервал умной очереди (в часах)
 SMART_QUEUE_INTERVAL_HOURS = 6

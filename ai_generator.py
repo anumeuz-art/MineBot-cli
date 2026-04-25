@@ -11,6 +11,7 @@ client = Groq(api_key=config.GROQ_API_KEY)
 MODEL_ID = "llama-3.3-70b-versatile"
 
 # Промпт-инструкция для ИИ. Определяет роль, стиль и структуру поста.
+# Содержит список разрешенных хэштегов и пример разметки HTML для Telegram.
 PROMPT_TEMPLATE = """
 Sen Minecraft modlari bo'yicha Telegram kanali muharririsan. Quyidagi ma'lumotlar asosida post yoz.
 '#Mods', '#Maps', '#Textures', '#Shaders', '#Addons', '#Mobs', '#Biomes', '#Structures', '#Survival', '#Magic', '#Armor', '#Tools', '#Furniture', '#Redstone', '#Utility', '#Building', '#Horror', '#Adventure', '#FPS', '#UI', '#Guns', '#Vehicles', 
@@ -38,10 +39,6 @@ Struktura:
 💎 Obuna bo'ling: @Lazikomods
 """
 
-def get_system_prompt():
-    """Получает текущий промпт из базы данных или возвращает стандартный."""
-    return database.get_global_setting('system_prompt', PROMPT_TEMPLATE)
-
 def extract_url(text):
     """Извлекает первую найденную URL-ссылку из текста."""
     urls = re.findall(r'(https?://[^\s]+)', text)
@@ -53,84 +50,159 @@ def fetch_page_content(url):
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
+        # Удаляем лишние теги, которые не несут смысловой нагрузки для описания мода
         for s in soup(["script", "style"]): s.extract()
         return soup.get_text(separator=' ', strip=True)[:3000]
     except: return ""
 
 def limit_hashtags(text, limit=5):
-    """Оставляет максимум 5 уникальных тегов, где #Minecraft всегда первый."""
+    """
+    Очищает текст от избыточного количества хэштегов.
+    Оставляет максимум 5 уникальных тегов, где #Minecraft всегда первый.
+    """
     lines = text.strip().split('\n')
     main_body = []
     hashtags = []
+    
     hashtag_pattern = re.compile(r'#\w+')
+    
     for line in lines:
         found_in_line = hashtag_pattern.findall(line)
+        # Если строка состоит только из хэштегов, собираем их в список
         if found_in_line and len(line.strip().replace(' ', '')) == sum(len(h) for h in found_in_line):
             for h in found_in_line:
-                if h not in hashtags: hashtags.append(h)
-        else: main_body.append(line)
+                if h not in hashtags:
+                    hashtags.append(h)
+        else:
+            main_body.append(line)
+
+    # Если хэштеги были вплетены в текст, а не в конце, извлекаем их
     if not hashtags:
         all_tags = hashtag_pattern.findall(text)
         for h in all_tags:
-            if h not in hashtags: hashtags.append(h)
+            if h not in hashtags:
+                hashtags.append(h)
+
+    # Формируем финальный список: #Minecraft + остальные до лимита
     final_tags = []
     if '#Minecraft' in hashtags:
         final_tags.append('#Minecraft')
         hashtags.remove('#Minecraft')
+    
     final_tags.extend(hashtags[:limit - len(final_tags)])
+    
+    # Очищаем основной текст от хэштегов в самом конце
     clean_body = "\n".join(main_body).strip()
     clean_body = re.sub(r'(#\w+\s*)+$', '', clean_body).strip()
+    
     return clean_body + "\n\n" + " ".join(final_tags)
 
 def generate_post(user_input, persona="uz"):
     """Основная функция генерации поста через Groq API."""
     url = extract_url(user_input)
     site_content = fetch_page_content(url) if url else ""
-    lang_map = {'uz': "O'zbek tilida", 'ru': "на русском языке", 'en': "in English"}
+    
+    # Определяем язык вывода
+    lang_map = {
+        'uz': "O'zbek tilida (Uzbek)",
+        'ru': "на русском языке (Russian)",
+        'en': "in English"
+    }
     target_lang = lang_map.get(persona, "O'zbek tilida")
-    current_prompt = get_system_prompt()
-    prompt = f"TASK: Write a post strictly {target_lang}.\n\n{current_prompt}\n\nDATA TO PROCESS:\n{user_input}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
+
+    # Формируем полный промпт
+    # Вставляем язык в начало и конец, чтобы модель не игнорировала его из-за шаблона
+    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{PROMPT_TEMPLATE}\n\nDATA TO PROCESS:\n{user_input}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
+    
     try:
-        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
-        gen = limit_hashtags(res.choices[0].message.content.strip())
+        res = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}], 
+            model=MODEL_ID
+        )
+        gen = res.choices[0].message.content.strip()
+        
+        # Пост-обработка для контроля количества хэштегов
+        gen = limit_hashtags(gen)
+        
+        # Добавляем рекламную подпись, если она настроена в БД
         ad_text = database.get_global_setting('ad_text', '')
-        if ad_text and ad_text not in gen: gen += f"\n\n{ad_text}"
+        if ad_text and ad_text not in gen:
+            gen += f"\n\n{ad_text}"
+            
         return gen
-    except Exception as e: return f"Error: {e}"
+    except Exception as e:
+        return f"Error: {e}"
 
 def translate_post(text, target_persona="uz"):
-    """Переводит пост на другой язык."""
+    """Переводит готовый пост на другой язык, сохраняя всю HTML разметку и эмодзи."""
     try:
-        lang_map = {'uz': "O'zbek tili", 'ru': "Русский язык", 'en': "English"}
-        target_lang = lang_map.get(target_persona, "English")
-        prompt = f"Translate this Telegram post strictly to {target_lang}. Keep all HTML tags and emojis. Text:\n\n{text}"
-        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
-        return res.choices[0].message.content.strip()
-    except Exception as e: return f"Translation error: {e}"
-
-def generate_reply(comment_text, original_post_text=None, persona="uz"):
-    """Генерирует живой, иногда дерзкий и очень человечный ответ на комментарий."""
-    try:
-        personality = {
-            'uz': "Siz Minecraft fanatisiz. Juda do'stona emas, ko'proq 'ko'cha' bolasidek gapiring. Slenglardan foydalaning. Agar post mashinalar haqida bo'lsa va kimdir otlar haqida so'rasa, 'otni nima qilasan, mana bu haqiqiy tulpor' deb ayting. Qisqa va lo'nda javob bering.",
-            'ru': "Ты — прожженный майнкрафтер и админ канала @Lazikomods. Общайся максимально по-живому, используй дерзкий сленг. Никакой вежливости, будь на чилле, можешь слегка подстебать (но без прямой чернухи). Если пост про машины, а юзер тупит — отвечай в духе 'да забудь ты свои лошади, тут суета на 500 лошадок под капотом'.",
-            'en': "You are a savage Minecraft veteran. Use heavy slang, be brief and edgy. If the post is about cars and someone asks about horses, tell them to forget that old trash and check this beast out. Don't be a bot, be a 'bro'."
+        lang_map = {
+            'uz': "O'zbek tili (Uzbek)",
+            'ru': "Русский язык (Russian)",
+            'en': "English"
         }
+        target_lang = lang_map.get(target_persona, "English")
+        
+        prompt = f"Translate this Telegram post strictly to {target_lang}. Keep all HTML tags like <b>, <blockquote>, <blockquote expandable> exactly as they are. Do not remove any emojis. Text to translate:\n\n{text}"
+        
+        res = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}], 
+            model=MODEL_ID
+        )
+        return res.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Translation error: {e}"
+
+def generate_reply(comment_text, persona="uz"):
+    """Генерирует живой, человечный ответ на комментарий пользователя."""
+    try:
+        # Инструкции для разных языков, чтобы сохранить "вайб"
+        personality = {
+            'uz': "Siz Minecraft fanatisiz va @Lazikomods kanalida moderatormiz. Juda do'stona, samimiy va qisqa javob bering. 'Imba', 'Gap yo'q', 'Zo'r' kabi so'zlarni ishlating. Robotdek gapirmang.",
+            'ru': "Ты — фанат Майнкрафта и модератор канала @Lazikomods. Отвечай как живой человек: используй сленг (имба, годно, топ, чекай), будь на позитиве. Никакого официоза и фраз типа 'чем я могу вам помочь'.",
+            'en': "You are a Minecraft fan and moderator of @Lazikomods. Reply like a real human: use slang (cool, sick, OP, lit), be energetic and very brief. Don't sound like a robot or a support agent."
+        }
+
         selected_personality = personality.get(persona, personality['uz'])
         lang_map = {'uz': "O'zbek tilida", 'ru': "на русском языке", 'en': "in English"}
         target_lang = lang_map.get(persona, "O'zbek tilida")
-        context = f"\n\nPOST KONTEKSTI (bu haqida gap ketyapti): {original_post_text}" if original_post_text else ""
-        prompt = f"{selected_personality}{context}\n\nFoydalanuvchi yozdi: \"{comment_text}\"\n\nVAZIFA: Ushbu xabarga {target_lang} qisqa (maksimum 1 ta gap) va juda jonli javob ber. Xuddi do'sting bilan gaplashayotgandek yoz."
-        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
+
+        prompt = f"""
+        {selected_personality}
+        Foydalanuvchi yozdi: "{comment_text}"
+
+        Vazifa: Ushbu xabarga {target_lang} qisqa (1 ta gap) javob ber. 
+        Agar rahmat aytsa — xursand bo'l. Agar savol so'rasa — do'stona javob ber.
+        Faqat matn, xeshteglar kerak emas.
+        """
+
+        res = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}], 
+            model=MODEL_ID
+        )
         return res.choices[0].message.content.strip().replace('"', '')
-    except: return None
+    except Exception as e:
+        return None
 
 def generate_suggestion_request(persona="uz"):
-    """Генерирует пост с запросом предложений."""
+    """Генерирует пост с запросом предложений от подписчиков."""
     try:
         lang_map = {'uz': "O'zbek tilida", 'ru': "на русском языке", 'en': "in English"}
         target_lang = lang_map.get(persona, "O'zbek tilida")
-        prompt = f"Minecraft kanali uchun qisqa va qiziqarli post yoz {target_lang}. Maqsad: Obunachilardan qanday modlar ko'rishni xohlashlarini so'rash. HTML ishlat."
-        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model=MODEL_ID)
+
+        prompt = f"""
+        Minecraft kanali uchun qisqa va qiziqarli post yoz. 
+        Maqsad: Obunachilardan qanday modlar, karta yoki teksturalar ko'rishni xohlashlarini so'rash.
+        Stil: Do'stona, emojilarga boy.
+        Til: {target_lang}.
+        Post oxirida obunachilarni kommentariyada yozishga unda.
+        HTML teglaridan foydalan (<b>, <i>).
+        """
+
+        res = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}], 
+            model=MODEL_ID
+        )
         return res.choices[0].message.content.strip()
-    except: return None
+    except Exception as e:
+        return None

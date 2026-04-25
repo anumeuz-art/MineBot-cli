@@ -3,17 +3,11 @@ import config
 import database
 import strings
 
-def get_main_menu(lang='uz', user_id=None):
+def get_main_menu(lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(KeyboardButton(btns['create']))
-    
-    # URL с ID пользователя для автоматического входа в панель
-    url = "https://hospitable-clarity-production-3350.up.railway.app"
-    if user_id:
-        url += f"?user_id={user_id}"
-        
-    markup.add(KeyboardButton(btns['lang']), KeyboardButton(btns['open_panel'], web_app=WebAppInfo(url=url)))
+    markup.add(KeyboardButton(btns['lang']), KeyboardButton(btns['open_panel'], web_app=WebAppInfo(url="https://hospitable-clarity-production-3350.up.railway.app")))
     return markup
 
 def get_cancel_markup(lang='uz'):
