@@ -7,91 +7,172 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
+        @font-face {
+            font-family: 'Minecraftia';
+            src: url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.eot');
+            src: url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.eot?#iefix') format('embedded-opentype'),
+            url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.woff2') format('woff2'),
+            url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.woff') format('woff'),
+            url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.ttf') format('truetype');
+        }
+
         :root { --bg: #0d1117; --card: #161b22; --neon-g: #39ff14; --neon-p: #bc13fe; --text-muted: #8b949e; }
-        body { background: var(--bg); color: #c9d1d9; font-family: 'Segoe UI', sans-serif; }
-        .card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; height: 100%; }
+        body { background: var(--bg); color: #c9d1d9; font-family: 'Minecraftia', 'Segoe UI', sans-serif; }
+        
+        .card { 
+            background: var(--card); 
+            border: 1px solid #30363d; 
+            border-radius: 12px; 
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        
         .nav-tabs { border-bottom: 2px solid #30363d; }
-        .nav-link { color: #8b949e; border: none !important; font-weight: 600; }
-        .nav-link.active { color: var(--neon-g) !important; background: transparent !important; border-bottom: 2px solid var(--neon-g) !important; }
-        .stat-val { font-size: 1.8rem; font-weight: 700; line-height: 1.2; }
-        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-        .growth-pos { color: var(--neon-g); font-size: 0.8rem; }
-        .growth-neg { color: #ff4d4d; font-size: 0.8rem; }
-        .channel-block { border-top: 3px solid var(--neon-p); margin-bottom: 2rem; }
-        .prompt-card { transition: 0.3s; cursor: pointer; border: 2px solid transparent; position: relative; }
-        .prompt-card:hover { transform: translateY(-5px); border-color: var(--neon-p); }
-        .prompt-card.selected { border-color: var(--neon-g); box-shadow: 0 0 15px rgba(57, 255, 20, 0.2); }
-        .prompt-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 10px; color: var(--neon-g); font-weight: bold; }
-        .btn-mc { border-radius: 8px; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; }
-        .btn-primary-mc { background: var(--neon-g); color: #000; border: none; }
-        .btn-purple-mc { background: var(--neon-p); color: #fff; border: none; }
-        .btn-danger-mc { background: #ff4d4d; color: #fff; border: none; }
-        .queue-item { background: #1c2128; border-radius: 8px; margin-bottom: 10px; padding: 15px; border-left: 4px solid var(--neon-g); }
+        .nav-link { color: #8b949e; border: none !important; font-weight: 600; cursor: pointer; }
+        .nav-link.active { 
+            color: var(--neon-g) !important; 
+            background: transparent !important; 
+            border-bottom: 2px solid var(--neon-g) !important;
+            text-shadow: 0 0 10px var(--neon-g);
+        }
+        
+        .stat-val { font-size: 2rem; font-weight: 700; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
+        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
+        
+        .channel-block { 
+            border: 1px solid var(--neon-p); 
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.1);
+            margin-bottom: 2rem; 
+        }
+
+        .prompt-card { 
+            transition: 0.3s; 
+            cursor: pointer; 
+            border: 1px solid #30363d; 
+            position: relative; 
+            height: 100%;
+        }
+        .prompt-card:hover { transform: scale(1.02); border-color: var(--neon-p); box-shadow: 0 0 15px rgba(188, 19, 254, 0.3); }
+        .prompt-card.selected { 
+            border: 2px solid var(--neon-g); 
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); 
+        }
+        .prompt-card.selected::after { 
+            content: 'SELECTED'; 
+            position: absolute; 
+            top: -10px; 
+            right: 10px; 
+            background: var(--neon-g); 
+            color: #000; 
+            font-size: 0.6rem; 
+            padding: 2px 8px; 
+            border-radius: 4px;
+        }
+
+        .btn-mc { 
+            border-radius: 4px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            font-size: 0.75rem; 
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .btn-primary-mc { background: var(--neon-g); color: #000; }
+        .btn-primary-mc:hover { background: #000; color: var(--neon-g); border-color: var(--neon-g); box-shadow: 0 0 15px var(--neon-g); }
+        
+        .btn-purple-mc { background: var(--neon-p); color: #fff; }
+        .btn-purple-mc:hover { background: #000; color: var(--neon-p); border-color: var(--neon-p); box-shadow: 0 0 15px var(--neon-p); }
+        
+        .btn-danger-mc { background: #ff4d4d; color: #fff; }
+        .btn-danger-mc:hover { background: #000; color: #ff4d4d; border-color: #ff4d4d; box-shadow: 0 0 15px #ff4d4d; }
+
+        .queue-item { 
+            background: #1c2128; 
+            border-radius: 8px; 
+            margin-bottom: 12px; 
+            padding: 15px; 
+            border-left: 5px solid var(--neon-g);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .growth-pos { color: var(--neon-g); }
+        .growth-neg { color: #ff4d4d; }
     </style>
 </head>
 <body>
 
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold m-0">MINE BOT <span class="text-muted" style="font-size: 0.9rem;">v2.7</span></h2>
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <button class="btn btn-danger-mc btn-mc px-3" onclick="clearMemory()"><i class="bi bi-cpu me-2"></i>CLEAR MEMORY</button>
-            <div class="badge bg-success ms-2">LIVE</div>
+            <h1 class="fw-bold m-0" style="color: var(--neon-g); text-shadow: 0 0 15px var(--neon-g);">MINE BOT OS</h1>
+            <small class="text-muted">VERSION 2.7 • AI POWERED</small>
+        </div>
+        <div>
+            <button class="btn btn-danger-mc btn-mc px-4" onclick="clearMemory()">
+                <i class="bi bi-cpu me-2"></i>WIPE MEMORY
+            </button>
         </div>
     </div>
 
+    <!-- TABS NAVIGATION -->
     <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard">ANALYTICS</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#queue">QUEUE</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#prompts">AI THEMES</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#settings">CONFIG</button></li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="dash-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">ANALYTICS</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button" role="tab">QUEUE</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="themes-tab" data-bs-toggle="tab" data-bs-target="#prompts" type="button" role="tab">AI THEMES</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">CONFIG</button>
+        </li>
     </ul>
 
-    <div class="tab-content">
+    <div class="tab-content" id="adminTabsContent">
         <!-- Analytics Dashboard -->
-        <div class="tab-pane fade show active" id="dashboard">
-            <!-- Global Post Stats -->
-            <div class="row g-3 mb-4">
+        <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+            <div class="row g-4 mb-5">
                 <div class="col-md-3">
-                    <div class="card p-3">
-                        <div class="stat-label">Total Published</div>
-                        <div class="stat-val text-white">{{ post_stats.total }}</div>
+                    <div class="card p-4 text-center">
+                        <div class="stat-label">Total Posted</div>
+                        <div class="stat-val">{{ post_stats.total }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card p-3">
-                        <div class="stat-label">Posts Today</div>
-                        <div class="stat-val" style="color: var(--neon-g);">{{ post_stats.today }}</div>
+                    <div class="card p-4 text-center" style="border-color: var(--neon-g);">
+                        <div class="stat-label">Today</div>
+                        <div class="stat-val" style="color: var(--neon-g);">+{{ post_stats.today }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card p-3">
-                        <div class="stat-label">Posts This Week</div>
+                    <div class="card p-4 text-center">
+                        <div class="stat-label">Week</div>
                         <div class="stat-val text-info">{{ post_stats.week }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card p-3">
-                        <div class="stat-label">Posts This Month</div>
+                    <div class="card p-4 text-center">
+                        <div class="stat-label">Month</div>
                         <div class="stat-val text-warning">{{ post_stats.month }}</div>
                     </div>
                 </div>
             </div>
 
-            <h4 class="mb-4 fw-bold">Channel Performance</h4>
-            
+            <h3 class="mb-4 fw-bold" style="color: var(--neon-p);">CHANNEL PERFORMANCE</h3>
             {% for ch in channel_data %}
-            <div class="card p-4 channel-block mb-4">
+            <div class="card p-4 channel-block">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="m-0 fw-bold text-white"><i class="bi bi-telegram me-2"></i>{{ ch.username }}</h5>
+                    <h4 class="m-0 fw-bold"><i class="bi bi-telegram me-3"></i>{{ ch.username }}</h4>
                     <div class="text-end">
-                        <div class="stat-label">Current Subs</div>
-                        <div class="stat-val" style="font-size: 1.5rem;">{{ ch.stats.current }}</div>
+                        <div class="stat-label">Subscribers</div>
+                        <div class="stat-val" style="font-size: 1.8rem;">{{ ch.stats.current }}</div>
                     </div>
                 </div>
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <div class="p-3 rounded bg-dark">
+                        <div class="p-3 rounded bg-dark border border-secondary text-center">
                             <div class="stat-label">24h Growth</div>
                             <div class="fw-bold {% if ch.stats.growth_24h >= 0 %}growth-pos{% else %}growth-neg{% endif %}">
                                 {% if ch.stats.growth_24h >= 0 %}+{% endif %}{{ ch.stats.growth_24h }}
@@ -99,7 +180,7 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="p-3 rounded bg-dark">
+                        <div class="p-3 rounded bg-dark border border-secondary text-center">
                             <div class="stat-label">7d Growth</div>
                             <div class="fw-bold {% if ch.stats.growth_7d >= 0 %}growth-pos{% else %}growth-neg{% endif %}">
                                 {% if ch.stats.growth_7d >= 0 %}+{% endif %}{{ ch.stats.growth_7d }}
@@ -107,7 +188,7 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="p-3 rounded bg-dark">
+                        <div class="p-3 rounded bg-dark border border-secondary text-center">
                             <div class="stat-label">30d Growth</div>
                             <div class="fw-bold {% if ch.stats.growth_30d >= 0 %}growth-pos{% else %}growth-neg{% endif %}">
                                 {% if ch.stats.growth_30d >= 0 %}+{% endif %}{{ ch.stats.growth_30d }}
@@ -120,24 +201,25 @@
         </div>
 
         <!-- Queue -->
-        <div class="tab-pane fade" id="queue">
+        <div class="tab-pane fade" id="queue" role="tabpanel">
             <div id="queue-list">
                 {% if not queue %}
                 <div class="text-center py-5">
-                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
-                    <p class="text-muted mt-3">Queue is empty</p>
+                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">NO PENDING POSTS</h4>
                 </div>
                 {% endif %}
                 {% for item in queue %}
-                <div class="queue-item d-flex justify-content-between align-items-center" data-id="{{ item.id }}">
-                    <div>
-                        <span class="badge bg-dark me-2">{{ item.time_str }}</span>
-                        <strong>{{ item.channel }}</strong>
-                        <div class="text-muted small mt-1">{{ item.text[:120] }}...</div>
+                <div class="queue-item d-flex justify-content-between align-items-center">
+                    <div class="pe-4">
+                        <span class="badge bg-dark border border-secondary mb-2">{{ item.time_str }}</span>
+                        <h6 class="m-0 fw-bold">{{ item.channel }}</h6>
+                        <div class="text-muted small mt-2">{{ item.text[:150] }}...</div>
                     </div>
-                    <div>
-                        <button class="btn btn-sm btn-outline-light me-1" onclick="editPost({{ item|tojson }})"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deletePost({{ item.id }})"><i class="bi bi-trash"></i></button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-mc btn-primary-mc" onclick="publishNow({{ item.id }})">PUB</button>
+                        <button class="btn btn-mc btn-outline-light" onclick="editPost({{ item|tojson }})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-mc btn-danger-mc" onclick="deletePost({{ item.id }})"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
                 {% endfor %}
@@ -145,21 +227,21 @@
         </div>
 
         <!-- AI Themes -->
-        <div class="tab-pane fade" id="prompts">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="m-0">AI Subject Themes</h4>
-                <button class="btn btn-primary-mc btn-mc px-4" onclick="showAddPrompt()"><i class="bi bi-plus-lg me-2"></i>NEW THEME</button>
+        <div class="tab-pane fade" id="prompts" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <h3 class="m-0 fw-bold">AI SUBJECT THEMES</h3>
+                <button class="btn btn-primary-mc btn-mc px-4" onclick="showAddPrompt()">+ NEW THEME</button>
             </div>
-            <div class="row g-3" id="prompts-grid">
+            <div class="row g-4" id="prompts-grid">
                 {% for p in prompts %}
                 <div class="col-md-4">
                     <div class="card p-4 prompt-card {% if p[0]|string == active_prompt_id|string %}selected{% endif %}" onclick="selectPrompt({{ p[0] }})">
-                        <h5 class="fw-bold mb-2">{{ p[1] }}</h5>
-                        <p class="text-muted small mb-3" style="height: 50px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ p[2] }}</p>
-                        <div class="d-flex justify-content-between align-items-center mt-auto">
-                            <span class="badge bg-dark">ID: {{ p[0] }}</span>
+                        <h4 class="fw-bold mb-3">{{ p[1] }}</h4>
+                        <p class="text-muted small mb-4" style="height: 60px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ p[2] }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="stat-label">ID: {{ p[0] }}</span>
                             {% if p[0] > 6 %}
-                            <button class="btn btn-sm btn-link text-danger text-decoration-none p-0" onclick="deletePrompt(event, {{ p[0] }})">Remove</button>
+                            <button class="btn btn-sm text-danger p-0" onclick="deletePrompt(event, {{ p[0] }})">DELETE</button>
                             {% endif %}
                         </div>
                     </div>
@@ -169,29 +251,29 @@
         </div>
 
         <!-- Settings -->
-        <div class="tab-pane fade" id="settings">
+        <div class="tab-pane fade" id="settings" role="tabpanel">
             <div class="row g-4">
                 <div class="col-md-6">
                     <div class="card p-4 mb-4">
-                        <h6 class="mb-3 text-white">SMART QUEUE INTERVAL</h6>
-                        <div class="input-group">
+                        <h5 class="mb-4 fw-bold" style="color: var(--neon-g);">SMART QUEUE</h5>
+                        <div class="input-group mb-3">
                             <input type="number" id="smart-interval" class="form-control bg-dark text-white border-secondary" value="{{ smart_interval }}">
                             <span class="input-group-text bg-dark text-white border-secondary">HOURS</span>
-                            <button class="btn btn-primary-mc px-4" onclick="saveInterval()">UPDATE</button>
+                            <button class="btn btn-primary-mc px-4" onclick="saveInterval()">SAVE</button>
                         </div>
-                        <small class="text-muted mt-2">Sets the gap between posts in the smart queue.</small>
+                        <small class="text-muted">Interval between automatic posts in Smart Queue.</small>
                     </div>
                     <div class="card p-4">
-                        <h6 class="mb-3 text-white">CUSTOM WATERMARK (PNG)</h6>
+                        <h5 class="mb-4 fw-bold" style="color: var(--neon-p);">WATERMARK</h5>
                         <input type="file" id="logo-file" class="form-control bg-dark text-white border-secondary mb-3" accept=".png">
-                        <button class="btn btn-purple-mc w-100 py-2" onclick="uploadLogo()"><i class="bi bi-upload me-2"></i>UPLOAD LOGO</button>
+                        <button class="btn btn-purple-mc w-100 py-2" onclick="uploadLogo()">UPLOAD PNG LOGO</button>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="card p-4">
-                        <h6 class="mb-3 text-white">GLOBAL ADVERTISING SIGNATURE</h6>
-                        <textarea id="ad-text" class="form-control bg-dark text-white border-secondary mb-3" rows="6" placeholder="Will be added to every post...">{{ ad_text }}</textarea>
-                        <button class="btn btn-primary-mc w-100 py-2" onclick="saveAd()">SAVE SIGNATURE</button>
+                    <div class="card p-4 h-100">
+                        <h5 class="mb-4 fw-bold" style="color: var(--neon-g);">GLOBAL SIGNATURE</h5>
+                        <textarea id="ad-text" class="form-control bg-dark text-white border-secondary mb-4" rows="8" placeholder="Enter ad text...">{{ ad_text }}</textarea>
+                        <button class="btn btn-primary-mc w-100 py-3" onclick="saveAd()">SAVE SIGNATURE</button>
                     </div>
                 </div>
             </div>
@@ -199,44 +281,45 @@
     </div>
 </div>
 
-<!-- Add Theme Modal -->
+<!-- Modal -->
 <div class="modal fade" id="promptModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content bg-dark text-white border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title">New AI Persona</h5>
+                <h5 class="modal-title fw-bold">NEW AI PERSONA</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <label class="stat-label mb-2">Subject Name</label>
-                <input type="text" id="new-prompt-name" class="form-control bg-secondary text-white border-0 mb-3" placeholder="e.g. CyberSport">
-                <label class="stat-label mb-2">System Instructions (Prompt)</label>
-                <textarea id="new-prompt-text" class="form-control bg-secondary text-white border-0" rows="10" placeholder="Describe how AI should write posts..."></textarea>
+                <label class="stat-label mb-2">PERSONA NAME</label>
+                <input type="text" id="new-prompt-name" class="form-control bg-secondary text-white border-0 mb-4" placeholder="e.g. Cinema Critic">
+                <label class="stat-label mb-2">SYSTEM PROMPT</label>
+                <textarea id="new-prompt-text" class="form-control bg-secondary text-white border-0" rows="10" placeholder="Instructions for AI..."></textarea>
             </div>
             <div class="modal-footer border-secondary">
-                <button class="btn btn-primary-mc w-100" onclick="saveNewPrompt()">CREATE THEME</button>
+                <button class="btn btn-primary-mc w-100 py-2" onclick="saveNewPrompt()">CREATE PERSONA</button>
             </div>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function clearMemory() {
-        if(confirm('This will wipe all stored comments and log files. Proceed?')) {
+        if(confirm('WIPE ALL COMMENTS AND LOGS?')) {
             fetch('/api/system/clear-memory', { method:'POST' })
-            .then(r => r.json()).then(() => alert('System memory cleared!'));
+            .then(r => r.json()).then(() => alert('WIPED!'));
         }
     }
 
     function saveInterval() {
         const val = document.getElementById('smart-interval').value;
         fetch('/api/settings/interval', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({interval: val}) })
-        .then(() => { alert('Interval saved!'); location.reload(); });
+        .then(() => alert('Saved!'));
     }
 
     function uploadLogo() {
         const file = document.getElementById('logo-file').files[0];
-        if(!file) return alert('Please select a PNG file');
+        if(!file) return alert('Select file');
         const fd = new FormData(); fd.append('file', file);
         fetch('/api/upload/logo', { method:'POST', body:fd }).then(() => alert('Logo updated!'));
     }
@@ -251,22 +334,24 @@
     function saveNewPrompt() {
         const name = document.getElementById('new-prompt-name').value;
         const prompt = document.getElementById('new-prompt-text').value;
-        if(!name || !prompt) return alert('Fill all fields');
+        if(!name || !prompt) return alert('Fill all');
         fetch('/api/prompts/add', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name: name, prompt: prompt}) })
         .then(() => location.reload());
     }
 
     function deletePrompt(e, id) {
         e.stopPropagation();
-        if(confirm('Permanently delete this theme?')) {
-            fetch('/api/prompts/delete/' + id, { method:'POST' }).then(() => location.reload());
-        }
+        if(confirm('Delete theme?')) fetch('/api/prompts/delete/' + id, { method:'POST' }).then(() => location.reload());
     }
 
     function saveAd() {
         fetch('/api/settings/ad', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text: document.getElementById('ad-text').value}) })
-        .then(() => alert('Signature saved!'));
+        .then(() => alert('Saved!'));
     }
+
+    function publishNow(id) { fetch('/api/publish/' + id, { method:'POST' }).then(() => location.reload()); }
+    function deletePost(id) { if(confirm('Delete post?')) fetch('/api/delete/' + id, { method:'POST' }).then(() => location.reload()); }
+    function editPost(p) { alert('Editor is available in the Web App interface'); }
 </script>
 </body>
 </html>

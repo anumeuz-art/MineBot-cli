@@ -63,7 +63,7 @@ def init_db():
     c.execute("SELECT count(*) FROM prompts_library")
     if c.fetchone()[0] == 0:
         default_prompts = [
-            ('Minecraft', 'Sen Minecraft modlari bo\'yicha Telegram kanali muharririsan...'),
+            ('Minecraft', 'Sen Minecraft modlari bo\'yicha Telegram kanali muharririsan. Quyidagi ma\'lumotlar asosida post yoz...'),
             ('Gaming', 'Sen zamonaviy o\'yinlar sharhlovchisisan. Yangi o\'yinlar, yangiliklar va kiber-sport haqida yoz.'),
             ('Sport', 'Sen sport ekspertisan. Futbol, basketbol va boshqa sport yangiliklarini dinamik va qiziqarli yoz.'),
             ('News', 'Sen xolis yangiliklar portali muharririsan. Eng muhim voqealarni qisqa va aniq yetkaz.'),
@@ -76,7 +76,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- Библиотека промптов ---
 def get_prompts():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -178,59 +177,40 @@ def get_sub_history(channel_id):
     return rows
 
 def get_channel_growth(channel_id):
-    """Возвращает рост подписчиков за 24ч, неделю и месяц."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    
     today_date = datetime.now().strftime('%Y-%m-%d')
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
     month_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-    
     def get_count(date):
         c.execute("SELECT count FROM stats_subscribers WHERE channel_id = ? AND date <= ? ORDER BY date DESC LIMIT 1", (channel_id, date))
         res = c.fetchone()
         return res[0] if res else 0
-
     current = get_count(today_date)
     v24h = current - get_count(yesterday)
     v7d = current - get_count(week_ago)
     v30d = current - get_count(month_ago)
-    
     conn.close()
     return {'current': current, 'growth_24h': v24h, 'growth_7d': v7d, 'growth_30d': v30d}
 
 def get_detailed_stats():
-    """Возвращает статистику постов за сегодня, неделю и месяц."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     now = int(time.time())
     day = now - 86400
     week = now - 86400 * 7
     month = now - 86400 * 30
-    
     c.execute("SELECT COUNT(*) FROM queue WHERE status='posted'")
     total = c.fetchone()[0]
-    
     c.execute("SELECT COUNT(*) FROM queue WHERE status='posted' AND scheduled_time >= ?", (day,))
     today = c.fetchone()[0]
-    
     c.execute("SELECT COUNT(*) FROM queue WHERE status='posted' AND scheduled_time >= ?", (week,))
     week_count = c.fetchone()[0]
-    
     c.execute("SELECT COUNT(*) FROM queue WHERE status='posted' AND scheduled_time >= ?", (month,))
     month_count = c.fetchone()[0]
-    
     conn.close()
     return {'total': total, 'today': today, 'week': week_count, 'month': month_count}
-
-def save_post_views(post_id, views):
-    date = datetime.now().strftime('%Y-%m-%d')
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO stats_posts (post_id, views, date) VALUES (?, ?, ?)", (post_id, views, date))
-    conn.commit()
-    conn.close()
 
 def update_user_setting(user_id, key, value):
     conn = sqlite3.connect(DB_PATH)
@@ -274,7 +254,6 @@ def mark_as_posted(post_id):
     conn.close()
 
 def get_stats():
-    import pytz
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM queue")
@@ -283,20 +262,13 @@ def get_stats():
     published = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM queue WHERE status='pending'")
     queue_count = c.fetchone()[0]
-    tashkent_tz = pytz.timezone('Asia/Tashkent')
-    today_start = int(datetime.now(tashkent_tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
-    c.execute("SELECT COUNT(*) FROM queue WHERE scheduled_time >= ?", (today_start,))
-    today = c.fetchone()[0]
     conn.close()
-    return {'total': total, 'published': published, 'queue': queue_count, 'today': today}
+    return {'total': total, 'published': published, 'queue': queue_count}
 
-def get_all_pending(user_id=None):
+def get_all_pending():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    if user_id and user_id not in config.ADMIN_IDS:
-        c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time FROM queue WHERE status='pending' AND user_id = ? ORDER BY scheduled_time ASC", (user_id,))
-    else:
-        c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time FROM queue WHERE status='pending' ORDER BY scheduled_time ASC")
+    c.execute("SELECT id, photo_id, text, document_id, channel_id, scheduled_time FROM queue WHERE status='pending' ORDER BY scheduled_time ASC")
     rows = c.fetchall()
     conn.close()
     return rows
@@ -309,13 +281,10 @@ def get_post_by_id(post_id):
     conn.close()
     return row
 
-def update_post_content(post_id, text, scheduled_time, channels=None):
+def update_post_content(post_id, text, scheduled_time):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    if channels:
-        c.execute("UPDATE queue SET text = ?, scheduled_time = ?, channel_id = ? WHERE id = ?", (text, scheduled_time, channels, post_id))
-    else:
-        c.execute("UPDATE queue SET text = ?, scheduled_time = ? WHERE id = ?", (text, scheduled_time, post_id))
+    c.execute("UPDATE queue SET text = ?, scheduled_time = ? WHERE id = ?", (text, scheduled_time, post_id))
     conn.commit()
     conn.close()
 
