@@ -97,6 +97,18 @@ def limit_hashtags(text, limit=5):
     
     return clean_body + "\n\n" + " ".join(final_tags)
 
+def improve_prompt(short_desc):
+    """Использует ИИ для превращения короткой идеи пользователя в мощный системный промпт."""
+    try:
+        instruction = f"Ты — инженер промптов. Твоя задача: взять короткую идею пользователя и превратить её в детальный системный промпт для ИИ-редактора Telegram-канала. Промпт должен описывать стиль, структуру поста, использование эмодзи и хештегов. Идея: {short_desc}"
+        res = client.chat.completions.create(
+            messages=[{"role": "user", "content": instruction}],
+            model=MODEL_ID
+        )
+        return res.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Error: {e}"
+
 def generate_post(user_input, persona="uz"):
     """Основная функция генерации поста через Groq API."""
     url = extract_url(user_input)

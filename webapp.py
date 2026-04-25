@@ -103,6 +103,13 @@ def set_interval():
     database.set_global_setting('smart_queue_interval', interval)
     return jsonify({'status': 'success'})
 
+@app.route('/api/prompts/improve', methods=['POST'])
+def improve_prompt_api():
+    data = request.json
+    idea = data.get('desc', '')
+    improved = ai_generator.improve_prompt(idea)
+    return jsonify({'improved': improved})
+
 @app.route('/api/prompts/add', methods=['POST'])
 def add_prompt():
     data = request.json
