@@ -136,9 +136,19 @@ def set_sq_settings():
     database.set_global_setting('smart_queue_text', data.get('text', ''))
     return jsonify({'status': 'success'})
 
-@app.route('/api/settings/prompt', methods=['POST'])
-def set_prompt():
-    database.update_active_prompt(request.json.get('prompt', ''))
+@app.route('/api/prompts', methods=['GET'])
+def get_prompts():
+    return jsonify(database.get_all_prompts())
+
+@app.route('/api/prompts/add', methods=['POST'])
+def add_prompt():
+    data = request.json
+    database.add_prompt(data.get('name'), data.get('prompt'))
+    return jsonify({'status': 'success'})
+
+@app.route('/api/prompts/delete/<int:prompt_id>', methods=['POST'])
+def delete_prompt(prompt_id):
+    database.delete_prompt(prompt_id)
     return jsonify({'status': 'success'})
 
 @app.route('/api/comments', methods=['GET'])

@@ -136,6 +136,28 @@ def delete_watermark(wm_id):
     conn.close()
 
 # --- Управление промптами ---
+def get_all_prompts():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, name, prompt, is_active FROM ai_prompts")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def add_prompt(name, prompt):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT INTO ai_prompts (name, prompt, is_active) VALUES (?, ?, 0)", (name, prompt))
+    conn.commit()
+    conn.close()
+
+def delete_prompt(prompt_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM ai_prompts WHERE id = ? AND is_active = 0", (prompt_id,))
+    conn.commit()
+    conn.close()
+
 def get_active_prompt():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()

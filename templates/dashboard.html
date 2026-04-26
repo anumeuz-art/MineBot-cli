@@ -9,16 +9,17 @@
     <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0a0a0a; --card: #141414; --mc: #388e3c; --neon-p: #bc13fe; --neon-g: #39ff14; --white: #fff; }
-        body { background: var(--bg); color: #f0f0f0; font-family: 'Minecraftia', sans-serif; letter-spacing: 1px; }
+        :root { --bg: #0a0a0a; --card: #141414; --mc: #388e3c; --neon-p: #bc13fe; --neon-g: #39ff14; --white: #fff; --text-main: #e0e0e0; }
+        body { background: var(--bg); color: var(--text-main); font-family: 'Minecraftia', sans-serif; letter-spacing: 1px; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: var(--mc); }
         .navbar { background: #000 !important; border-bottom: 3px solid var(--neon-p); box-shadow: 0 0 20px rgba(188, 19, 254, 0.3); }
         .navbar-brand { color: var(--neon-g) !important; text-shadow: 0 0 5px var(--neon-g); font-size: 1.2rem; }
         .nav-logo { height: 35px; margin-right: 12px; image-rendering: pixelated; }
-        .card { background: var(--card); border: 2px solid #2a2a2a; border-radius: 0; transition: 0.3s; margin-bottom: 20px; }
+        .card { background: var(--card); border: 2px solid #2a2a2a; border-radius: 0; transition: all 0.3s ease; margin-bottom: 20px; }
+        .card:hover { border-color: var(--neon-p); box-shadow: 0 0 15px rgba(188, 19, 254, 0.2); transform: translateY(-3px); }
         .stats-card { border-color: var(--neon-p); text-align: center; }
-        .stats-label { color: var(--white) !important; font-size: 0.6rem; text-shadow: 0 0 5px #fff; margin-top: 4px; }
+        .stats-label { color: #fff !important; font-size: 0.6rem; text-shadow: 0 0 5px #fff; margin-top: 4px; }
         .stats-num { font-size: 2rem; font-weight: bold; color: var(--neon-g); text-shadow: 0 0 10px var(--neon-g); }
         .btn-mc { border-radius: 0; text-transform: uppercase; font-size: 0.65rem; border-width: 2px; }
         .btn-primary-mc { border-color: var(--neon-g); color: var(--neon-g); background: transparent; }
@@ -161,7 +162,7 @@
         <div class="tab-pane fade" id="channels">
             <div class="row">
                 <div class="col-md-6"><div class="card p-3"><h6 id="head-link">LINK_NEW_CHANNEL</h6><div class="input-group"><input type="text" id="new-ch" class="form-control" placeholder="@user"><button class="btn btn-primary-mc btn-mc px-3 btn-link-sys" onclick="addChannel()">LINK</button></div></div></div>
-                <div class="col-md-6"><div class="card p-3"><h6 id="head-linked">LINKED_SYSTEMS</h6><ul class="list-group list-group-flush">{% for ch in channels %}<li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between px-0 align-items-center" style="font-size: 0.7rem;">{{ ch }}<button class="btn btn-sm btn-danger-mc btn-mc px-2 btn-unlink" onclick="removeChannel('{{ ch }}')">UNLINK</button></li>{% endfor %}</ul></div></div>
+                <div class="col-md-6"><div class="card p-3"><h6 id="head-linked">LINKED_SYSTEMS</h6><ul class="list-group list-group-flush">{% for ch in channels %}<li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between px-0 align-items-center" style="font-size: 0.7rem;">{{ ch.username }}<button class="btn btn-sm btn-danger-mc btn-mc px-2 btn-unlink" onclick="removeChannel('{{ ch.username }}')">UNLINK</button></li>{% endfor %}</ul></div></div>
             </div>
         </div>
         <div class="tab-pane fade" id="ad-config">
@@ -227,9 +228,22 @@
                 <div class="col-md-12">
                     <div class="card p-4">
                         <h6 style="color: var(--neon-g);">AI_SYSTEM_PROMPT_ENGINE</h6>
-                        <textarea id="prompt-area" class="form-control mt-3" rows="10" style="font-size: 0.7rem;">{{ active_prompt }}</textarea>
-                        <button class="btn btn-primary-mc btn-mc mt-3 px-5" onclick="savePrompt()">UPDATE_PROMPT_TEMPLATE</button>
-                        <p class="mt-2 text-muted" style="font-size: 0.55rem;">* Use tags like &lt;b&gt;, &lt;blockquote&gt; etc. AI will follow this structure.</p>
+                        <div class="accordion accordion-flush" id="promptAccordion">
+                          <div class="accordion-item bg-transparent border-0">
+                            <h2 class="accordion-header">
+                              <button class="accordion-button bg-transparent text-white collapsed shadow-none p-0 py-2" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne">
+                                VIEW/EDIT PROMPT TEMPLATE
+                              </button>
+                            </h2>
+                            <div id="flush-collapseOne" class="accordion-collapse collapse" data-bs-parent="#promptAccordion">
+                              <div class="accordion-body p-0 pt-2">
+                                <textarea id="prompt-area" class="form-control" rows="10" style="font-size: 0.7rem;">{{ active_prompt }}</textarea>
+                                <button class="btn btn-primary-mc btn-mc mt-3 px-5" onclick="savePrompt()">SAVE_PROMPT_CHANGES</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <p class="mt-3 text-muted" style="font-size: 0.55rem;">* Use tags like &lt;b&gt;, &lt;blockquote&gt; etc.</p>
                     </div>
                 </div>
             </div>
@@ -342,11 +356,38 @@
         fetch('/api/reorder', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({order}) });
     }});
 
-    fetch('/api/stats').then(r => r.json()).then(data => {
+    function initChart(data) {
         const ctx = document.getElementById('subsChart').getContext('2d');
-        const first = Object.keys(data)[0]; if(!first) return;
-        new Chart(ctx, { type: 'line', data: { labels: data[first].labels, datasets: [{ label: first, data: data[first].data, borderColor: '#39ff14', tension: 0.3, fill: true, backgroundColor: 'rgba(57, 255, 20, 0.05)' }] }, options: { plugins: { legend: { labels: { color: '#fff', font: { family: 'Minecraftia', size: 8 } } } }, scales: { y: { ticks: { color: '#555' } }, x: { ticks: { color: '#555' } } } } });
+        const labels = Object.values(data)[0] ? Object.values(data)[0].labels : [];
+        const datasets = Object.keys(data).map((ch, index) => ({
+            label: ch,
+            data: data[ch].data,
+            borderColor: ['#39ff14', '#bc13fe', '#ff0033', '#388e3c', '#00d4ff'][index % 5],
+            backgroundColor: 'transparent',
+            tension: 0.3
+        }));
+        
+        if (window.subsChartInstance) window.subsChartInstance.destroy();
+        window.subsChartInstance = new Chart(ctx, { 
+            type: 'line', 
+            data: { labels: labels, datasets: datasets }, 
+            options: { 
+                plugins: { legend: { labels: { color: '#fff', font: { family: 'Minecraftia', size: 10 } } } }, 
+                scales: { y: { ticks: { color: '#555' } }, x: { ticks: { color: '#555' } } } 
+            } 
+        });
+    }
+
+    fetch('/api/stats').then(r => r.json()).then(data => {
+        window.allStats = data;
+        initChart(data);
     });
+
+    function toggleChannel(ch) {
+        const data = window.allStats;
+        if (!data[ch]) return;
+        initChart({[ch]: data[ch]});
+    }
 
     function saveAd() { fetch('/api/settings/ad', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('ad-text-area').value}) }).then(() => alert('AD_SAVED')); }
     function setLang(l) { fetch('/api/settings/language', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) }).then(() => location.reload()); }
