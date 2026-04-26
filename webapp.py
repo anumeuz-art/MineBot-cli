@@ -109,6 +109,13 @@ def upload_watermark():
     file = request.files['file']
     if file.filename == '': return jsonify({'error': 'No file'}), 400
     
+    # Проверка размера (макс 2МБ)
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > 2 * 1024 * 1024:
+        return jsonify({'error': 'File too large (max 2MB)'}), 400
+    
     filename = f"wm_{int(time.time())}.png"
     path = os.path.join('data', filename)
     file.save(path)

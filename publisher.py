@@ -5,9 +5,14 @@ import database
 def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_auto=False):
     """
     Основная функция публикации контента в Telegram канал.
-    Поддерживает одиночные фото, альбомы, текстовые сообщения и документы.
+    Проверяет права бота в канале.
     """
     try:
+        # Проверка прав администратора
+        member = bot.get_chat_member(channel_id, bot.get_me().id)
+        if member.status not in ['administrator', 'creator']:
+            raise Exception(f"Бот не является администратором в канале {channel_id}")
+
         # Добавляем текст умной очереди, если это автопостинг
         if is_auto:
             sq_text = database.get_global_setting('smart_queue_text', '')
