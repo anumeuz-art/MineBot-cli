@@ -245,7 +245,8 @@
             'head_link': 'YANGI_KANAL_ULASH', 'head_linked': 'ULANGAN_TIZIMLAR', 'head_ad': 'REKLAMA_SOZLAMALARI', 'head_lang': 'AI_TILINI_TANLASH',
             'btn_save_ad': 'SAQLASH', 'hint_ad': '* Ushbu matn barcha yangi postlarga qo\'shiladi.', 'head_update': 'MA\'LUMOTNI_YANGILASH',
             'lbl_sched': 'REJALASHTIRILGAN_VAQT', 'btn_upload': 'YANGILASHNI_YUBORISH', 'head_view': 'POST_MATNI', 'btn_link': 'ULASH', 'btn_unlink': 'UZISH',
-            'head_voice': 'AUDITORIYA_TAKLIFLARI', 'btn_ai_analyze': '🧠 AI TAHLILI', 'btn_clear_com': 'TOZALASH'
+            'head_voice': 'AUDITORIYA_TAKLIFLARI', 'btn_ai_analyze': '🧠 AI TAHLILI', 'btn_clear_com': 'TOZALASH', 'head_wm': 'SUV_BELGISI_BOSHQARUVCHI',
+            'head_prompt': 'AI_TIZIM_PROMPT_ENGINE', 'btn_save_sq': 'SAQLASH', 'btn_add_prompt': 'YANGI_PROMPT_QO\'SHISH'
         },
         'ru': {
             'refresh': '🔄 ОБНОВИТЬ', 'followers': 'ПОДПИСЧИКОВ', 'growth': 'РОСТ_24Ч', 'queue': 'В_ОЧЕРЕДИ', 'posted': 'ОПУБЛИКОВАНО',
@@ -254,7 +255,8 @@
             'head_link': 'ПРИВЯЗКА_КАНАЛА', 'head_linked': 'ПОДКЛЮЧЕННЫЕ_СИСТЕМЫ', 'head_ad': 'НАСТРОЙКА_РЕКЛАМЫ', 'head_lang': 'ЯЗЫК_ГЕНЕРАЦИИ_ИИ',
             'btn_save_ad': 'СОХРАНИТЬ_ТЕКСТ', 'hint_ad': '* Этот текст будет автоматически добавлен ко всем новым постам.', 'head_update': 'ОБНОВЛЕНИЕ_ДАННЫХ',
             'lbl_sched': 'ВРЕМЯ_ПУБЛИКАЦИИ', 'btn_upload': 'ЗАГРУЗИТЬ_ИЗМЕНЕНИЯ', 'head_view': 'ПРОСМОТР_ТЕКСТА', 'btn_link': 'СВЯЗАТЬ', 'btn_unlink': 'ОТКЛЮЧИТЬ',
-            'head_voice': 'ПРЕДЛОЖЕНИЯ АУДИТОРИИ', 'btn_ai_analyze': '🧠 АНАЛИЗ ИИ', 'btn_clear_com': 'ОЧИСТИТЬ'
+            'head_voice': 'ПРЕДЛОЖЕНИЯ АУДИТОРИИ', 'btn_ai_analyze': '🧠 АНАЛИЗ ИИ', 'btn_clear_com': 'ОЧИСТИТЬ', 'head_wm': 'УПРАВЛЕНИЕ_ВОДЯНЫМИ_ЗНАКАМИ',
+            'head_prompt': 'ИИ_СИСТЕМНЫЙ_ПРОМПТ_ДВИЖОК', 'btn_save_sq': 'СОХРАНИТЬ', 'btn_add_prompt': 'ДОБАВИТЬ_ПРОМПТ'
         },
         'en': {
             'refresh': '🔄 REFRESH', 'followers': 'FOLLOWERS', 'growth': '24H_GROWTH', 'queue': 'IN_QUEUE', 'posted': 'POSTED',
@@ -263,7 +265,8 @@
             'head_link': 'LINK_NEW_CHANNEL', 'head_linked': 'LINKED_SYSTEMS', 'head_ad': 'ADVERTISING_BLOCK_CONFIG', 'head_lang': 'AI_OUTPUT_LANGUAGE',
             'btn_save_ad': 'SAVE_AD_TEXT', 'hint_ad': '* This text will be automatically appended to all new AI-generated posts.', 'head_update': 'UPDATE_PAYLOAD',
             'lbl_sched': 'SCHED_TIME', 'btn_upload': 'UPLOAD_CHANGES', 'head_view': 'RAW_DATA_VIEW', 'btn_link': 'LINK', 'btn_unlink': 'UNLINK',
-            'head_voice': 'AUDIENCE_VOICE_FEED', 'btn_ai_analyze': '🧠 AI ANALYZE', 'btn_clear_com': 'CLEAR'
+            'head_voice': 'AUDIENCE_VOICE_FEED', 'btn_ai_analyze': '🧠 AI ANALYZE', 'btn_clear_com': 'CLEAR', 'head_wm': 'WATERMARK_MANAGER',
+            'head_prompt': 'AI_SYSTEM_PROMPT_ENGINE', 'btn_save_sq': 'SAVE', 'btn_add_prompt': 'ADD_NEW_PROMPT'
         }
     };
 
@@ -271,7 +274,6 @@
         const t = translations[lang] || translations['uz'];
         document.getElementById('btn-refresh').innerText = t.refresh;
         document.getElementById('lbl-followers').innerText = t.followers;
-        document.getElementById('lbl-growth').innerText = t.growth;
         document.getElementById('lbl-in-queue').innerText = t.queue;
         document.getElementById('lbl-posted').innerText = t.posted;
         document.getElementById('tab-queue').innerText = t.tab_queue;
@@ -294,12 +296,15 @@
         document.getElementById('head-voice').innerText = t.head_voice;
         document.getElementById('btn-ai-analyze').innerText = t.btn_ai_analyze;
         document.getElementById('btn-clear-com').innerText = t.btn_clear_com;
-        document.querySelectorAll('.btn-expand').forEach(b => b.innerText = t.expand);
+        document.getElementById('head-wm').innerText = t.head_wm;
+        document.getElementById('head-prompt').innerText = t.head_prompt;
+        document.getElementById('btn-add-prompt').innerText = t.btn_add_prompt;
         document.querySelectorAll('.btn-execute').forEach(b => b.innerText = t.execute);
         document.querySelectorAll('.btn-edit').forEach(b => b.innerText = t.edit);
         document.querySelectorAll('.btn-drop').forEach(b => b.innerText = t.drop);
         document.querySelectorAll('.btn-link-sys').forEach(b => b.innerText = t.btn_link);
         document.querySelectorAll('.btn-unlink').forEach(b => b.innerText = t.btn_unlink);
+        document.querySelectorAll('.btn-save-sq').forEach(b => b.innerText = t.btn_save_sq);
     }
 
     function addPrompt() {
