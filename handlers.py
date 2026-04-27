@@ -133,12 +133,31 @@ def register_handlers(bot_instance, user_drafts, album_cache):
         if message.text == btns['create']:
             bot.send_message(message.chat.id, get_txt(user_id, 'choose_action'), reply_markup=keyboards.get_cancel_markup(lang))
             return
+        if message.text == "🔍 CurseForge":
+            user_states[user_id] = "SEARCHING_CF"
+            bot.send_message(message.chat.id, "✍️ Qidirmoqchi bo'lgan mod nomini kiriting:", reply_markup=keyboards.get_cancel_markup(lang))
+            return
         if message.text == btns['lang']:
             bot.send_message(message.chat.id, get_txt(user_id, 'choose_lang'), reply_markup=keyboards.get_language_menu())
             return
         if message.text == btns['cancel']:
             user_states[user_id] = None
             bot.send_message(message.chat.id, get_txt(user_id, 'cancel_msg'), reply_markup=keyboards.get_main_menu(lang))
+            return
+
+        if user_states.get(user_id) == "SEARCHING_CF":
+            query = message.text
+            bot.send_message(message.chat.id, "⏳ Izlanmoqda...")
+            import curseforge_api
+            mod = curseforge_api.search_mod(query)
+            if mod:
+                info = f"✅ <b>{mod['name']}</b>\n\n{mod['summary']}\n\nID: {mod['id']}"
+                markup = InlineKeyboardMarkup()
+                markup.add(InlineKeyboardButton("📝 Post yaratish", callback_data=f"cf_create_{mod['id']}"))
+                bot.send_message(message.chat.id, info, parse_mode='HTML', reply_markup=markup)
+            else:
+                bot.send_message(message.chat.id, "❌ Mod topilmadi.")
+            user_states[user_id] = None
             return
 
         if message.media_group_id:
@@ -281,6 +300,22 @@ def register_handlers(bot_instance, user_drafts, album_cache):
                 database.add_to_queue(draft['photo'], draft['text'], draft['document'], channel, int(time.time()) + h*3600)
                 bot.delete_message(chat_id, target_id)
                 bot.send_message(chat_id, get_txt(user_id, 'scheduled', time=f"+{h}h"), reply_markup=keyboards.get_main_menu(lang))
+            return
+
+        if call.data.startswith("cf_create_"):
+            mod_id = call.data.split('_')[2]
+            bot.answer_callback_query(call.id, "⏳ Post yaratilmoqda...")
+            import curseforge_api
+            mod = curseforge_api.get_mod_info(mod_id)
+            if mod:
+                lang = get_user_lang(user_id)
+                # Генерируем текст используя данные мода
+                input_data = f"Mod name: {mod['name']}\nSummary: {mod['summary']}\nDescription: {mod.get('description', '')[:500]}"
+                generated_text = ai_generator.generate_post(input_data, lang)
+                
+                draft = {'photo': None, 'text': generated_text, 'document': None, 'channel': database.get_user_setting(user_id, 'active_channel', config.DEFAULT_CHANNEL)}
+                send_draft_preview(chat_id, user_id, draft)
+                bot.delete_message(chat_id, target_id)
             return
 
         # Остальные меню
