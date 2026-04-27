@@ -16,6 +16,7 @@ import utils
 import keyboards
 import publisher
 import strings
+import curseforge_api # Добавляем импорт здесь для надежности
 from bot_instance import bot
 
 # Глобальные словари для хранения текущего состояния пользователей
