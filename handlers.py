@@ -151,11 +151,10 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             import curseforge_api
             mods = curseforge_api.search_mods(query)
             if mods:
-                mod = mods[0]
-                info = f"✅ <b>{mod['name']}</b>\n\n{mod.get('summary', 'No summary')}\n\nID: {mod['id']}"
                 markup = InlineKeyboardMarkup()
-                markup.add(InlineKeyboardButton("📝 Post yaratish", callback_data=f"cf_create_{mod['id']}"))
-                bot.send_message(message.chat.id, info, parse_mode='HTML', reply_markup=markup)
+                for m in mods[:5]:
+                    markup.add(InlineKeyboardButton(m['name'], callback_data=f"cf_select_{m['id']}"))
+                bot.send_message(message.chat.id, "🔍 <b>Qidiruv natijalari:</b>", parse_mode='HTML', reply_markup=markup)
             else:
                 bot.send_message(message.chat.id, "❌ Mod topilmadi.")
             user_states[user_id] = None
