@@ -67,6 +67,65 @@ Qo‘shimcha:
 client = Groq(api_key=config.GROQ_API_KEY)
 # Используемая модель ИИ
 MODEL_ID = "llama-3.3-70b-versatile"
+
+def extract_url(text):
+    """Извлекает первую найденную URL-ссылку из текста."""
+    urls = re.findall(r'(https?://[^\s]+)', text)
+    return urls[0] if urls else None
+
+def fetch_page_content(url):
+    """Загружает содержимое страницы по ссылке и очищает его от скриптов/стилей для передачи в ИИ."""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        # Удаляем лишние теги, которые не несут смысловой нагрузки для описания мода
+        for s in soup(["script", "style"]): s.extract()
+        return soup.get_text(separator=' ', strip=True)[:3000]
+    except: return ""
+
+def limit_hashtags(text, limit=5):
+    """
+    Очищает текст от избыточного количества хэштегов.
+    Оставляет максимум 5 уникальных тегов, где #Minecraft всегда первый.
+    """
+    lines = text.strip().split('\n')
+    main_body = []
+    hashtags = []
+    
+    hashtag_pattern = re.compile(r'#\w+')
+    
+    for line in lines:
+        found_in_line = hashtag_pattern.findall(line)
+        # Если строка состоит только из хэштегов, собираем их в список
+        if found_in_line and len(line.strip().replace(' ', '')) == sum(len(h) for h in found_in_line):
+            for h in found_in_line:
+                if h not in hashtags:
+                    hashtags.append(h)
+        else:
+            main_body.append(line)
+
+    # Если хэштеги были вплетены в текст, а не в конце, извлекаем их
+    if not hashtags:
+        all_tags = hashtag_pattern.findall(text)
+        for h in all_tags:
+            if h not in hashtags:
+                hashtags.append(h)
+
+    # Формируем финальный список: #Minecraft + остальные до лимита
+    final_tags = []
+    if '#Minecraft' in hashtags:
+        final_tags.append('#Minecraft')
+        hashtags.remove('#Minecraft')
+    
+    final_tags.extend(hashtags[:limit - len(final_tags)])
+    
+    # Очищаем основной текст от хэштегов в самом конце
+    clean_body = "\n".join(main_body).strip()
+    clean_body = re.sub(r'(#\w+\s*)+$', '', clean_body).strip()
+    
+    return clean_body + "\n\n" + " ".join(final_tags)
+
 def generate_post(user_input, persona="uz"):
     """Основная функция генерации поста через Groq API с поддержкой CurseForge API."""
     import curseforge_api # Локальный импорт для предотвращения циклической зависимости
