@@ -149,9 +149,10 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             query = message.text
             bot.send_message(message.chat.id, "⏳ Izlanmoqda...")
             import curseforge_api
-            mod = curseforge_api.search_mod(query)
-            if mod:
-                info = f"✅ <b>{mod['name']}</b>\n\n{mod['summary']}\n\nID: {mod['id']}"
+            mods = curseforge_api.search_mods(query)
+            if mods:
+                mod = mods[0]
+                info = f"✅ <b>{mod['name']}</b>\n\n{mod.get('summary', 'No summary')}\n\nID: {mod['id']}"
                 markup = InlineKeyboardMarkup()
                 markup.add(InlineKeyboardButton("📝 Post yaratish", callback_data=f"cf_create_{mod['id']}"))
                 bot.send_message(message.chat.id, info, parse_mode='HTML', reply_markup=markup)
