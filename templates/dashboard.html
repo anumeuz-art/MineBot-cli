@@ -216,6 +216,12 @@
                     <div class="card p-4">
                         <h6 style="color: var(--neon-g);" id="head-prompt">AI_SYSTEM_PROMPT_ENGINE</h6>
                         <div id="prompt-list" class="row mt-3">
+                            <div class="col-md-3 mb-3">
+                                <div class="card p-3" style="border: 1px solid var(--neon-g);">
+                                    <h6 style="color: var(--neon-g);">[CURRENT]</h6>
+                                    <p style="font-size: 0.6rem; height: 50px; overflow: hidden;">{{ active_prompt }}</p>
+                                </div>
+                            </div>
                             <div class="col-md-2 mb-3">
                                 <div class="card p-3 d-flex align-items-center justify-content-center" style="height: 120px; cursor: pointer; border: 2px dashed #444;" onclick="document.getElementById('new-prompt-form').style.display='block'">
                                     <span style="font-size: 2rem;">+</span>
