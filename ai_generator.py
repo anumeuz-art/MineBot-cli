@@ -10,19 +10,15 @@ import curseforge_api # Импорт нового модуля
 client = Groq(api_key=config.GROQ_API_KEY)
 # Используемая модель ИИ
 MODEL_ID = "llama-3.3-70b-versatile"
-
-# ... (остальной код PROMPT_TEMPLATE и другие функции)
-
 def generate_post(user_input, persona="uz"):
     """Основная функция генерации поста через Groq API с поддержкой CurseForge API."""
+    import curseforge_api # Локальный импорт для предотвращения циклической зависимости
+
     url = extract_url(user_input)
-    
+
     # ИНТЕГРАЦИЯ CURSEFORGE
     cf_data = ""
     if url and "curseforge.com" in url:
-        # Пытаемся извлечь modId из ссылки (упрощенно)
-        # Пример: .../mods/just-enough-items -> обычно ID не в ссылке, 
-        # нам нужно найти мод по названию из ссылки или доработать извлечение
         mod_name = url.split('/')[-1].replace('-', ' ')
         mod = curseforge_api.search_mod(mod_name)
         if mod:

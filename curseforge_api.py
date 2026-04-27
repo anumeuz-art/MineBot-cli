@@ -1,10 +1,10 @@
+import os
 import requests
-import config
 
 BASE_URL = "https://api.curseforge.com/v1"
 HEADERS = {
     'Accept': 'application/json',
-    'x-api-key': config.CURSEFORGE_API_KEY
+    'x-api-key': os.getenv("CURSEFORGE_API_KEY")
 }
 
 def get_mod_info(mod_id):
