@@ -334,15 +334,22 @@
         fetch('/api/prompts').then(r => r.json()).then(data => {
             const list = document.getElementById('prompt-list');
             list.innerHTML = data.map(p => `
-                <div class="col-md-6 mb-3">
-                    <div class="card p-3">
+                <div class="col-md-3 mb-3">
+                    <div class="card p-3" style="border: 1px solid ${p[3] ? 'var(--neon-g)' : '#333'};">
                         <h6>${p[1]}</h6>
                         <p style="font-size: 0.6rem; height: 50px; overflow: hidden;">${p[2]}</p>
-                        <button class="btn btn-sm btn-danger-mc btn-mc" onclick="deletePrompt(${p[0]})">DELETE</button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-primary-mc btn-mc" onclick="activatePrompt(${p[0]})" ${p[3] ? 'disabled' : ''}>USE</button>
+                            <button class="btn btn-sm btn-danger-mc btn-mc" onclick="deletePrompt(${p[0]})">DEL</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
         });
+    }
+
+    function activatePrompt(id) {
+        fetch('/api/prompts/activate/'+id, { method: 'POST' }).then(() => { location.reload(); });
     }
 
     function deletePrompt(id) {
