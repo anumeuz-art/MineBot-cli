@@ -51,16 +51,20 @@ def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_
                     except Exception as de:
                         print(f"⚠️ Ошибка отправки документа {d_id}: {de}")
         
+        # Если публикация прошла успешно, уведомляем админа
+        for admin in getattr(config, 'ADMIN_IDS', []):
+            try: 
+                msg = f"✅ <b>Пост опубликован:</b>\nКанал: {channel_id}"
+                if is_auto: msg = f"✅ <b>Автопостинг:</b> Пост успешно опубликован в {channel_id}!"
+                bot.send_message(admin, msg, parse_mode='HTML')
+            except: pass
+
         # Если это пост из очереди (post_id != -1), помечаем его как опубликованный в БД
         if post_id != -1: 
             database.mark_as_posted(post_id)
             if sent_message:
                 database.update_message_id(post_id, sent_message.message_id)
-            # Уведомляем админа об автоматической публикации
-            if is_auto:
-                for admin in getattr(config, 'ADMIN_IDS', []):
-                    try: bot.send_message(admin, f"✅ <b>Автопостинг:</b> Пост успешно опубликован в {channel_id}!", parse_mode='HTML')
-                    except: pass
+
 
                     
         print(f"✅ Пост #{post_id} опубликован в {channel_id}!")

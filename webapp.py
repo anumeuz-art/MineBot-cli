@@ -94,13 +94,27 @@ def index():
     sq_text = database.get_global_setting('smart_queue_text', '')
     
     watermarks = database.get_all_watermarks()
-    active_prompt = database.get_active_prompt()
+    active_prompt, active_prompt_id = database.get_active_prompt()
+    
+    published_raw = database.get_published_history(50)
+    history = []
+    for p in published_raw:
+        history.append({
+            'id': p[0],
+            'photos': p[1].split(',') if p[1] else [],
+            'text': p[2],
+            'channel': p[3],
+            'time_str': format_timestamp(p[4]),
+            'message_id': p[5]
+        })
     
     return render_template('dashboard.html', stats=stats, queue=queue, 
+                           history=history,
                            channels=channel_stats, total_subs=total_subs, 
                            current_lang=current_lang, ad_text=ad_text, 
                            sq_interval=sq_interval, sq_text=sq_text,
                            watermarks=watermarks, active_prompt=active_prompt,
+                           active_prompt_id=active_prompt_id,
                            config=config)
 
 @app.route('/api/watermarks/upload', methods=['POST'])
@@ -140,7 +154,19 @@ def delete_watermark(wm_id):
 def set_sq_settings():
     data = request.json
     database.set_global_setting('smart_queue_interval', data.get('interval', '6'))
-    database.set_global_setting('smart_queue_text', data.get('text', ''))
+    if data.get('text'):
+        database.set_global_setting('smart_queue_text', data.get('text', ''))
+    return jsonify({'status': 'success'})
+
+@app.route('/api/prompts/activate/<int:prompt_id>', methods=['POST'])
+def api_activate_prompt(prompt_id):
+    database.activate_prompt(prompt_id)
+    return jsonify({'status': 'success'})
+
+@app.route('/api/prompts/update/<int:prompt_id>', methods=['POST'])
+def api_update_prompt(prompt_id):
+    data = request.json
+    database.update_prompt(prompt_id, data.get('name'), data.get('prompt'))
     return jsonify({'status': 'success'})
 
 @app.route('/api/prompts', methods=['GET'])
@@ -224,8 +250,14 @@ def api_remove_channel():
     database.remove_channel(username)
     return jsonify({'status': 'success'})
 
-@app.route('/file/<file_id>')
-def proxy_file(file_id):
+@app.route('/file/<path:file_id>')
+def serve_file(file_id):
+    if not file_id.startswith('AgAC') and not file_id.startswith('file_') and ('.' in file_id or '/' in file_id or '\\' in file_id):
+        for folder in ['data', 'templates']:
+            path = os.path.join(folder, os.path.basename(file_id))
+            if os.path.exists(path):
+                return send_file(path)
+    
     url = get_telegram_file_url(file_id)
     return redirect(url) if url else ("/static/no-image.png", 404)
 

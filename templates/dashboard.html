@@ -65,6 +65,7 @@
 
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue" id="tab-queue">Navbat</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#published-history" id="tab-history">Tarix</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#audience" id="tab-audience" onclick="loadComments()">Auditoriya</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics" id="tab-analytics">Analitika</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#channels" id="tab-channels">Kanallar</button></li>
@@ -101,6 +102,38 @@
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="published-history">
+            <div class="card p-4">
+                <h6 class="mb-4" style="color: var(--neon-g);">PUBLISHED_HISTORY_REPORT</h6>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover" style="font-size: 0.65rem;">
+                        <thead>
+                            <tr>
+                                <th>TIME</th>
+                                <th>CHANNEL</th>
+                                <th>CONTENT_PREVIEW</th>
+                                <th>MSG_ID</th>
+                                <th>ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in history %}
+                            <tr>
+                                <td class="text-success">{{ p.time_str }}</td>
+                                <td><span class="badge bg-secondary">{{ p.channel }}</span></td>
+                                <td class="text-truncate" style="max-width: 250px;">{{ p.text|striptags }}</td>
+                                <td><code>#{{ p.message_id }}</code></td>
+                                <td>
+                                    <button class="btn btn-sm btn-mc btn-primary-mc py-0" onclick='viewFullText({{ p|tojson }})'>VIEW</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -185,6 +218,8 @@
                         <h6 style="color: var(--neon-g);">SMART_QUEUE_CONFIG</h6>
                         <label class="stats-label d-block mt-3">INTERVAL (HOURS)</label>
                         <input type="number" id="sq-interval" class="form-control mb-3" value="{{ sq_interval }}">
+                        <label class="stats-label d-block">APPEND_TEXT</label>
+                        <textarea id="sq-text" class="form-control mb-3" rows="2">{{ sq_text }}</textarea>
                         <button class="btn btn-primary-mc btn-mc w-100" onclick="saveSQ()">SAVE_SQ_SETTINGS</button>
                     </div>
                 </div>
@@ -284,50 +319,41 @@
 
     function applyTranslations(lang) {
         const t = translations[lang] || translations['uz'];
-        document.getElementById('btn-refresh').innerText = t.refresh;
-        document.getElementById('lbl-followers').innerText = t.followers;
-        document.getElementById('lbl-in-queue').innerText = t.queue;
-        document.getElementById('lbl-posted').innerText = t.posted;
-        document.getElementById('tab-queue').innerText = t.tab_queue;
-        document.getElementById('tab-audience').innerText = t.tab_audience;
-        document.getElementById('tab-analytics').innerText = t.tab_analytics;
-        document.getElementById('tab-channels').innerText = t.tab_channels;
-        document.getElementById('tab-ad').innerText = t.tab_ad;
-        document.getElementById('tab-settings').innerText = t.tab_settings;
-        document.getElementById('head-growth').innerText = t.head_growth;
-        document.getElementById('head-link').innerText = t.head_link;
-        document.getElementById('head-linked').innerText = t.head_linked;
-        document.getElementById('head-ad').innerText = t.head_ad;
-        document.getElementById('head-lang').innerText = t.head_lang;
-        document.getElementById('btn-save-ad').innerText = t.btn_save_ad;
-        document.getElementById('hint-ad').innerText = t.hint_ad;
-        document.getElementById('head-update').innerText = t.head_update;
-        document.getElementById('lbl-sched').innerText = t.lbl_sched;
-        document.getElementById('save-btn').innerText = t.btn_upload;
-        document.getElementById('head-view').innerText = t.head_view;
-        document.getElementById('head-voice').innerText = t.head_voice;
-        document.getElementById('btn-ai-analyze').innerText = t.btn_ai_analyze;
-        document.getElementById('btn-clear-com').innerText = t.btn_clear_com;
-        document.getElementById('head-wm').innerText = t.head_wm;
-        document.getElementById('head-prompt').innerText = t.head_prompt;
-        document.getElementById('btn-add-prompt').innerText = t.btn_add_prompt;
+        const el = (id) => document.getElementById(id);
+        if (el('btn-refresh')) el('btn-refresh').innerText = t.refresh;
+        if (el('lbl-followers')) el('lbl-followers').innerText = t.followers;
+        if (el('lbl-in-queue')) el('lbl-in-queue').innerText = t.queue;
+        if (el('lbl-posted')) el('lbl-posted').innerText = t.posted;
+        if (el('tab-queue')) el('tab-queue').innerText = t.tab_queue;
+        if (el('tab-audience')) el('tab-audience').innerText = t.tab_audience;
+        if (el('tab-analytics')) el('tab-analytics').innerText = t.tab_analytics;
+        if (el('tab-channels')) el('tab-channels').innerText = t.tab_channels;
+        if (el('tab-ad')) el('tab-ad').innerText = t.tab_ad;
+        if (el('tab-settings')) el('tab-settings').innerText = t.tab_settings;
+        if (el('head-growth')) el('head-growth').innerText = t.head_growth;
+        if (el('head-link')) el('head-link').innerText = t.head_link;
+        if (el('head-linked')) el('head-linked').innerText = t.head_linked;
+        if (el('head-ad')) el('head-ad').innerText = t.head_ad;
+        if (el('head-lang')) el('head-lang').innerText = t.head_lang;
+        if (el('btn-save-ad')) el('btn-save-ad').innerText = t.btn_save_ad;
+        if (el('hint-ad')) el('hint-ad').innerText = t.hint_ad;
+        if (el('head-update')) el('head-update').innerText = t.head_update;
+        if (el('lbl-sched')) el('lbl-sched').innerText = t.lbl_sched;
+        if (el('save-btn')) el('save-btn').innerText = t.btn_upload;
+        if (el('head-view')) el('head-view').innerText = t.head_view;
+        if (el('head-voice')) el('head-voice').innerText = t.head_voice;
+        if (el('btn-ai-analyze')) el('btn-ai-analyze').innerText = t.btn_ai_analyze;
+        if (el('btn-clear-com')) el('btn-clear-com').innerText = t.btn_clear_com;
+        if (el('head-wm')) el('head-wm').innerText = t.head_wm;
+        if (el('head-prompt')) el('head-prompt').innerText = t.head_prompt;
+        if (el('btn-save-prompt')) el('btn-save-prompt').innerText = t.btn_add_prompt;
+        
         document.querySelectorAll('.btn-execute').forEach(b => b.innerText = t.execute);
         document.querySelectorAll('.btn-edit').forEach(b => b.innerText = t.edit);
         document.querySelectorAll('.btn-drop').forEach(b => b.innerText = t.drop);
         document.querySelectorAll('.btn-link-sys').forEach(b => b.innerText = t.btn_link);
         document.querySelectorAll('.btn-unlink').forEach(b => b.innerText = t.btn_unlink);
         document.querySelectorAll('.btn-save-sq').forEach(b => b.innerText = t.btn_save_sq);
-    }
-
-    function addPrompt() {
-        const name = document.getElementById('new-prompt-name').value;
-        const prompt = document.getElementById('new-prompt-text').value;
-        if (!name || !prompt) return alert('Fill fields');
-        fetch('/api/prompts/add', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, prompt}) }).then(() => {
-            document.getElementById('new-prompt-name').value = '';
-            document.getElementById('new-prompt-text').value = '';
-            loadPrompts();
-        });
     }
 
     function loadPrompts() {
@@ -340,11 +366,37 @@
                         <p style="font-size: 0.6rem; height: 50px; overflow: hidden;">${p[2]}</p>
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-primary-mc btn-mc" onclick="activatePrompt(${p[0]})" ${p[3] ? 'disabled' : ''}>USE</button>
+                            <button class="btn btn-sm btn-purple-mc btn-mc" onclick="editPrompt(${p[0]}, '${p[1]}', \`${p[2].replace(/'/g, "\\'")}\`)">EDIT</button>
                             <button class="btn btn-sm btn-danger-mc btn-mc" onclick="deletePrompt(${p[0]})">DEL</button>
                         </div>
                     </div>
                 </div>
             `).join('');
+        });
+    }
+
+    let editingPromptId = null;
+    function editPrompt(id, name, text) {
+        editingPromptId = id;
+        document.getElementById('new-prompt-name').value = name;
+        document.getElementById('new-prompt-text').value = text;
+        document.getElementById('new-prompt-form').style.display = 'block';
+        document.getElementById('btn-save-prompt').innerText = 'UPDATE_PROMPT';
+    }
+
+    function addPrompt() {
+        const name = document.getElementById('new-prompt-name').value;
+        const prompt = document.getElementById('new-prompt-text').value;
+        if (!name || !prompt) return alert('Fill fields');
+        
+        const url = editingPromptId ? '/api/prompts/update/' + editingPromptId : '/api/prompts/add';
+        fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, prompt}) }).then(() => {
+            document.getElementById('new-prompt-name').value = '';
+            document.getElementById('new-prompt-text').value = '';
+            document.getElementById('new-prompt-form').style.display = 'none';
+            document.getElementById('btn-save-prompt').innerText = 'SAVE_PROMPT';
+            editingPromptId = null;
+            loadPrompts();
         });
     }
 
@@ -448,12 +500,6 @@
 
     function activateWM(id) { fetch('/api/watermarks/activate/'+id, { method: 'POST' }).then(() => location.reload()); }
     function deleteWM(id) { if(confirm('Delete watermark?')) fetch('/api/watermarks/delete/'+id, { method: 'POST' }).then(() => location.reload()); }
-
-    function savePrompt() {
-        fetch('/api/settings/prompt', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({
-            prompt: document.getElementById('prompt-area').value
-        }) }).then(() => alert('PROMPT_UPDATED'));
-    }
 </script>
 </body>
 </html>
