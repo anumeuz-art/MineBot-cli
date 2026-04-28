@@ -20,23 +20,25 @@ def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_
                 text += f"\n\n{sq_text}"
 
         # 1. Отправка фото или альбома
+        sent_message = None
         if photo_id:
             if ',' in photo_id: # Если в строке несколько ID через запятую — это альбом
                 ids = photo_id.split(',')
                 # Формируем список MediaGroup. Текст (caption) прикрепляем к первому фото.
                 media = [telebot.types.InputMediaPhoto(media=pid, caption=text if i==0 and len(text)<=1024 else None, parse_mode='HTML') for i, pid in enumerate(ids)]
-                bot.send_media_group(channel_id, media)
+                messages = bot.send_media_group(channel_id, media)
+                sent_message = messages[0] # Сохраняем ID первого сообщения в группе
                 # Если текст слишком длинный для подписи к фото (>1024 симв), отправляем его отдельным сообщением
                 if len(text) > 1024:
                     bot.send_message(channel_id, text, parse_mode='HTML')
             else: # Одиночное фото
                 if len(text) <= 1024:
-                    bot.send_photo(channel_id, photo_id, caption=text, parse_mode='HTML')
+                    sent_message = bot.send_photo(channel_id, photo_id, caption=text, parse_mode='HTML')
                 else:
                     bot.send_photo(channel_id, photo_id)
-                    bot.send_message(channel_id, text, parse_mode='HTML')
+                    sent_message = bot.send_message(channel_id, text, parse_mode='HTML')
         else: # Только текст (без фото)
-            bot.send_message(channel_id, text, parse_mode='HTML')
+            sent_message = bot.send_message(channel_id, text, parse_mode='HTML')
             
         # 2. Отправка документов (поддержка нескольких файлов через запятую)
         if document_id:
@@ -52,11 +54,14 @@ def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_
         # Если это пост из очереди (post_id != -1), помечаем его как опубликованный в БД
         if post_id != -1: 
             database.mark_as_posted(post_id)
+            if sent_message:
+                database.update_message_id(post_id, sent_message.message_id)
             # Уведомляем админа об автоматической публикации
             if is_auto:
                 for admin in getattr(config, 'ADMIN_IDS', []):
                     try: bot.send_message(admin, f"✅ <b>Автопостинг:</b> Пост успешно опубликован в {channel_id}!", parse_mode='HTML')
                     except: pass
+
                     
         print(f"✅ Пост #{post_id} опубликован в {channel_id}!")
         return True

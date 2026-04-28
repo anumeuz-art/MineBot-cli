@@ -4,7 +4,6 @@ import requests
 from bs4 import BeautifulSoup
 from groq import Groq
 import database
-import curseforge_api # Импорт нового модуля
 
 # Промпт-инструкция для ИИ. Определяет роль, стиль и структуру поста.
 PROMPT_TEMPLATE = """
@@ -127,20 +126,10 @@ def limit_hashtags(text, limit=5):
     return clean_body + "\n\n" + " ".join(final_tags)
 
 def generate_post(user_input, persona="uz"):
-    """Основная функция генерации поста через Groq API с поддержкой CurseForge API."""
-    import curseforge_api # Локальный импорт для предотвращения циклической зависимости
+    """Основная функция генерации поста через Groq API."""
 
     url = extract_url(user_input)
-
-    # ИНТЕГРАЦИЯ CURSEFORGE
-    cf_data = ""
-    if url and "curseforge.com" in url:
-        mod_name = url.split('/')[-1].replace('-', ' ')
-        mod = curseforge_api.search_mod(mod_name)
-        if mod:
-            cf_data = f"CURSEFORGE DATA: Name: {mod['name']}, Summary: {mod['summary']}, Features: {mod.get('description', '')[:500]}"
-
-    site_content = fetch_page_content(url) if url and not cf_data else ""
+    site_content = fetch_page_content(url) if url else ""
     
     # Получаем промпт из БД
     db_prompt = database.get_active_prompt()
@@ -155,7 +144,7 @@ def generate_post(user_input, persona="uz"):
     target_lang = lang_map.get(persona, "O'zbek tilida")
 
     # Формируем полный промпт
-    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{effective_prompt_template}\n\nDATA TO PROCESS:\n{user_input}\n{cf_data}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
+    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{effective_prompt_template}\n\nDATA TO PROCESS:\n{user_input}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
     
     try:
         res = client.chat.completions.create(

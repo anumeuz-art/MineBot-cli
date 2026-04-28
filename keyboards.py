@@ -6,7 +6,7 @@ import strings
 def get_main_menu(lang='uz'):
     btns = strings.BUTTONS.get(lang, strings.BUTTONS['uz'])
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(KeyboardButton(btns['create']), KeyboardButton("🔍 CurseForge"))
+    markup.add(KeyboardButton(btns['create']))
     markup.add(KeyboardButton(btns['lang']), KeyboardButton(btns['open_panel'], web_app=WebAppInfo(url="https://hospitable-clarity-production-3350.up.railway.app")))
     return markup
 

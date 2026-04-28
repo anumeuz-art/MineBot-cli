@@ -21,12 +21,15 @@ def init_db():
                   photo_id TEXT,
                   text TEXT,
                   document_id TEXT,
-                  status TEXT DEFAULT 'pending')''')
+                  status TEXT DEFAULT 'pending',
+                  message_id INTEGER)''')
     
     # Динамическое добавление колонок (для миграции старых БД без удаления данных)
     try: c.execute("ALTER TABLE queue ADD COLUMN channel_id TEXT")
     except: pass
     try: c.execute("ALTER TABLE queue ADD COLUMN scheduled_time INTEGER")
+    except: pass
+    try: c.execute("ALTER TABLE queue ADD COLUMN message_id INTEGER")
     except: pass
         
     # Таблица индивидуальных настроек пользователей (язык, активный канал)
@@ -274,10 +277,10 @@ def get_ready_posts():
     conn.close()
     return rows
 
-def mark_as_posted(post_id):
+def update_message_id(post_id, message_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("UPDATE queue SET status='posted' WHERE id=?", (post_id,))
+    c.execute("UPDATE queue SET message_id = ? WHERE id = ?", (message_id, post_id))
     conn.commit()
     conn.close()
 
