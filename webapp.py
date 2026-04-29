@@ -311,6 +311,7 @@ def reorder():
 
     # Обновляем каждый пост в базе
     for i, p_id in enumerate(order):
+        if p_id is None: continue
         post = database.get_post_by_id(int(p_id))
         if post:
             database.update_post_content(post[0], post[2], new_timestamps[i])
