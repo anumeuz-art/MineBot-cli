@@ -108,6 +108,10 @@ def index():
             'message_id': p[5]
         })
     
+    import json
+    with open('translations.json', 'r', encoding='utf-8') as f:
+        translations = json.load(f)
+    
     return render_template('dashboard.html', stats=stats, queue=queue, 
                            history=history,
                            channels=channel_stats, total_subs=total_subs, 
@@ -115,6 +119,7 @@ def index():
                            sq_interval=sq_interval, sq_text=sq_text,
                            watermarks=watermarks, active_prompt=active_prompt,
                            active_prompt_id=active_prompt_id,
+                           translations=translations,
                            config=config)
 
 @app.route('/api/watermarks/upload', methods=['POST'])
