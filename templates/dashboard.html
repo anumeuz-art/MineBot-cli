@@ -9,7 +9,7 @@
     <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0a0a0a; --card: #141414; --mc: #388e3c; --neon-p: #bc13fe; --neon-g: #39ff14; --white: #fff; --text-main: #e0e0e0; }
+        :root { --bg: #0a0a0a; --card: #141414; --mc: #388e3c; --neon-p: #bc13fe; --neon-g: #39ff14; --white: #fff; --text-main: #ffffff; }
         body { background: var(--bg); color: var(--text-main); font-family: 'Minecraftia', sans-serif; letter-spacing: 1px; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: var(--mc); }
@@ -27,24 +27,22 @@
         .btn-purple-mc { border-color: var(--neon-p); color: var(--neon-p); background: transparent; }
         .btn-purple-mc:hover { background: var(--neon-p); color: #fff; }
         .btn-danger-mc { border-color: #ff0033; color: #ff0033; background: transparent; }
-        .nav-tabs .nav-link { color: #444; border: none; font-size: 0.7rem; }
+        .nav-tabs .nav-link { color: #888; border: none; font-size: 0.7rem; }
         .nav-tabs .nav-link.active { background: transparent; color: var(--neon-p); border-bottom: 3px solid var(--neon-p); }
         .post-media { height: 180px; position: relative; background: #000; overflow: hidden; }
         .post-media img { width: 100%; height: 100%; object-fit: cover; }
         .badge-files { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); border: 1px solid var(--neon-g); color: var(--neon-g); padding: 2px 6px; font-size: 0.55rem; z-index: 5; }
         .handle { cursor: grab; background: #1a1a1a; color: var(--mc); font-size: 0.55rem; text-align: center; padding: 4px; border-bottom: 1px solid #333; }
-        .lang-btn { flex: 1; border: 2px solid #333; color: #555; background: transparent; padding: 10px; cursor: pointer; }
+        .lang-btn { flex: 1; border: 2px solid #333; color: #888; background: transparent; padding: 10px; cursor: pointer; }
         .lang-btn.active { border-color: var(--neon-g); color: var(--neon-g); text-shadow: 0 0 5px var(--neon-g); }
         .modal-content { background: #000; border: 3px solid var(--neon-p); border-radius: 0; }
         .form-control { background: #111 !important; color: #fff !important; border-radius: 0; border: 1px solid #444; font-family: monospace; }
         .form-control:focus { background: #1a1a1a !important; color: #fff !important; border-color: var(--neon-p); box-shadow: 0 0 10px rgba(188, 19, 254, 0.5); outline: none; }
-        #ad-text-area { background: #111 !important; color: #fff !important; }
         .tab-pane { background: var(--bg); color: #fff; }
-        .form-control:-webkit-autofill, .form-control:-webkit-autofill:hover, .form-control:-webkit-autofill:focus {
-            -webkit-text-fill-color: #fff !important; -webkit-box-shadow: 0 0 0px 1000px #111 inset !important; transition: background-color 5000s ease-in-out 0s;
-        }
         .ai-summary { background: #111; border: 1px dashed var(--neon-p); padding: 15px; font-size: 0.75rem; white-space: pre-wrap; line-height: 1.6; }
-        .comment-item { border-left: 3px solid var(--neon-g); padding-left: 12px; margin-bottom: 10px; font-size: 0.7rem; }
+        .comment-item { border-left: 3px solid var(--neon-g); padding-left: 12px; margin-bottom: 10px; font-size: 0.7rem; color: #fff; }
+        .text-muted { color: #ccc !important; }
+        label { color: #fff !important; }
     </style>
 </head>
 <body>
@@ -67,8 +65,7 @@
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#queue" id="tab-queue">Navbat</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#published-history" id="tab-history">Tarix</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#audience" id="tab-audience" onclick="loadComments()">Auditoriya</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics" id="tab-analytics">Analitika</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#channels" id="tab-channels">Kanallar</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics" id="tab-analytics">Kanallar</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#settings" id="tab-settings">Sozlamalar</button></li>
     </ul>
 
@@ -91,7 +88,7 @@
                                 <small class="text-success" style="font-size: 0.6rem;">{{ post.time_str }}</small>
                                 <span class="badge" style="background: var(--mc); font-size: 0.5rem;">{{ post.channel }}</span>
                             </div>
-                            <p class="mt-2" style="font-size: 0.65rem; color: var(--text-main); height: 75px; overflow: hidden;">{{ post.text|striptags }}</p>
+                            <p class="mt-2" style="font-size: 0.65rem; color: #fff; height: 75px; overflow: hidden;">{{ post.text|striptags }}</p>
                             <button class="btn btn-link p-0 text-info text-start mb-3 btn-expand" style="font-size: 0.55rem; text-decoration: none;" onclick='viewFullText({{ post|tojson }})'>[EXPAND_LOG]</button>
                             <div class="mt-auto">
                                 <button class="btn btn-primary-mc btn-mc w-100 mb-2 btn-execute" onclick="publishNow({{ post.id }})">🚀 EXECUTE_POST</button>
@@ -123,8 +120,8 @@
                             <tr>
                                 <td class="text-success">{{ p.time_str }}</td>
                                 <td><span class="badge bg-secondary">{{ p.channel }}</span></td>
-                                <td class="text-truncate" style="max-width: 250px;">{{ p.text|striptags }}</td>
-                                <td><code>#{{ p.message_id }}</code></td>
+                                <td class="text-truncate" style="max-width: 250px; color: #fff;">{{ p.text|striptags }}</td>
+                                <td style="color: #fff;"><code>#{{ p.message_id }}</code></td>
                                 <td>
                                     <button class="btn btn-sm btn-mc btn-primary-mc py-0 btn-view" onclick='viewFullText({{ p|tojson }})'>VIEW</button>
                                 </td>
@@ -141,16 +138,16 @@
                 <div class="col-md-8">
                     <div class="card p-4">
                         <div class="d-flex justify-content-between mb-4">
-                            <h6 id="head-voice">AUDIENCE_VOICE_FEED</h6>
+                            <h6 id="head-voice" style="color: var(--neon-g);">AUDIENCE_VOICE_FEED</h6>
                             <button class="btn btn-primary-mc btn-mc px-3" onclick="analyzeComments()" id="btn-ai-analyze">🧠 ANALYZE_WITH_AI</button>
                         </div>
-                        <div id="ai-summary-container" class="ai-summary mb-4" style="display:none;"></div>
+                        <div id="ai-summary-container" class="ai-summary mb-4" style="display:none; color: #fff;"></div>
                         <div id="comments-list" style="max-height: 500px; overflow-y: auto;"></div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card p-4 text-center">
-                        <h6 id="actions-head">ACTIONS</h6>
+                        <h6 id="actions-head" style="color: var(--neon-g);">ACTIONS</h6>
                         <button class="btn btn-danger-mc btn-mc w-100 mt-3" onclick="clearComments()" id="btn-clear-com">CLEAR_HISTORY</button>
                     </div>
                 </div>
@@ -159,47 +156,58 @@
 
         <div class="tab-pane fade" id="analytics">
             <div class="row">
-                {% for ch in channels %}
-                <div class="col-md-4 mb-3">
-                    <div class="card p-3" style="border-color: var(--neon-g); cursor: pointer;" onclick="toggleChannel('{{ ch.username }}')">
-                        <div class="text-center mb-2">
-                            <span style="color: var(--neon-g); font-size: 0.8rem;">{{ ch.username }}</span>
-                        </div>
-                        <div class="row text-center">
-                            <div class="col-6 mb-2">
-                                <div style="font-size: 1.2rem; color: #fff;">{{ ch.subs }}</div>
-                                <div style="font-size: 0.5rem; color: #aaa;" class="lbl-total">TOTAL</div>
-                            </div>
-                            <div class="col-6 mb-2">
-                                <div style="font-size: 1.2rem; color: {% if ch.g24h >= 0 %}#39ff14{% else %}#ff0033{% endif %};">
-                                    {% if ch.g24h >= 0 %}+{% endif %}{{ ch.g24h }}
+                <div class="col-md-8">
+                    <div class="row">
+                        {% for ch in channels %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card p-3" style="border-color: var(--neon-g); cursor: pointer;" onclick="toggleChannel('{{ ch.username }}')">
+                                <div class="text-center mb-2">
+                                    <span style="color: var(--neon-g); font-size: 0.8rem;">{{ ch.username }}</span>
                                 </div>
-                                <div style="font-size: 0.5rem; color: #aaa;" class="lbl-24h">24H</div>
+                                <div class="row text-center">
+                                    <div class="col-6 mb-2">
+                                        <div style="font-size: 1.2rem; color: #fff;">{{ ch.subs }}</div>
+                                        <div style="font-size: 0.5rem; color: #fff;" class="lbl-total">TOTAL</div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div style="font-size: 1.2rem; color: {% if ch.g24h >= 0 %}#39ff14{% else %}#ff0033{% endif %};">
+                                            {% if ch.g24h >= 0 %}+{% endif %}{{ ch.g24h }}
+                                        </div>
+                                        <div style="font-size: 0.5rem; color: #fff;" class="lbl-24h">24H</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card p-4 mt-2">
+                        <h6 id="head-growth" style="color: var(--neon-g);">GROWTH_CURVE.DATA</h6>
+                        <canvas id="subsChart" height="150"></canvas>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
-            <div class="card p-4 mt-2">
-                <h6 id="head-growth" style="color: #ccc;">GROWTH_CURVE.DATA</h6>
-                <canvas id="subsChart" height="100"></canvas>
+                <div class="col-md-4">
+                    <div class="card p-3">
+                        <h6 id="head-link" style="color: var(--neon-g);">LINK_NEW_CHANNEL</h6>
+                        <div class="input-group mb-3">
+                            <input type="text" id="new-ch" class="form-control" placeholder="@user">
+                            <button class="btn btn-primary-mc btn-mc px-3 btn-link-sys" onclick="addChannel()">LINK</button>
+                        </div>
+                    </div>
+                    <div class="card p-3">
+                        <h6 id="head-linked" style="color: var(--neon-g);">LINKED_SYSTEMS</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for ch in channels %}
+                            <li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between px-0 align-items-center" style="font-size: 0.7rem;">
+                                {{ ch.username }}
+                                <button class="btn btn-sm btn-danger-mc btn-mc px-2 btn-unlink" onclick="removeChannel('{{ ch.username }}')">UNLINK</button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="tab-pane fade" id="channels">
-            <div class="row">
-                <div class="col-md-6"><div class="card p-3"><h6 id="head-link">LINK_NEW_CHANNEL</h6><div class="input-group"><input type="text" id="new-ch" class="form-control" placeholder="@user"><button class="btn btn-primary-mc btn-mc px-3 btn-link-sys" onclick="addChannel()">LINK</button></div></div></div>
-                <div class="col-md-6"><div class="card p-3"><h6 id="head-linked">LINKED_SYSTEMS</h6><ul class="list-group list-group-flush">{% for ch in channels %}<li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between px-0 align-items-center" style="font-size: 0.7rem;">{{ ch.username }}<button class="btn btn-sm btn-danger-mc btn-mc px-2 btn-unlink" onclick="removeChannel('{{ ch.username }}')">UNLINK</button></li>{% endfor %}</ul></div></div>
-            </div>
-        </div>
-        <div class="tab-pane fade" id="ad-config">
-            <div class="card p-4">
-                <h6 class="mb-4" style="color: var(--neon-g)" id="head-ad">ADVERTISING_BLOCK_CONFIG</h6>
-                <textarea id="ad-text-area" class="form-control mb-3" rows="5" placeholder="..."></textarea>
-                <button class="btn btn-primary-mc btn-mc px-4" onclick="saveAd()" id="btn-save-ad">SAVE_AD_TEXT</button>
-                <p class="mt-3 text-muted" style="font-size: 0.6rem;" id="hint-ad">* This text will be automatically appended to all new AI-generated posts.</p>
-            </div>
-        </div>
+
         <div class="tab-pane fade" id="settings">
             <div class="row">
                 <div class="col-md-6 mb-4">
@@ -240,32 +248,9 @@
                             <div class="col-md-2 mb-3">
                                 <label class="w-100 h-100 d-flex align-items-center justify-content-center" style="border: 2px dashed #444; cursor: pointer; min-height: 100px;">
                                     <input type="file" id="wm-file" hidden onchange="uploadWM()">
-                                    <span style="font-size: 1.5rem;">+</span>
+                                    <span style="font-size: 1.5rem; color: #fff;">+</span>
                                 </label>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <div class="card p-4">
-                        <h6 style="color: var(--neon-g);" id="head-prompt">AI_SYSTEM_PROMPT_ENGINE</h6>
-                        <div id="prompt-list" class="row mt-3">
-                            <div class="col-md-3 mb-3">
-                                <div class="card p-3" style="border: 1px solid var(--neon-g);">
-                                    <h6 style="color: var(--neon-g);">[CURRENT]</h6>
-                                    <p style="font-size: 0.6rem; height: 50px; overflow: hidden;">{{ active_prompt }}</p>
-                                </div>
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <div class="card p-3 d-flex align-items-center justify-content-center" style="height: 120px; cursor: pointer; border: 2px dashed #444;" onclick="document.getElementById('new-prompt-form').style.display='block'">
-                                    <span style="font-size: 2rem;">+</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="new-prompt-form" class="mt-3 p-3" style="border: 1px solid #333; display: none;">
-                            <input type="text" id="new-prompt-name" class="form-control mb-2" placeholder="Prompt Name">
-                            <textarea id="new-prompt-text" class="form-control mb-2" rows="3" placeholder="System Prompt..."></textarea>
-                            <button class="btn btn-primary-mc btn-mc" onclick="addPrompt()" id="btn-save-prompt">SAVE_PROMPT</button>
                         </div>
                     </div>
                 </div>
@@ -278,12 +263,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header border-secondary">
-                <h6 id="head-update">UPDATE_PAYLOAD</h6>
+                <h6 id="head-update" style="color: var(--neon-g);">UPDATE_PAYLOAD</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <textarea id="edit-text" class="form-control mb-3" rows="12"></textarea>
-                <label style="font-size: 0.5rem;" id="lbl-sched">SCHED_TIME</label>
+                <label style="font-size: 0.5rem; color: #fff;" id="lbl-sched">SCHED_TIME</label>
                 <input type="datetime-local" id="edit-time" class="form-control" step="1">
             </div>
             <div class="modal-footer border-secondary">
@@ -292,7 +277,7 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="textModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-view">RAW_DATA_VIEW</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="full-text-content" style="font-size: 0.75rem; white-space: pre-wrap; color: #fff !important;"></div></div></div></div>
+<div class="modal fade" id="textModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header border-secondary"><h6 id="head-view" style="color: var(--neon-g);">RAW_DATA_VIEW</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="full-text-content" style="font-size: 0.75rem; white-space: pre-wrap; color: #fff !important;"></div></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -301,41 +286,15 @@
 <script>
     const currentLang = "{{ current_lang }}";
     const translations = {
-        'uz': {
-            'refresh': '🔄 YANGILASH', 'followers': 'OBUNACHILAR', 'growth': '24SOAT_O\'SISH', 'queue': 'NAVBTDA', 'posted': 'CHOP_ETILGAN',
-            'tab_queue': 'Navbat', 'tab_audience': 'Auditoriya', 'tab_analytics': 'Analitika', 'tab_channels': 'Kanallar', 'tab_ad': 'Reklama', 'tab_settings': 'Sozlamalar',
-            'expand': '[TO\'LIQ_KO\'RISH]', 'execute': '🚀 CHOP_ETISH', 'edit': 'TAHRIR', 'drop': 'O\'CHIRISH', 'head_growth': 'O\'SISH_GRAFIKI',
-            'head_link': 'YANGI_KANAL_ULASH', 'head_linked': 'ULANGAN_TIZIMLAR', 'head_ad': 'REKLAMA_SOZLAMALARI', 'head_lang': 'AI_TILINI_TANLASH',
-            'btn_save_ad': 'SAQLASH', 'hint_ad': '* Ushbu matn barcha yangi postlarga qo\'shiladi.', 'head_update': 'MA\'LUMOTNI_YANGILASH',
-            'lbl_sched': 'REJALASHTIRILGAN_VAQT', 'btn_upload': 'YANGILASHNI_YUBORISH', 'head_view': 'POST_MATNI', 'btn_link': 'ULASH', 'btn_unlink': 'UZISH',
-            'head_voice': 'AUDITORIYA_TAKLIFLARI', 'btn_ai_analyze': '🧠 AI TAHLILI', 'btn_clear_com': 'TOZALASH', 'head_wm': 'SUV_BELGISI_BOSHQARUVCHI',
-            'head_prompt': 'AI_TIZIM_PROMPT_ENGINE', 'btn_save_sq': 'SAQLASH', 'btn_add_prompt': 'YANGI_PROMPT_QO\'SHISH'
-        },
-        'ru': {
-            'refresh': '🔄 ОБНОВИТЬ', 'followers': 'ПОДПИСЧИКОВ', 'growth': 'РОСТ_24Ч', 'queue': 'В_ОЧЕРЕДИ', 'posted': 'ОПУБЛИКОВАНО',
-            'tab_queue': 'Очередь', 'tab_audience': 'Аудитория', 'tab_analytics': 'Аналитика', 'tab_channels': 'Каналы', 'tab_ad': 'Реклама', 'tab_settings': 'Настройки',
-            'expand': '[РАЗВЕРНУТЬ]', 'execute': '🚀 ОПУБЛИКОВАТЬ', 'edit': 'ПРАВКА', 'drop': 'УДАЛИТЬ', 'head_growth': 'ГРАФИК_РОСТА',
-            'head_link': 'ПРИВЯЗКА_КАНАЛА', 'head_linked': 'ПОДКЛЮЧЕННЫЕ_СИСТЕМЫ', 'head_ad': 'НАСТРОЙКА_РЕКЛАМЫ', 'head_lang': 'ЯЗЫК_ГЕНЕРАЦИИ_ИИ',
-            'btn_save_ad': 'СОХРАНИТЬ_ТЕКСТ', 'hint_ad': '* Этот текст будет автоматически добавлен ко всем новым постам.', 'head_update': 'ОБНОВЛЕНИЕ_ДАННЫХ',
-            'lbl_sched': 'ВРЕМЯ_ПУБЛИКАЦИИ', 'btn_upload': 'ЗАГРУЗИТЬ_ИЗМЕНЕНИЯ', 'head_view': 'ПРОСМОТР_ТЕКСТА', 'btn_link': 'СВЯЗАТЬ', 'btn_unlink': 'ОТКЛЮЧИТЬ',
-            'head_voice': 'ПРЕДЛОЖЕНИЯ АУДИТОРИИ', 'btn_ai_analyze': '🧠 АНАЛИЗ ИИ', 'btn_clear_com': 'ОЧИСТИТЬ', 'head_wm': 'УПРАВЛЕНИЕ_ВОДЯНЫМИ_ЗНАКАМИ',
-            'head_prompt': 'ИИ_СИСТЕМНЫЙ_ПРОМПТ_ДВИЖОК', 'btn_save_sq': 'СОХРАНИТЬ', 'btn_add_prompt': 'ДОБАВИТЬ_ПРОМПТ'
-        },
-        'en': {
-            'refresh': '🔄 REFRESH', 'followers': 'FOLLOWERS', 'growth': '24H_GROWTH', 'queue': 'IN_QUEUE', 'posted': 'POSTED',
-            'tab_queue': 'Queue', 'tab_audience': 'Audience', 'tab_analytics': 'Analytics', 'tab_channels': 'Channels', 'tab_ad': 'Ad_Config', 'tab_settings': 'Settings',
-            'expand': '[EXPAND_LOG]', 'execute': '🚀 EXECUTE_POST', 'edit': 'EDIT', 'drop': 'DROP', 'head_growth': 'GROWTH_CURVE.DATA',
-            'head_link': 'LINK_NEW_CHANNEL', 'head_linked': 'LINKED_SYSTEMS', 'head_ad': 'ADVERTISING_BLOCK_CONFIG', 'head_lang': 'AI_OUTPUT_LANGUAGE',
-            'btn_save_ad': 'SAVE_AD_TEXT', 'hint_ad': '* This text will be automatically appended to all new AI-generated posts.', 'head_update': 'UPDATE_PAYLOAD',
-            'lbl_sched': 'SCHED_TIME', 'btn_upload': 'UPLOAD_CHANGES', 'head_view': 'RAW_DATA_VIEW', 'btn_link': 'LINK', 'btn_unlink': 'UNLINK',
-            'head_voice': 'AUDIENCE_VOICE_FEED', 'btn_ai_analyze': '🧠 AI ANALYZE', 'btn_clear_com': 'CLEAR', 'head_wm': 'WATERMARK_MANAGER',
-            'head_prompt': 'AI_SYSTEM_PROMPT_ENGINE', 'btn_save_sq': 'SAVE', 'btn_add_prompt': 'ADD_NEW_PROMPT'
-        }
+        'uz': {{ translations.uz|tojson }},
+        'ru': {{ translations.ru|tojson }},
+        'en': {{ translations.en|tojson }}
     };
 
     function applyTranslations(lang) {
         const t = translations[lang] || translations['uz'];
         const el = (id) => document.getElementById(id);
+        
         if (el('btn-refresh')) el('btn-refresh').innerText = t.refresh;
         if (el('lbl-followers')) el('lbl-followers').innerText = t.followers;
         if (el('lbl-in-queue')) el('lbl-in-queue').innerText = t.queue;
@@ -343,26 +302,25 @@
         if (el('tab-queue')) el('tab-queue').innerText = t.tab_queue;
         if (el('tab-history')) el('tab-history').innerText = t.tab_history;
         if (el('tab-audience')) el('tab-audience').innerText = t.tab_audience;
-        if (el('tab-analytics')) el('tab-analytics').innerText = t.tab_analytics;
-        if (el('tab-channels')) el('tab-channels').innerText = t.tab_channels;
-        if (el('tab-ad')) el('tab-ad').innerText = t.tab_ad;
+        if (el('tab-analytics')) el('tab-analytics').innerText = t.tab_channels;
         if (el('tab-settings')) el('tab-settings').innerText = t.tab_settings;
         if (el('head-growth')) el('head-growth').innerText = t.head_growth;
         if (el('head-link')) el('head-link').innerText = t.head_link;
         if (el('head-linked')) el('head-linked').innerText = t.head_linked;
-        if (el('head-ad')) el('head-ad').innerText = t.head_ad;
-        if (el('btn-save-ad')) el('btn-save-ad').innerText = t.btn_save_ad;
-        if (el('head-view')) el('head-view').innerText = t.head_view;
+        if (el('head-lang')) el('head-lang').innerText = t.head_lang;
         if (el('head-voice')) el('head-voice').innerText = t.head_voice;
         if (el('btn-ai-analyze')) el('btn-ai-analyze').innerText = t.btn_ai_analyze;
         if (el('btn-clear-com')) el('btn-clear-com').innerText = t.btn_clear_com;
         if (el('head-wm')) el('head-wm').innerText = t.head_wm;
-        if (el('head-prompt')) el('head-prompt').innerText = t.head_prompt;
-        if (el('btn-save-prompt')) el('btn-save-prompt').innerText = t.btn_add_prompt;
         if (el('history-report-head')) el('history-report-head').innerText = t.history_report;
         if (el('actions-head')) el('actions-head').innerText = t.actions;
         if (el('sq-config-head')) el('sq-config-head').innerText = t.sq_config;
         if (el('interval-h-label')) el('interval-h-label').innerText = t.interval_h;
+        if (el('append-text-label')) el('append-text-label').innerText = t.append_text;
+        if (el('head-update')) el('head-update').innerText = t.head_update;
+        if (el('lbl-sched')) el('lbl-sched').innerText = t.lbl_sched;
+        if (el('save-btn')) el('save-btn').innerText = t.btn_upload;
+        if (el('head-view')) el('head-view').innerText = t.head_view;
         
         document.querySelectorAll('.lbl-time').forEach(b => b.innerText = t.lbl_time);
         document.querySelectorAll('.lbl-channel').forEach(b => b.innerText = t.lbl_channel);
@@ -370,69 +328,19 @@
         document.querySelectorAll('.lbl-msgid').forEach(b => b.innerText = t.lbl_msgid);
         document.querySelectorAll('.lbl-action').forEach(b => b.innerText = t.lbl_action);
         document.querySelectorAll('.lbl-total').forEach(b => b.innerText = t.total);
-        document.querySelectorAll('.btn-view').forEach(b => b.innerText = t.head_view);
+        document.querySelectorAll('.lbl-24h').forEach(b => b.innerText = '24H');
         
-        document.querySelectorAll('.btn-execute').forEach(b => b.innerText = t.execute);
-        document.querySelectorAll('.btn-edit').forEach(b => b.innerText = t.edit);
-        document.querySelectorAll('.btn-drop').forEach(b => b.innerText = t.drop);
+        document.querySelectorAll('.btn-execute').forEach(b => b.innerText = t.btn_execute);
+        document.querySelectorAll('.btn-edit').forEach(b => b.innerText = t.btn_edit);
+        document.querySelectorAll('.btn-drop').forEach(b => b.innerText = t.btn_drop);
         document.querySelectorAll('.btn-link-sys').forEach(b => b.innerText = t.btn_link);
         document.querySelectorAll('.btn-unlink').forEach(b => b.innerText = t.btn_unlink);
         document.querySelectorAll('.btn-save-sq').forEach(b => b.innerText = t.save_sq);
+        document.querySelectorAll('.btn-expand').forEach(b => b.innerText = t.expand);
+        document.querySelectorAll('.btn-view').forEach(b => b.innerText = t.head_view);
     }
 
-    function loadPrompts() {
-        fetch('/api/prompts').then(r => r.json()).then(data => {
-            const list = document.getElementById('prompt-list');
-            list.innerHTML = data.map(p => `
-                <div class="col-md-3 mb-3">
-                    <div class="card p-3" style="border: 1px solid ${p[3] ? 'var(--neon-g)' : '#333'};">
-                        <h6>${p[1]}</h6>
-                        <p style="font-size: 0.6rem; height: 50px; overflow: hidden;">${p[2]}</p>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-primary-mc btn-mc" onclick="activatePrompt(${p[0]})" ${p[3] ? 'disabled' : ''}>USE</button>
-                            <button class="btn btn-sm btn-purple-mc btn-mc" onclick="editPrompt(${p[0]}, '${p[1]}', \`${p[2].replace(/'/g, "\\'")}\`)">EDIT</button>
-                            <button class="btn btn-sm btn-danger-mc btn-mc" onclick="deletePrompt(${p[0]})">DEL</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        });
-    }
-
-    let editingPromptId = null;
-    function editPrompt(id, name, text) {
-        editingPromptId = id;
-        document.getElementById('new-prompt-name').value = name;
-        document.getElementById('new-prompt-text').value = text;
-        document.getElementById('new-prompt-form').style.display = 'block';
-        document.getElementById('btn-save-prompt').innerText = 'UPDATE_PROMPT';
-    }
-
-    function addPrompt() {
-        const name = document.getElementById('new-prompt-name').value;
-        const prompt = document.getElementById('new-prompt-text').value;
-        if (!name || !prompt) return alert('Fill fields');
-        
-        const url = editingPromptId ? '/api/prompts/update/' + editingPromptId : '/api/prompts/add';
-        fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, prompt}) }).then(() => {
-            document.getElementById('new-prompt-name').value = '';
-            document.getElementById('new-prompt-text').value = '';
-            document.getElementById('new-prompt-form').style.display = 'none';
-            document.getElementById('btn-save-prompt').innerText = 'SAVE_PROMPT';
-            editingPromptId = null;
-            loadPrompts();
-        });
-    }
-
-    function activatePrompt(id) {
-        fetch('/api/prompts/activate/'+id, { method: 'POST' }).then(() => { location.reload(); });
-    }
-
-    function deletePrompt(id) {
-        fetch('/api/prompts/delete/'+id, { method: 'POST' }).then(() => loadPrompts());
-    }
-
-    window.onload = () => { applyTranslations(currentLang); loadComments(); loadPrompts(); };
+    window.onload = () => { applyTranslations(currentLang); loadComments(); };
 
     function loadComments() {
         fetch('/api/comments').then(r => r.json()).then(data => {
@@ -471,7 +379,8 @@
             data: data[ch].data,
             borderColor: ['#39ff14', '#bc13fe', '#ff0033', '#388e3c', '#00d4ff'][index % 5],
             backgroundColor: 'transparent',
-            tension: 0.3
+            tension: 0.3,
+            pointBackgroundColor: '#fff'
         }));
         
         if (window.subsChartInstance) window.subsChartInstance.destroy();
@@ -480,7 +389,10 @@
             data: { labels: labels, datasets: datasets }, 
             options: { 
                 plugins: { legend: { labels: { color: '#fff', font: { family: 'Minecraftia', size: 10 } } } }, 
-                scales: { y: { ticks: { color: '#555' } }, x: { ticks: { color: '#555' } } } 
+                scales: { 
+                    y: { grid: { color: '#222' }, ticks: { color: '#fff' } }, 
+                    x: { grid: { color: '#222' }, ticks: { color: '#fff' } } 
+                } 
             } 
         });
     }
@@ -496,14 +408,12 @@
         initChart({[ch]: data[ch]});
     }
 
-    function saveAd() { fetch('/api/settings/ad', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('ad-text-area').value}) }).then(() => alert('AD_SAVED')); }
     function setLang(l) { fetch('/api/settings/language', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) }).then(() => location.reload()); }
     function viewFullText(p) { document.getElementById('full-text-content').innerText = p.text; new bootstrap.Modal(document.getElementById('textModal')).show(); }
     let curId = null;
     function editPost(p) { 
         curId = p.id; 
         document.getElementById('edit-text').value = p.text; 
-        // Исправлено: корректный формат для datetime-local
         if (p.iso_time) {
             document.getElementById('edit-time').value = p.iso_time.substring(0, 16);
         } else {
