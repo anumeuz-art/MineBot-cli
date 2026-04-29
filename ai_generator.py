@@ -163,11 +163,21 @@ def generate_post(user_input, persona="uz"):
         gen = limit_hashtags(gen)
         
         # Финальная очистка: удаляем лишние пробелы в концах строк и ограничиваем пустые строки
-        lines = [line.rstrip() for line in gen.split('\n')]
-        gen = '\n'.join(lines)
+        lines = [line.strip() for line in gen.split('\n')]
+        # Убираем полностью пустые строки, которые могли возникнуть из-за strip(),
+        # но сохраняем структуру (макс 1 пустая строка между блоками текста)
+        new_lines = []
+        for line in lines:
+            if line:
+                new_lines.append(line)
+            elif new_lines and new_lines[-1] != "":
+                new_lines.append("")
+        
+        gen = '\n'.join(new_lines).strip()
+        # Гарантируем, что нет более 2 переносов строк подряд
         gen = re.sub(r'\n{3,}', '\n\n', gen)
             
-        return gen.strip()
+        return gen
     except Exception as e:
         return f"Error: {e}"
 
