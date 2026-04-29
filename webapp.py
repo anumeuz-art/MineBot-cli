@@ -154,8 +154,7 @@ def delete_watermark(wm_id):
 def set_sq_settings():
     data = request.json
     database.set_global_setting('smart_queue_interval', data.get('interval', '6'))
-    if data.get('text'):
-        database.set_global_setting('smart_queue_text', data.get('text', ''))
+    database.set_global_setting('smart_queue_text', data.get('text', ''))
     return jsonify({'status': 'success'})
 
 @app.route('/api/prompts/activate/<int:prompt_id>', methods=['POST'])
