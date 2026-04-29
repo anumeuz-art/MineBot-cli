@@ -154,18 +154,20 @@ def generate_post(user_input, persona="uz"):
         )
         gen = res.choices[0].message.content.strip()
         
-        # Пост-обработка
-        gen = limit_hashtags(gen)
-        
-        # Очистка от избыточных пустых строк (более 2 подряд)
-        gen = re.sub(r'\n{3,}', '\n\n', gen)
-        
-        # Добавляем рекламную подпись
+        # Добавляем рекламную подпись ПЕРЕД обработкой хэштегов, чтобы все чистилось вместе
         ad_text = database.get_global_setting('ad_text', '')
         if ad_text and ad_text not in gen:
             gen += f"\n\n{ad_text}"
             
-        return gen
+        # Пост-обработка хэштегов (лимитирование)
+        gen = limit_hashtags(gen)
+        
+        # Финальная очистка: удаляем лишние пробелы в концах строк и ограничиваем пустые строки
+        lines = [line.rstrip() for line in gen.split('\n')]
+        gen = '\n'.join(lines)
+        gen = re.sub(r'\n{3,}', '\n\n', gen)
+            
+        return gen.strip()
     except Exception as e:
         return f"Error: {e}"
 
