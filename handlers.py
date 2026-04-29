@@ -245,6 +245,13 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             bot.edit_message_reply_markup(chat_id, target_id, reply_markup=keyboards.get_queue_menu(target_id, lang))
             return
 
+        if call.data == "sched_exact":
+            user_states[user_id] = "SETTING_TIME"
+            user_current_draft_id[user_id] = target_id
+            bot.send_message(chat_id, get_txt(user_id, 'enter_time'), parse_mode='HTML')
+            bot.answer_callback_query(call.id)
+            return
+
         if call.data.startswith("sched_i_"):
             h = int(call.data.split('_')[2])
             channels = database.get_all_managed_channels()
