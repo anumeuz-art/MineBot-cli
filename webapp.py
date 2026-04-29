@@ -283,17 +283,34 @@ def edit_post(post_id):
 def reorder():
     order = request.json.get('order')
     if not order: return jsonify({'status': 'error'})
+    
     pending = database.get_all_pending()
+    # Собираем все существующие временные метки или генерируем новые, если их нет
     existing_timestamps = sorted([p[5] for p in pending if p[5]])
-    if len(existing_timestamps) < len(order):
-        last_time = existing_timestamps[-1] if existing_timestamps else int(time.time())
-        interval = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6) * 3600
-        while len(existing_timestamps) < len(order):
+    
+    # Если меток меньше чем постов, генерируем недостающие
+    interval = int(database.get_global_setting('smart_queue_interval', 6)) * 3600
+    last_time = existing_timestamps[-1] if existing_timestamps else int(time.time())
+    
+    # Создаем полный список таймстампов для всех ID в новом порядке
+    new_timestamps = []
+    if existing_timestamps:
+        # Если были старые времена, пытаемся их переиспользовать
+        new_timestamps = existing_timestamps
+        while len(new_timestamps) < len(order):
             last_time += interval
-            existing_timestamps.append(last_time)
+            new_timestamps.append(last_time)
+    else:
+        # Если все посты были "ASAP", создаем новую последовательность
+        for i in range(len(order)):
+            new_timestamps.append(last_time + (i * interval))
+
+    # Обновляем каждый пост в базе
     for i, p_id in enumerate(order):
         post = database.get_post_by_id(int(p_id))
-        if post: database.update_post_content(post[0], post[2], existing_timestamps[i])
+        if post:
+            database.update_post_content(post[0], post[2], new_timestamps[i])
+            
     return jsonify({'status': 'success'})
 
 def run_server():

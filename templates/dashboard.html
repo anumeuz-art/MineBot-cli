@@ -107,16 +107,16 @@
 
         <div class="tab-pane fade" id="published-history">
             <div class="card p-4">
-                <h6 class="mb-4" style="color: var(--neon-g);">PUBLISHED_HISTORY_REPORT</h6>
+                <h6 class="mb-4" style="color: var(--neon-g);" id="history-report-head">PUBLISHED_HISTORY_REPORT</h6>
                 <div class="table-responsive">
                     <table class="table table-dark table-hover" style="font-size: 0.65rem;">
                         <thead>
                             <tr>
-                                <th>TIME</th>
-                                <th>CHANNEL</th>
-                                <th>CONTENT_PREVIEW</th>
-                                <th>MSG_ID</th>
-                                <th>ACTION</th>
+                                <th class="lbl-time">TIME</th>
+                                <th class="lbl-channel">CHANNEL</th>
+                                <th class="lbl-preview">CONTENT_PREVIEW</th>
+                                <th class="lbl-msgid">MSG_ID</th>
+                                <th class="lbl-action">ACTION</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -127,7 +127,7 @@
                                 <td class="text-truncate" style="max-width: 250px;">{{ p.text|striptags }}</td>
                                 <td><code>#{{ p.message_id }}</code></td>
                                 <td>
-                                    <button class="btn btn-sm btn-mc btn-primary-mc py-0" onclick='viewFullText({{ p|tojson }})'>VIEW</button>
+                                    <button class="btn btn-sm btn-mc btn-primary-mc py-0 btn-view" onclick='viewFullText({{ p|tojson }})'>VIEW</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -151,7 +151,7 @@
                 </div>
                 <div class="col-md-4">
                     <div class="card p-4 text-center">
-                        <h6>ACTIONS</h6>
+                        <h6 id="actions-head">ACTIONS</h6>
                         <button class="btn btn-danger-mc btn-mc w-100 mt-3" onclick="clearComments()" id="btn-clear-com">CLEAR_HISTORY</button>
                     </div>
                 </div>
@@ -169,13 +169,13 @@
                         <div class="row text-center">
                             <div class="col-6 mb-2">
                                 <div style="font-size: 1.2rem; color: #fff;">{{ ch.subs }}</div>
-                                <div style="font-size: 0.5rem; color: #aaa;">TOTAL</div>
+                                <div style="font-size: 0.5rem; color: #aaa;" class="lbl-total">TOTAL</div>
                             </div>
                             <div class="col-6 mb-2">
                                 <div style="font-size: 1.2rem; color: {% if ch.g24h >= 0 %}#39ff14{% else %}#ff0033{% endif %};">
                                     {% if ch.g24h >= 0 %}+{% endif %}{{ ch.g24h }}
                                 </div>
-                                <div style="font-size: 0.5rem; color: #aaa;">24H</div>
+                                <div style="font-size: 0.5rem; color: #aaa;" class="lbl-24h">24H</div>
                             </div>
                         </div>
                     </div>
@@ -215,12 +215,12 @@
                 </div>
                 <div class="col-md-6 mb-4">
                     <div class="card p-4 h-100">
-                        <h6 style="color: var(--neon-g);">SMART_QUEUE_CONFIG</h6>
-                        <label class="stats-label d-block mt-3">INTERVAL (HOURS)</label>
+                        <h6 style="color: var(--neon-g);" id="sq-config-head">SMART_QUEUE_CONFIG</h6>
+                        <label class="stats-label d-block mt-3" id="interval-h-label">INTERVAL (HOURS)</label>
                         <input type="number" id="sq-interval" class="form-control mb-3" value="{{ sq_interval }}">
-                        <label class="stats-label d-block">APPEND_TEXT</label>
+                        <label class="stats-label d-block" id="append-text-label">APPEND_TEXT</label>
                         <textarea id="sq-text" class="form-control mb-3" rows="2">{{ sq_text }}</textarea>
-                        <button class="btn btn-primary-mc btn-mc w-100" onclick="saveSQ()">SAVE_SQ_SETTINGS</button>
+                        <button class="btn btn-primary-mc btn-mc w-100 btn-save-sq" onclick="saveSQ()">SAVE_SQ_SETTINGS</button>
                     </div>
                 </div>
                 <div class="col-md-12 mb-4">
@@ -325,6 +325,7 @@
         if (el('lbl-in-queue')) el('lbl-in-queue').innerText = t.queue;
         if (el('lbl-posted')) el('lbl-posted').innerText = t.posted;
         if (el('tab-queue')) el('tab-queue').innerText = t.tab_queue;
+        if (el('tab-history')) el('tab-history').innerText = t.tab_history;
         if (el('tab-audience')) el('tab-audience').innerText = t.tab_audience;
         if (el('tab-analytics')) el('tab-analytics').innerText = t.tab_analytics;
         if (el('tab-channels')) el('tab-channels').innerText = t.tab_channels;
@@ -334,12 +335,7 @@
         if (el('head-link')) el('head-link').innerText = t.head_link;
         if (el('head-linked')) el('head-linked').innerText = t.head_linked;
         if (el('head-ad')) el('head-ad').innerText = t.head_ad;
-        if (el('head-lang')) el('head-lang').innerText = t.head_lang;
         if (el('btn-save-ad')) el('btn-save-ad').innerText = t.btn_save_ad;
-        if (el('hint-ad')) el('hint-ad').innerText = t.hint_ad;
-        if (el('head-update')) el('head-update').innerText = t.head_update;
-        if (el('lbl-sched')) el('lbl-sched').innerText = t.lbl_sched;
-        if (el('save-btn')) el('save-btn').innerText = t.btn_upload;
         if (el('head-view')) el('head-view').innerText = t.head_view;
         if (el('head-voice')) el('head-voice').innerText = t.head_voice;
         if (el('btn-ai-analyze')) el('btn-ai-analyze').innerText = t.btn_ai_analyze;
@@ -347,13 +343,25 @@
         if (el('head-wm')) el('head-wm').innerText = t.head_wm;
         if (el('head-prompt')) el('head-prompt').innerText = t.head_prompt;
         if (el('btn-save-prompt')) el('btn-save-prompt').innerText = t.btn_add_prompt;
+        if (el('history-report-head')) el('history-report-head').innerText = t.history_report;
+        if (el('actions-head')) el('actions-head').innerText = t.actions;
+        if (el('sq-config-head')) el('sq-config-head').innerText = t.sq_config;
+        if (el('interval-h-label')) el('interval-h-label').innerText = t.interval_h;
+        
+        document.querySelectorAll('.lbl-time').forEach(b => b.innerText = t.lbl_time);
+        document.querySelectorAll('.lbl-channel').forEach(b => b.innerText = t.lbl_channel);
+        document.querySelectorAll('.lbl-preview').forEach(b => b.innerText = t.lbl_preview);
+        document.querySelectorAll('.lbl-msgid').forEach(b => b.innerText = t.lbl_msgid);
+        document.querySelectorAll('.lbl-action').forEach(b => b.innerText = t.lbl_action);
+        document.querySelectorAll('.lbl-total').forEach(b => b.innerText = t.total);
+        document.querySelectorAll('.btn-view').forEach(b => b.innerText = t.head_view);
         
         document.querySelectorAll('.btn-execute').forEach(b => b.innerText = t.execute);
         document.querySelectorAll('.btn-edit').forEach(b => b.innerText = t.edit);
         document.querySelectorAll('.btn-drop').forEach(b => b.innerText = t.drop);
         document.querySelectorAll('.btn-link-sys').forEach(b => b.innerText = t.btn_link);
         document.querySelectorAll('.btn-unlink').forEach(b => b.innerText = t.btn_unlink);
-        document.querySelectorAll('.btn-save-sq').forEach(b => b.innerText = t.btn_save_sq);
+        document.querySelectorAll('.btn-save-sq').forEach(b => b.innerText = t.save_sq);
     }
 
     function loadPrompts() {
