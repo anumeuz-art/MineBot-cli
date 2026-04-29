@@ -500,7 +500,17 @@
     function setLang(l) { fetch('/api/settings/language', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({lang: l}) }).then(() => location.reload()); }
     function viewFullText(p) { document.getElementById('full-text-content').innerText = p.text; new bootstrap.Modal(document.getElementById('textModal')).show(); }
     let curId = null;
-    function editPost(p) { curId = p.id; document.getElementById('edit-text').value = p.text; document.getElementById('edit-time').value = p.iso_time ? p.iso_time.slice(0,16) : ""; new bootstrap.Modal(document.getElementById('editModal')).show(); }
+    function editPost(p) { 
+        curId = p.id; 
+        document.getElementById('edit-text').value = p.text; 
+        // Исправлено: корректный формат для datetime-local
+        if (p.iso_time) {
+            document.getElementById('edit-time').value = p.iso_time.substring(0, 16);
+        } else {
+            document.getElementById('edit-time').value = '';
+        }
+        new bootstrap.Modal(document.getElementById('editModal')).show(); 
+    }
     document.getElementById('save-btn').onclick = function() { fetch('/api/edit/'+curId, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text:document.getElementById('edit-text').value, time:document.getElementById('edit-time').value}) }).then(() => location.reload()); };
     function publishNow(id) { if(confirm('UPLOAD NOW?')) fetch('/api/publish/'+id, {method:'POST'}).then(r => r.ok ? location.reload() : alert('FAIL')); }
     function deletePost(id) { if(confirm('DROP?')) fetch('/api/delete/'+id, {method:'POST'}).then(() => location.reload()); }

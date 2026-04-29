@@ -33,6 +33,7 @@ Qoidalar:
 6. HTML formatlashni saqla
 7. CTA (auditoriya reaksiyasi) bo‘lishi shart
 8. Yakunda obuna chaqiruvi bo‘lsin
+9. Modni nomini xeshteg sifatida aslo yozma
 
 Format:
 
@@ -155,6 +156,9 @@ def generate_post(user_input, persona="uz"):
         
         # Пост-обработка
         gen = limit_hashtags(gen)
+        
+        # Очистка от избыточных пустых строк (более 2 подряд)
+        gen = re.sub(r'\n{3,}', '\n\n', gen)
         
         # Добавляем рекламную подпись
         ad_text = database.get_global_setting('ad_text', '')
