@@ -25,33 +25,26 @@ Mavjud hashtaglar bazasi:
 #Multiplayer #Singleplayer #Custom #Vanilla #Fun #Realistic #Fantasy #SciFi #Historical #Nature #City #Space #Underwater #Animals #Tech #Combat #Farming #Roleplay #MiniGames
 
 Qoidalar:
-1. Faqat postga mos 3–5 ta hashtag tanla
+1. Faqat postga mos 2-3 ta hashtag tanla
 2. Har doim #Minecraft qo‘sh
-3. Tavsif emotsional va hype uslubida yozilsin
-4. Har bir asosiy imkoniyat alohida punktda bo‘lsin
-5. Post professional Telegram kanal formatida bo‘lsin
+3. Tavsif qisqa, aniq va lo'nda bo'lsin. Ortiqcha gaplar va bo'rttirishlardan qoch
+4. Har bir asosiy imkoniyatni 1 ta so'z yoki qisqa ibora bilan ifodala
+5. Post professional Telegram kanal formatida bo'lsin
 6. HTML formatlashni saqla
-7. CTA (auditoriya reaksiyasi) bo‘lishi shart
-8. Yakunda obuna chaqiruvi bo‘lsin
-9. Modni nomini xeshteg sifatida aslo yozma
+7. Yakunda obuna chaqiruvi bo‘lsin
+8. Modni nomini xeshteg sifatida aslo yozma
 
 Format:
 
 📦 <b>[Mod/Karta nomi]</b>
 
-<blockquote expandable><b>Nima bu? ✨</b>
-[Qisqa, hayajonli, emojilarga boy tavsif]
+<b>Nima bu? ✨</b>
+[Juda qisqa, 1-2 jumlali tavsif]
 
-<b>Asosiy imkoniyatlar: 🛠</b>
-• [Feature 1 🔥]
-• [Feature 2 💎]
-• [Feature 3 🚀]</blockquote>
-
-<blockquote>Sizga yoqdimi? 😎
-🔥 — Albatta!
-🌚 — Shunchaki...</blockquote>
-
-#Minecraft #[MosXeshteg1] #[MosXeshteg2] #[MosXeshteg3]
+<b>Imkoniyatlar: 🛠</b>
+• [Feature 1]
+• [Feature 2]
+• [Feature 3]
 
 💎 Obuna bo‘ling: @Lazikomods
 
@@ -126,15 +119,24 @@ def limit_hashtags(text, limit=5):
     
     return clean_body + "\n\n" + " ".join(final_tags)
 
+import mod_parser
+
 def generate_post(user_input, persona="uz"):
     """Основная функция генерации поста через Groq API."""
 
     url = extract_url(user_input)
     site_content = fetch_page_content(url) if url else ""
     
+    # --- ИНТЕЛЛЕКТУАЛЬНЫЙ ПАРСИНГ ---
+    mod_metadata = ""
+    if url:
+        meta = mod_parser.parse_mod_data(url)
+        if meta:
+            mod_metadata = f"\nVERIFIED MOD DATA ({meta['source']}):\nTitle: {meta['title']}\nDescription: {meta['summary']}\nVersion: {meta['version']}\nDownloads: {meta['downloads']}\n"
+
     # Получаем промпт из БД
     db_prompt = database.get_active_prompt()
-    effective_prompt_template = db_prompt if db_prompt else PROMPT_TEMPLATE
+    effective_prompt_template = db_prompt[0] if db_prompt and db_prompt[0] else PROMPT_TEMPLATE
 
     # Определяем язык вывода
     lang_map = {
@@ -145,7 +147,7 @@ def generate_post(user_input, persona="uz"):
     target_lang = lang_map.get(persona, "O'zbek tilida")
 
     # Формируем полный промпт
-    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{effective_prompt_template}\n\nDATA TO PROCESS:\n{user_input}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
+    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{effective_prompt_template}\n\nDATA TO PROCESS:\n{user_input}\n{mod_metadata}\n{site_content}\n\nREMINDER: Use the VERIFIED MOD DATA if available. The entire post must be {target_lang}."
     
     try:
         res = client.chat.completions.create(

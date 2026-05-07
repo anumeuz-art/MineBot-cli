@@ -55,9 +55,59 @@ def get_channel_growth(channel_id):
         'current': current
     }
 
+import mod_parser
+import ai_generator
+
+@app.route('/api/curseforge/search')
+def api_curseforge_search():
+    query = request.args.get('q', '')
+    if not query: return jsonify([])
+    results = mod_parser.search_curseforge(query)
+    return jsonify(results)
+
+@app.route('/api/curseforge/create-post', methods=['POST'])
+def api_curseforge_create_post():
+    data = request.json
+    mod_id = data.get('mod_id')
+    scheduled_time = data.get('time') # timestamp
+    
+    mod_data = mod_parser.get_curseforge_mod_by_id(mod_id)
+    if not mod_data: return jsonify({'error': 'Mod not found'}), 404
+    
+    # Генерация текста через ИИ
+    ui_lang = request.cookies.get('ui_lang', 'uz')
+    generated_text = ai_generator.generate_post(mod_data['url'], ui_lang)
+    
+    # Добавление в очередь
+    database.add_to_queue(
+        photo_id=mod_data.get('logo'), # Используем лого как фото
+        text=generated_text,
+        document_id=None,
+        channel_id=config.DEFAULT_CHANNEL,
+        scheduled_time=scheduled_time
+    )
+    return jsonify({'status': 'success'})
+
+@app.route('/api/ui-lang', methods=['POST'])
+def set_ui_lang():
+    lang = request.json.get('lang', 'uz')
+    resp = jsonify({'status': 'success'})
+    resp.set_cookie('ui_lang', lang, max_age=30*24*60*60)
+    return resp
+
 @app.route('/')
 def index():
     collect_stats()
+    
+    # --- ОПРЕДЕЛЕНИЕ ЯЗЫКА ИНТЕРФЕЙСА ---
+    ui_lang = request.cookies.get('ui_lang', 'uz')
+    import json
+    try:
+        with open('translations.json', 'r', encoding='utf-8') as f:
+            all_translations = json.load(f)
+        translations = all_translations.get(ui_lang, all_translations['uz'])
+    except: translations = {}
+    
     stats = database.get_stats()
     pending = database.get_all_pending()
     queue = []
@@ -265,10 +315,28 @@ def serve_file(file_id):
     url = get_telegram_file_url(file_id)
     return redirect(url) if url else ("/static/no-image.png", 404)
 
-@app.route('/api/delete/<int:post_id>', methods=['POST'])
-def delete_post(post_id):
-    database.delete_from_queue(post_id)
-    return jsonify({'status': 'success'})
+@app.route('/api/delete-file/<int:post_id>/<int:file_idx>', methods=['POST'])
+def delete_file(post_id, file_idx):
+    post = database.get_post_by_id(post_id)
+    if not post: return jsonify({'error': 'Post not found'}), 404
+    
+    # post[3] - это document_id, строка с путями или ID файлов через запятую
+    doc_ids = post[3].split(',') if post[3] else []
+    if 0 <= file_idx < len(doc_ids):
+        doc_ids.pop(file_idx)
+        new_doc_ids = ",".join(doc_ids)
+        
+        # Обновляем БД (нужен метод, который обновит только document_id)
+        # Пока используем простую SQL-команду через sqlite3 напрямую, 
+        # так как подходящего метода в database.py нет.
+        import sqlite3
+        conn = sqlite3.connect(database.DB_PATH)
+        c = conn.cursor()
+        c.execute("UPDATE queue SET document_id = ? WHERE id = ?", (new_doc_ids, post_id))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success'})
+    return jsonify({'error': 'Invalid file index'}), 400
 
 @app.route('/api/edit/<int:post_id>', methods=['POST'])
 def edit_post(post_id):

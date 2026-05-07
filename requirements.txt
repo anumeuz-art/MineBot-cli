@@ -8,3 +8,5 @@ beautifulsoup4
 Pillow
 pytz
 flask
+playwright
+playwright-python

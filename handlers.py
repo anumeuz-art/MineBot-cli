@@ -220,7 +220,18 @@ def register_handlers(bot_instance, user_drafts, album_cache):
             return
 
         if call.data == "cancel_action":
-            bot.delete_message(chat_id, target_id)
+            # Удаляем черновик из словаря
+            if target_id in user_drafts:
+                del user_drafts[target_id]
+            
+            # Удаляем сообщение с черновиком
+            try:
+                bot.delete_message(chat_id, target_id)
+            except:
+                pass
+            
+            # Отправляем главное меню
+            bot.send_message(chat_id, get_txt(user_id, 'cancel_msg'), reply_markup=keyboards.get_main_menu(lang))
             return
 
         # Навигация

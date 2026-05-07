@@ -54,8 +54,9 @@ def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_
         # Если публикация прошла успешно, уведомляем админа
         for admin in getattr(config, 'ADMIN_IDS', []):
             try: 
-                msg = f"✅ <b>Пост опубликован:</b>\nКанал: {channel_id}"
-                if is_auto: msg = f"✅ <b>Автопостинг:</b> Пост успешно опубликован в {channel_id}!"
+                post_title = text.split('\n')[0].replace('📦 ', '')[:50]
+                msg = f"✅ <b>Пост опубликован:</b>\nМод: {post_title}\nКанал: {channel_id}\nВремя: {time.strftime('%H:%M:%S', time.localtime())}"
+                if is_auto: msg = f"✅ <b>Автопостинг:</b> Мод <i>{post_title}</i> успешно опубликован в {channel_id} в {time.strftime('%H:%M:%S', time.localtime())}!"
                 bot.send_message(admin, msg, parse_mode='HTML')
             except: pass
 
