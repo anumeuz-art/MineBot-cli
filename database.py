@@ -5,7 +5,7 @@ from datetime import datetime
 
 # Путь к файлу базы данных SQLite. 
 # Используется папка 'data/', которая обычно мапится на Railway Volume для сохранения данных при перезагрузках.
-DB_PATH = 'data/bot_data.db'
+DB_PATH = 'bot_data.db'
 
 def init_db():
     """Инициализация структуры базы данных при запуске приложения."""
