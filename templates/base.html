@@ -16,45 +16,59 @@
             url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.ttf') format('truetype');
         }
 
-        :root { --bg: #0d1117; --card: rgba(22, 27, 34, 0.7); --neon-g: #39ff14; --neon-p: #bc13fe; --text-muted: #aaa; }
-        body { background: var(--bg); color: #c9d1d9; font-family: 'Minecraftia', sans-serif; position: relative; overflow-x: hidden; }
+        :root { 
+            --bg: #0b0e14; 
+            --card: rgba(20, 25, 35, 0.85); 
+            --neon-g: #39ff14; 
+            --neon-p: #bc13fe; 
+            --mc-border: #4a5568; 
+            --text-muted: #8b949e; 
+        }
+        body { 
+            background: var(--bg); 
+            color: #e2e8f0; 
+            font-family: 'Minecraftia', sans-serif; 
+            position: relative; 
+            overflow-x: hidden; 
+            background-image: radial-gradient(circle at 50% 50%, rgba(20, 30, 20, 0.5) 0%, #0b0e14 100%);
+        }
         
-        /* Bubble Effect */
+        /* Bubble Effect Refinement */
         .bubbles { position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0; overflow: hidden; pointer-events: none; }
-        .bubble { position: absolute; bottom: -100px; background: rgba(57, 255, 20, 0.1); border-radius: 50%; animation: rise 10s infinite ease-in; }
-        @keyframes rise { 0% { transform: translateY(0); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(-100vh); opacity: 0; } }
+        .bubble { 
+            position: absolute; 
+            bottom: -150px; 
+            background: radial-gradient(circle at 30% 30%, rgba(57, 255, 20, 0.3), rgba(0, 0, 0, 0.1)); 
+            border-radius: 4px; /* Pixel-ish rounded */
+            filter: blur(15px);
+            animation: rise 15s infinite ease-in; 
+        }
+        @keyframes rise { 
+            0% { transform: translateY(0) scale(0.5); opacity: 0; } 
+            20% { opacity: 0.6; } 
+            100% { transform: translateY(-120vh) scale(1.2); opacity: 0; } 
+        }
 
-        h1, h2, h3, h4, h5, h6, .nav-link, .btn-mc, .stat-val { font-family: 'Minecraftia', sans-serif !important; }
+        h1, h2, h3, h4, h5, h6, .nav-link, .btn-mc, .stat-val { font-family: 'Minecraftia', sans-serif !important; letter-spacing: 0.5px; }
 
         .card { 
-            background: var(--card); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(48, 54, 61, 0.5); border-radius: 12px; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            background: var(--card); 
+            backdrop-filter: blur(15px); 
+            border: 4px solid var(--mc-border); 
+            border-radius: 0; /* Sharp corners for MC aesthetic */
+            transition: all 0.3s ease; 
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.3);
         }
-        .card:hover { border-color: var(--neon-g); box-shadow: 0 0 20px rgba(57, 255, 20, 0.3); transform: translateY(-5px); }
-        .nav-tabs { border-bottom: 2px solid #30363d; }
-        .nav-link { color: #8b949e; border: none !important; font-weight: 600; cursor: pointer; transition: 0.3s; }
-        .nav-link:hover { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-        .nav-link.active { color: var(--neon-g) !important; background: transparent !important; border-bottom: 2px solid var(--neon-g) !important; text-shadow: 0 0 15px var(--neon-g); }
-        .stat-val { font-size: 2rem; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
-        .channel-block { border: 1px solid var(--neon-p); box-shadow: 0 0 15px rgba(188, 19, 254, 0.1); margin-bottom: 2rem; background: var(--card); backdrop-filter: blur(10px); }
-        .channel-block:hover { box-shadow: 0 0 30px rgba(188, 19, 254, 0.4); border-color: var(--neon-p); }
-        .prompt-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 1px solid #30363d; position: relative; height: 100%; background: var(--card); backdrop-filter: blur(10px); }
-        .prompt-card:hover { transform: scale(1.03) translateY(-5px); border-color: var(--neon-p); box-shadow: 0 0 25px rgba(188, 19, 254, 0.5); }
-        .prompt-card.selected { border: 2px solid var(--neon-g); box-shadow: 0 0 25px rgba(57, 255, 20, 0.4); }
-        .prompt-card.selected::after { content: 'SELECTED'; position: absolute; top: -10px; right: 10px; background: var(--neon-g); color: #000; font-size: 0.6rem; padding: 2px 8px; border-radius: 4px; }
-        .btn-mc { border-radius: 4px; font-weight: bold; text-transform: uppercase; font-size: 0.75rem; border: 2px solid transparent; transition: all 0.2s ease; }
-        .btn-primary-mc { background: var(--neon-g); color: #000; }
-        .btn-primary-mc:hover { background: #000; color: var(--neon-g); border-color: var(--neon-g); box-shadow: 0 0 20px var(--neon-g); text-shadow: 0 0 5px var(--neon-g); }
-        .btn-purple-mc { background: var(--neon-p); color: #fff; }
-        .btn-purple-mc:hover { background: #000; color: var(--neon-p); border-color: var(--neon-p); box-shadow: 0 0 20px var(--neon-p); text-shadow: 0 0 5px var(--neon-p); }
-        .btn-danger-mc { background: #ff4d4d; color: #fff; }
-        .btn-danger-mc:hover { background: #000; color: #ff4d4d; border-color: #ff4d4d; box-shadow: 0 0 20px #ff4d4d; text-shadow: 0 0 5px #ff4d4d; }
-        .queue-item { background: rgba(28, 33, 40, 0.8); backdrop-filter: blur(5px); border-radius: 8px; margin-bottom: 12px; padding: 15px; border-left: 5px solid var(--neon-g); box-shadow: 5px 5px 15px rgba(0,0,0,0.3); transition: 0.3s; }
-        .queue-item:hover { transform: translateX(10px); box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); border-left-width: 8px; }
-        .growth-pos { color: var(--neon-g); }
-        .growth-neg { color: #ff4d4d; }
+        .card:hover { border-color: var(--neon-g); transform: translate(-2px, -2px); box-shadow: 15px 15px 0px rgba(57, 255, 20, 0.2); }
+        
+        .nav-tabs { border: none; }
+        .nav-link { color: #8b949e; border: 4px solid transparent !important; margin-right: 10px; }
+        .nav-link.active { border-color: var(--neon-g) !important; background: rgba(57, 255, 20, 0.1) !important; color: #fff !important; }
+        
+        .btn-mc { border-radius: 0; font-weight: bold; border: 3px solid transparent; }
+        .btn-primary-mc { border-color: var(--neon-g); color: var(--neon-g); }
+        .btn-primary-mc:hover { background: var(--neon-g); color: #000; }
+
     </style>
 </head>
 <body>

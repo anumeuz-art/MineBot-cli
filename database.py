@@ -372,13 +372,22 @@ def delete_from_queue(post_id):
     conn.commit()
     conn.close()
 
-def get_last_scheduled_time():
+def get_pending_posts():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT scheduled_time FROM queue WHERE status='pending' AND scheduled_time IS NOT NULL ORDER BY scheduled_time DESC LIMIT 1")
-    result = c.fetchone()
+    c.execute("SELECT id, scheduled_time FROM queue WHERE status='pending' ORDER BY scheduled_time ASC")
+    rows = c.fetchall()
     conn.close()
-    return result[0] if result else None
+    return rows
+
+def update_post_times(updates):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    for post_id, scheduled_time in updates.items():
+        c.execute("UPDATE queue SET scheduled_time = ? WHERE id = ?", (scheduled_time, post_id))
+    conn.commit()
+    conn.close()
+
 
 def record_published_post(photo_id, text, document_id, channel_id):
     conn = sqlite3.connect(DB_PATH)
