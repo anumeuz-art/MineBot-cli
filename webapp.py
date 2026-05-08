@@ -55,9 +55,59 @@ def get_channel_growth(channel_id):
         'current': current
     }
 
+import mod_parser
+import ai_generator
+
+@app.route('/api/curseforge/search')
+def api_curseforge_search():
+    query = request.args.get('q', '')
+    if not query: return jsonify([])
+    results = mod_parser.search_curseforge(query)
+    return jsonify(results)
+
+@app.route('/api/curseforge/create-post', methods=['POST'])
+def api_curseforge_create_post():
+    data = request.json
+    mod_id = data.get('mod_id')
+    scheduled_time = data.get('time') # timestamp
+    
+    mod_data = mod_parser.get_curseforge_mod_by_id(mod_id)
+    if not mod_data: return jsonify({'error': 'Mod not found'}), 404
+    
+    # Генерация текста через ИИ
+    ui_lang = request.cookies.get('ui_lang', 'uz')
+    generated_text = ai_generator.generate_post(mod_data['url'], ui_lang)
+    
+    # Добавление в очередь
+    database.add_to_queue(
+        photo_id=mod_data.get('logo'), # Используем лого как фото
+        text=generated_text,
+        document_id=None,
+        channel_id=config.DEFAULT_CHANNEL,
+        scheduled_time=scheduled_time
+    )
+    return jsonify({'status': 'success'})
+
+@app.route('/api/ui-lang', methods=['POST'])
+def set_ui_lang():
+    lang = request.json.get('lang', 'uz')
+    resp = jsonify({'status': 'success'})
+    resp.set_cookie('ui_lang', lang, max_age=30*24*60*60)
+    return resp
+
 @app.route('/')
 def index():
     collect_stats()
+    
+    # --- ОПРЕДЕЛЕНИЕ ЯЗЫКА ИНТЕРФЕЙСА ---
+    ui_lang = request.cookies.get('ui_lang', 'uz')
+    import json
+    try:
+        with open('translations.json', 'r', encoding='utf-8') as f:
+            all_translations = json.load(f)
+        translations = all_translations.get(ui_lang, all_translations['uz'])
+    except: translations = {}
+    
     stats = database.get_stats()
     pending = database.get_all_pending()
     queue = []
@@ -94,13 +144,32 @@ def index():
     sq_text = database.get_global_setting('smart_queue_text', '')
     
     watermarks = database.get_all_watermarks()
-    active_prompt = database.get_active_prompt()
+    active_prompt, active_prompt_id = database.get_active_prompt()
+    
+    published_raw = database.get_published_history(50)
+    history = []
+    for p in published_raw:
+        history.append({
+            'id': p[0],
+            'photos': p[1].split(',') if p[1] else [],
+            'text': p[2],
+            'channel': p[3],
+            'time_str': format_timestamp(p[4]),
+            'message_id': p[5]
+        })
+    
+    import json
+    with open('translations.json', 'r', encoding='utf-8') as f:
+        translations = json.load(f)
     
     return render_template('dashboard.html', stats=stats, queue=queue, 
+                           history=history,
                            channels=channel_stats, total_subs=total_subs, 
                            current_lang=current_lang, ad_text=ad_text, 
                            sq_interval=sq_interval, sq_text=sq_text,
                            watermarks=watermarks, active_prompt=active_prompt,
+                           active_prompt_id=active_prompt_id,
+                           translations=translations,
                            config=config)
 
 @app.route('/api/watermarks/upload', methods=['POST'])
@@ -141,6 +210,17 @@ def set_sq_settings():
     data = request.json
     database.set_global_setting('smart_queue_interval', data.get('interval', '6'))
     database.set_global_setting('smart_queue_text', data.get('text', ''))
+    return jsonify({'status': 'success'})
+
+@app.route('/api/prompts/activate/<int:prompt_id>', methods=['POST'])
+def api_activate_prompt(prompt_id):
+    database.activate_prompt(prompt_id)
+    return jsonify({'status': 'success'})
+
+@app.route('/api/prompts/update/<int:prompt_id>', methods=['POST'])
+def api_update_prompt(prompt_id):
+    data = request.json
+    database.update_prompt(prompt_id, data.get('name'), data.get('prompt'))
     return jsonify({'status': 'success'})
 
 @app.route('/api/prompts', methods=['GET'])
@@ -224,15 +304,39 @@ def api_remove_channel():
     database.remove_channel(username)
     return jsonify({'status': 'success'})
 
-@app.route('/file/<file_id>')
-def proxy_file(file_id):
+@app.route('/file/<path:file_id>')
+def serve_file(file_id):
+    if not file_id.startswith('AgAC') and not file_id.startswith('file_') and ('.' in file_id or '/' in file_id or '\\' in file_id):
+        for folder in ['data', 'templates']:
+            path = os.path.join(folder, os.path.basename(file_id))
+            if os.path.exists(path):
+                return send_file(path)
+    
     url = get_telegram_file_url(file_id)
     return redirect(url) if url else ("/static/no-image.png", 404)
 
-@app.route('/api/delete/<int:post_id>', methods=['POST'])
-def delete_post(post_id):
-    database.delete_from_queue(post_id)
-    return jsonify({'status': 'success'})
+@app.route('/api/delete-file/<int:post_id>/<int:file_idx>', methods=['POST'])
+def delete_file(post_id, file_idx):
+    post = database.get_post_by_id(post_id)
+    if not post: return jsonify({'error': 'Post not found'}), 404
+    
+    # post[3] - это document_id, строка с путями или ID файлов через запятую
+    doc_ids = post[3].split(',') if post[3] else []
+    if 0 <= file_idx < len(doc_ids):
+        doc_ids.pop(file_idx)
+        new_doc_ids = ",".join(doc_ids)
+        
+        # Обновляем БД (нужен метод, который обновит только document_id)
+        # Пока используем простую SQL-команду через sqlite3 напрямую, 
+        # так как подходящего метода в database.py нет.
+        import sqlite3
+        conn = sqlite3.connect(database.DB_PATH)
+        c = conn.cursor()
+        c.execute("UPDATE queue SET document_id = ? WHERE id = ?", (new_doc_ids, post_id))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success'})
+    return jsonify({'error': 'Invalid file index'}), 400
 
 @app.route('/api/edit/<int:post_id>', methods=['POST'])
 def edit_post(post_id):
@@ -251,17 +355,35 @@ def edit_post(post_id):
 def reorder():
     order = request.json.get('order')
     if not order: return jsonify({'status': 'error'})
+    
     pending = database.get_all_pending()
+    # Собираем все существующие временные метки или генерируем новые, если их нет
     existing_timestamps = sorted([p[5] for p in pending if p[5]])
-    if len(existing_timestamps) < len(order):
-        last_time = existing_timestamps[-1] if existing_timestamps else int(time.time())
-        interval = getattr(config, 'SMART_QUEUE_INTERVAL_HOURS', 6) * 3600
-        while len(existing_timestamps) < len(order):
+    
+    # Если меток меньше чем постов, генерируем недостающие
+    interval = int(database.get_global_setting('smart_queue_interval', 6)) * 3600
+    last_time = existing_timestamps[-1] if existing_timestamps else int(time.time())
+    
+    # Создаем полный список таймстампов для всех ID в новом порядке
+    new_timestamps = []
+    if existing_timestamps:
+        # Если были старые времена, пытаемся их переиспользовать
+        new_timestamps = existing_timestamps
+        while len(new_timestamps) < len(order):
             last_time += interval
-            existing_timestamps.append(last_time)
+            new_timestamps.append(last_time)
+    else:
+        # Если все посты были "ASAP", создаем новую последовательность
+        for i in range(len(order)):
+            new_timestamps.append(last_time + (i * interval))
+
+    # Обновляем каждый пост в базе
     for i, p_id in enumerate(order):
+        if p_id is None: continue
         post = database.get_post_by_id(int(p_id))
-        if post: database.update_post_content(post[0], post[2], existing_timestamps[i])
+        if post:
+            database.update_post_content(post[0], post[2], new_timestamps[i])
+            
     return jsonify({'status': 'success'})
 
 def run_server():

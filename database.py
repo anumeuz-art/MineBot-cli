@@ -21,12 +21,15 @@ def init_db():
                   photo_id TEXT,
                   text TEXT,
                   document_id TEXT,
-                  status TEXT DEFAULT 'pending')''')
+                  status TEXT DEFAULT 'pending',
+                  message_id INTEGER)''')
     
     # Динамическое добавление колонок (для миграции старых БД без удаления данных)
     try: c.execute("ALTER TABLE queue ADD COLUMN channel_id TEXT")
     except: pass
     try: c.execute("ALTER TABLE queue ADD COLUMN scheduled_time INTEGER")
+    except: pass
+    try: c.execute("ALTER TABLE queue ADD COLUMN message_id INTEGER")
     except: pass
         
     # Таблица индивидуальных настроек пользователей (язык, активный канал)
@@ -161,10 +164,25 @@ def delete_prompt(prompt_id):
 def get_active_prompt():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT prompt FROM ai_prompts WHERE is_active = 1")
+    c.execute("SELECT prompt, id FROM ai_prompts WHERE is_active = 1")
     res = c.fetchone()
     conn.close()
-    return res[0] if res else None
+    return res if res else (None, None)
+
+def activate_prompt(prompt_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE ai_prompts SET is_active = 0")
+    c.execute("UPDATE ai_prompts SET is_active = 1 WHERE id = ?", (prompt_id,))
+    conn.commit()
+    conn.close()
+
+def update_prompt(prompt_id, name, prompt):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE ai_prompts SET name = ?, prompt = ? WHERE id = ?", (name, prompt, prompt_id))
+    conn.commit()
+    conn.close()
 
 def update_active_prompt(new_prompt):
     conn = sqlite3.connect(DB_PATH)
@@ -274,12 +292,30 @@ def get_ready_posts():
     conn.close()
     return rows
 
+def update_message_id(post_id, message_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE queue SET message_id = ? WHERE id = ?", (message_id, post_id))
+    conn.commit()
+    conn.close()
+
 def mark_as_posted(post_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("UPDATE queue SET status='posted' WHERE id=?", (post_id,))
     conn.commit()
     conn.close()
+
+def get_published_history(limit=50):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("""SELECT id, photo_id, text, channel_id, scheduled_time, message_id 
+                 FROM queue 
+                 WHERE status='posted' 
+                 ORDER BY scheduled_time DESC LIMIT ?""", (limit,))
+    rows = c.fetchall()
+    conn.close()
+    return rows
 
 def get_stats():
     import pytz

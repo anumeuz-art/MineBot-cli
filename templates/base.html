@@ -16,13 +16,20 @@
             url('https://db.onlinewebfonts.com/t/6ab52003135aedab3ad34584046d997d.ttf') format('truetype');
         }
 
-        :root { --bg: #0d1117; --card: #161b22; --neon-g: #39ff14; --neon-p: #bc13fe; --text-muted: #aaa; }
-        body { background: var(--bg); color: #c9d1d9; font-family: 'Minecraftia', sans-serif; }
+        :root { --bg: #0d1117; --card: rgba(22, 27, 34, 0.7); --neon-g: #39ff14; --neon-p: #bc13fe; --text-muted: #aaa; }
+        body { background: var(--bg); color: #c9d1d9; font-family: 'Minecraftia', sans-serif; position: relative; overflow-x: hidden; }
+        
+        /* Bubble Effect */
+        .bubbles { position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0; overflow: hidden; pointer-events: none; }
+        .bubble { position: absolute; bottom: -100px; background: rgba(57, 255, 20, 0.1); border-radius: 50%; animation: rise 10s infinite ease-in; }
+        @keyframes rise { 0% { transform: translateY(0); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(-100vh); opacity: 0; } }
+
         h1, h2, h3, h4, h5, h6, .nav-link, .btn-mc, .stat-val { font-family: 'Minecraftia', sans-serif !important; }
 
         .card { 
-            background: var(--card); border: 1px solid #30363d; border-radius: 12px; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            background: var(--card); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(48, 54, 61, 0.5); border-radius: 12px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         .card:hover { border-color: var(--neon-g); box-shadow: 0 0 20px rgba(57, 255, 20, 0.3); transform: translateY(-5px); }
         .nav-tabs { border-bottom: 2px solid #30363d; }
@@ -31,9 +38,9 @@
         .nav-link.active { color: var(--neon-g) !important; background: transparent !important; border-bottom: 2px solid var(--neon-g) !important; text-shadow: 0 0 15px var(--neon-g); }
         .stat-val { font-size: 2rem; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
         .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
-        .channel-block { border: 1px solid var(--neon-p); box-shadow: 0 0 15px rgba(188, 19, 254, 0.1); margin-bottom: 2rem; }
+        .channel-block { border: 1px solid var(--neon-p); box-shadow: 0 0 15px rgba(188, 19, 254, 0.1); margin-bottom: 2rem; background: var(--card); backdrop-filter: blur(10px); }
         .channel-block:hover { box-shadow: 0 0 30px rgba(188, 19, 254, 0.4); border-color: var(--neon-p); }
-        .prompt-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 1px solid #30363d; position: relative; height: 100%; }
+        .prompt-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 1px solid #30363d; position: relative; height: 100%; background: var(--card); backdrop-filter: blur(10px); }
         .prompt-card:hover { transform: scale(1.03) translateY(-5px); border-color: var(--neon-p); box-shadow: 0 0 25px rgba(188, 19, 254, 0.5); }
         .prompt-card.selected { border: 2px solid var(--neon-g); box-shadow: 0 0 25px rgba(57, 255, 20, 0.4); }
         .prompt-card.selected::after { content: 'SELECTED'; position: absolute; top: -10px; right: 10px; background: var(--neon-g); color: #000; font-size: 0.6rem; padding: 2px 8px; border-radius: 4px; }
@@ -44,19 +51,39 @@
         .btn-purple-mc:hover { background: #000; color: var(--neon-p); border-color: var(--neon-p); box-shadow: 0 0 20px var(--neon-p); text-shadow: 0 0 5px var(--neon-p); }
         .btn-danger-mc { background: #ff4d4d; color: #fff; }
         .btn-danger-mc:hover { background: #000; color: #ff4d4d; border-color: #ff4d4d; box-shadow: 0 0 20px #ff4d4d; text-shadow: 0 0 5px #ff4d4d; }
-        .queue-item { background: #1c2128; border-radius: 8px; margin-bottom: 12px; padding: 15px; border-left: 5px solid var(--neon-g); box-shadow: 5px 5px 15px rgba(0,0,0,0.3); transition: 0.3s; }
+        .queue-item { background: rgba(28, 33, 40, 0.8); backdrop-filter: blur(5px); border-radius: 8px; margin-bottom: 12px; padding: 15px; border-left: 5px solid var(--neon-g); box-shadow: 5px 5px 15px rgba(0,0,0,0.3); transition: 0.3s; }
         .queue-item:hover { transform: translateX(10px); box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); border-left-width: 8px; }
         .growth-pos { color: var(--neon-g); }
         .growth-neg { color: #ff4d4d; }
     </style>
 </head>
 <body>
+<div class="bubbles" id="bubbles"></div>
+<script>
+    const bubblesContainer = document.getElementById('bubbles');
+    for(let i=0; i<15; i++) {
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        const size = Math.random() * 60 + 20 + 'px';
+        b.style.width = size; b.style.height = size;
+        b.style.left = Math.random() * 100 + '%';
+        b.style.animationDelay = Math.random() * 10 + 's';
+        bubblesContainer.appendChild(b);
+    }
+</script>
 
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
             <h1 class="fw-bold m-0" style="color: var(--neon-g); text-shadow: 0 0 15px var(--neon-g);">MINE BOT OS</h1>
-            <small class="text-muted">VERSION 2.8 • AI POWERED</small>
+            <div class="d-flex align-items-center mt-1">
+                <small class="text-muted me-3">VERSION 2.8 • AI POWERED</small>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary btn-sm px-2 py-0" onclick="setUILang('uz')" style="font-size: 0.6rem;">UZ</button>
+                    <button class="btn btn-outline-secondary btn-sm px-2 py-0" onclick="setUILang('ru')" style="font-size: 0.6rem;">RU</button>
+                    <button class="btn btn-outline-secondary btn-sm px-2 py-0" onclick="setUILang('en')" style="font-size: 0.6rem;">EN</button>
+                </div>
+            </div>
         </div>
         <div>
             <button class="btn btn-danger-mc btn-mc px-4" onclick="clearMemory()"><i class="bi bi-cpu me-2"></i>WIPE MEMORY</button>
@@ -65,17 +92,28 @@
 
     <!-- TABS NAVIGATION -->
     <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active" id="dash-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button">ANALYTICS</button></li>
-        <li class="nav-item"><button class="nav-link" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button">QUEUE</button></li>
-        <li class="nav-item"><button class="nav-link" id="channels-tab" data-bs-toggle="tab" data-bs-target="#channels" type="button">CHANNELS</button></li>
+        <li class="nav-item"><button class="nav-link active" id="dash-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button">{{ translations.tab_audience }}</button></li>
+        <li class="nav-item"><button class="nav-link" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button">{{ translations.tab_queue }}</button></li>
+        <li class="nav-item"><button class="nav-link" id="cf-tab" data-bs-toggle="tab" data-bs-target="#curseforge" type="button">CURSEFORGE</button></li>
+        <li class="nav-item"><button class="nav-link" id="channels-tab" data-bs-toggle="tab" data-bs-target="#channels" type="button">{{ translations.tab_channels }}</button></li>
         <li class="nav-item"><button class="nav-link" id="themes-tab" data-bs-toggle="tab" data-bs-target="#prompts" type="button">AI THEMES</button></li>
-        <li class="nav-item"><button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button">CONFIG</button></li>
+        <li class="nav-item"><button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button">{{ translations.tab_settings }}</button></li>
     </ul>
 
     <div class="tab-content">
         {% block content %}{% endblock %}
     </div>
 </div>
+
+<script>
+    function setUILang(lang) {
+        fetch('/api/ui-lang', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lang: lang })
+        }).then(() => location.reload());
+    }
+</script>
 
 {% include 'parts/modals.html' %}
 {% include 'parts/scripts.html' %}

@@ -5,13 +5,7 @@ from bs4 import BeautifulSoup
 from groq import Groq
 import database
 
-# Инициализация клиента Groq для работы с ИИ
-client = Groq(api_key=config.GROQ_API_KEY)
-# Используемая модель ИИ
-MODEL_ID = "llama-3.3-70b-versatile"
-
 # Промпт-инструкция для ИИ. Определяет роль, стиль и структуру поста.
-# Содержит список разрешенных хэштегов и пример разметки HTML для Telegram.
 PROMPT_TEMPLATE = """
 Sen Minecraft modlari bo‘yicha professional Telegram kontent muharririsan.
 
@@ -67,6 +61,11 @@ Qo‘shimcha:
 - Agar addon bo‘lsa, gameplay o‘zgarishlarini urg‘ula
 - Har safar original va takrorlanmaydigan uslub yarat
 """
+
+# Инициализация клиента Groq для работы с ИИ
+client = Groq(api_key=config.GROQ_API_KEY)
+# Используемая модель ИИ
+MODEL_ID = "llama-3.3-70b-versatile"
 
 def extract_url(text):
     """Извлекает первую найденную URL-ссылку из текста."""
@@ -126,14 +125,24 @@ def limit_hashtags(text, limit=5):
     
     return clean_body + "\n\n" + " ".join(final_tags)
 
+import mod_parser
+
 def generate_post(user_input, persona="uz"):
     """Основная функция генерации поста через Groq API."""
+
     url = extract_url(user_input)
     site_content = fetch_page_content(url) if url else ""
     
+    # --- ИНТЕЛЛЕКТУАЛЬНЫЙ ПАРСИНГ ---
+    mod_metadata = ""
+    if url:
+        meta = mod_parser.parse_mod_data(url)
+        if meta:
+            mod_metadata = f"\nVERIFIED MOD DATA ({meta['source']}):\nTitle: {meta['title']}\nDescription: {meta['summary']}\nVersion: {meta['version']}\nDownloads: {meta['downloads']}\n"
+
     # Получаем промпт из БД
     db_prompt = database.get_active_prompt()
-    effective_prompt_template = db_prompt if db_prompt else PROMPT_TEMPLATE
+    effective_prompt_template = db_prompt[0] if db_prompt and db_prompt[0] else PROMPT_TEMPLATE
 
     # Определяем язык вывода
     lang_map = {
@@ -144,7 +153,7 @@ def generate_post(user_input, persona="uz"):
     target_lang = lang_map.get(persona, "O'zbek tilida")
 
     # Формируем полный промпт
-    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{effective_prompt_template}\n\nDATA TO PROCESS:\n{user_input}\n{site_content}\n\nREMINDER: The entire post must be {target_lang}."
+    prompt = f"TASK: Write a Minecraft mod post strictly {target_lang}.\n\n{effective_prompt_template}\n\nDATA TO PROCESS:\n{user_input}\n{mod_metadata}\n{site_content}\n\nREMINDER: Use the VERIFIED MOD DATA if available. The entire post must be {target_lang}."
     
     try:
         res = client.chat.completions.create(
@@ -153,17 +162,33 @@ def generate_post(user_input, persona="uz"):
         )
         gen = res.choices[0].message.content.strip()
         
-        # Пост-обработка для контроля количества хэштегов
-        gen = limit_hashtags(gen)
-        
-        # Добавляем рекламную подпись, если она настроена в БД
+        # Добавляем рекламную подпись ПЕРЕД обработкой хэштегов, чтобы все чистилось вместе
         ad_text = database.get_global_setting('ad_text', '')
         if ad_text and ad_text not in gen:
             gen += f"\n\n{ad_text}"
             
+        # Пост-обработка хэштегов (лимитирование)
+        gen = limit_hashtags(gen)
+        
+        # Финальная очистка: удаляем лишние пробелы в концах строк и ограничиваем пустые строки
+        lines = [line.strip() for line in gen.split('\n')]
+        # Убираем полностью пустые строки, которые могли возникнуть из-за strip(),
+        # но сохраняем структуру (макс 1 пустая строка между блоками текста)
+        new_lines = []
+        for line in lines:
+            if line:
+                new_lines.append(line)
+            elif new_lines and new_lines[-1] != "":
+                new_lines.append("")
+        
+        gen = '\n'.join(new_lines).strip()
+        # Гарантируем, что нет более 2 переносов строк подряд
+        gen = re.sub(r'\n{3,}', '\n\n', gen)
+            
         return gen
     except Exception as e:
         return f"Error: {e}"
+
 
 def translate_post(text, target_persona="uz"):
     """Переводит готовый пост на другой язык, сохраняя всю HTML разметку и эмодзи."""

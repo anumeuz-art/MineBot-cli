@@ -69,7 +69,11 @@ MESSAGES = {
         'album_processing': "🎨 Processing album photo {i}/{total}...",
         'lang_selected': "✅ Language changed: <b>English</b>",
         'choose_lang': "Choose language for interface and posts:",
-        'translating': "⏳ Translating..."
+        'translating': "⏳ Translating...",
+        'expand_log' : "Expand log",
+        'ai_output_lang' : "UI language",
+        'APPEND_TEXT' : "Append text",
+        'WATERMARK_MANAGER' : "Logo manager" 
     }
 }
 

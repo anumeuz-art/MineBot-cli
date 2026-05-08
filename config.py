@@ -9,6 +9,8 @@ GEMINI_KEY = os.getenv("GEMINI_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 CURSEFORGE_API_KEY = os.getenv("CURSEFORGE_API_KEY")
+BROWSER_ACT_API_KEY = os.getenv("BROWSER_ACT_API_KEY", "app-SrnMNQHJzuKityGrZ0q8yMve")
+
 
 if not TELEGRAM_TOKEN:
     raise ValueError("❌ КРИТИЧЕСКАЯ ОШИБКА: TELEGRAM_TOKEN не установлен!")
