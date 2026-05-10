@@ -1,6 +1,7 @@
 import telebot
 import config
 import database
+import time
 
 def publish_post_data(bot, post_id, photo_id, text, document_id, channel_id, is_auto=False):
     """
